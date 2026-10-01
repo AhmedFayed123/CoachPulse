@@ -16,5 +16,7 @@ namespace CoachPulse.Domain.Entities
         public Guid ClientId { get; set; }
 
         public string Meals { get; set; } = string.Empty;
+
+        public Client Client { get; set; } = null!;
     }
 }

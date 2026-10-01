@@ -20,5 +20,7 @@ namespace CoachPulse.Domain.Entities
         public string GeneratedContent { get; set; } = string.Empty;
 
         public bool ApprovedByCoach { get; set; }
+
+        public Client Client { get; set; } = null!;
     }
 }

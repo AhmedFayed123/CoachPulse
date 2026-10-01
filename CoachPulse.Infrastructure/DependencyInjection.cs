@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace CoachPulse.Infrastructure
 {
+
     public static class DependencyInjection
     {
         public static IServiceCollection AddInfrastructure(

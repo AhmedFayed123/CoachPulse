@@ -8,8 +8,9 @@ namespace CoachPulse.Domain.Enums
 {
     public enum UserRole
     {
-        Admin = 1,
-        Coach = 2,
-        Client = 3
+        SuperAdmin = 1,
+        Owner = 2,
+        Staff = 3,
+        Client = 4
     }
 }

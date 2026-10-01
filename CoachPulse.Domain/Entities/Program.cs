@@ -20,5 +20,9 @@ namespace CoachPulse.Domain.Entities
         public string Title { get; set; } = string.Empty;
 
         public bool IsTemplate { get; set; }
+
+        public Client Client { get; set; } = null!;
+
+        public User Coach { get; set; } = null!;
     }
 }

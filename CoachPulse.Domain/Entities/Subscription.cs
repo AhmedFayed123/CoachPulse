@@ -23,5 +23,9 @@ namespace CoachPulse.Domain.Entities
         public DateTime StartDate { get; set; }
 
         public DateTime EndDate { get; set; }
+
+        public Client Client { get; set; } = null!;
+
+        public Plan Plan { get; set; } = null!;
     }
 }

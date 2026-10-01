@@ -29,5 +29,9 @@ namespace CoachPulse.Domain.Entities
         public string? ReceiptUrl { get; set; }
 
         public Guid? ConfirmedByAdminId { get; set; }
+
+        public Subscription Subscription { get; set; } = null!;
+
+        public User? ConfirmedByAdmin { get; set; }
     }
 }

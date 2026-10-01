@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CoachPulse.Domain.Interfaces
+namespace CoachPulse.Application.Interfaces
 {
-    public interface ITenantEntity
+    public interface ICurrentTenantService
     {
-        Guid TenantId { get; set; }
+        Guid? TenantId { get; }
     }
 }

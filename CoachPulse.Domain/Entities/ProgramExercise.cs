@@ -19,5 +19,9 @@ namespace CoachPulse.Domain.Entities
         public int Reps { get; set; }
 
         public int Day { get; set; }
+
+        public Program Program { get; set; } = null!;
+
+        public Exercise Exercise { get; set; } = null!;
     }
 }

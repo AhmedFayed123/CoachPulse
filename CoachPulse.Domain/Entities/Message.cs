@@ -20,5 +20,9 @@ namespace CoachPulse.Domain.Entities
         public string Content { get; set; } = string.Empty;
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        public User Sender { get; set; } = null!;
+
+        public User Receiver { get; set; } = null!;
     }
 }

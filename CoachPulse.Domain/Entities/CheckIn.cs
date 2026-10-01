@@ -22,5 +22,7 @@ namespace CoachPulse.Domain.Entities
         public string? Measurements { get; set; }
 
         public string? PhotoUrl { get; set; }
+
+        public Client Client { get; set; } = null!;
     }
 }

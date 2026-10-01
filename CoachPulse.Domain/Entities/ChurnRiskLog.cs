@@ -18,5 +18,7 @@ namespace CoachPulse.Domain.Entities
         public decimal RiskScore { get; set; }
 
         public DateTime ComputedAt { get; set; } = DateTime.UtcNow;
+
+        public Client Client { get; set; } = null!;
     }
 }

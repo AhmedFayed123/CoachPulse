@@ -18,5 +18,7 @@ namespace CoachPulse.Domain.Entities
         public decimal Price { get; set; }
 
         public int DurationDays { get; set; }
+
+        public Tenant Tenant { get; set; } = null!;
     }
 }
