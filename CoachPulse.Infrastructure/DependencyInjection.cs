@@ -21,6 +21,7 @@ namespace CoachPulse.Infrastructure
             IConfiguration configuration)
         {
             services.AddScoped<ICurrentTenantService, CurrentTenantService>();
+            services.AddScoped<IPasswordHasher, PasswordHasherService>();
             services.AddDbContext<CoachPulseDbContext>(options =>
             {
                 options.UseNpgsql(
