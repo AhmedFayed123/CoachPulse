@@ -1,4 +1,5 @@
 
+using CoachPulse.Api.Middleware;
 using CoachPulse.Infrastructure;
 using Serilog;
 
@@ -13,6 +14,7 @@ namespace CoachPulse.Api
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.Console()
                 .CreateLogger();
+
 
             builder.Host.UseSerilog();
 
@@ -30,7 +32,7 @@ namespace CoachPulse.Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
+            app.UseMiddleware<TenantResolutionMiddleware>();
             app.UseHttpsRedirection();
 
             app.UseAuthorization();

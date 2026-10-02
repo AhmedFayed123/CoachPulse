@@ -1,4 +1,6 @@
-﻿using CoachPulse.Infrastructure.Persistence;
+﻿using CoachPulse.Application.Interfaces;
+using CoachPulse.Infrastructure.Persistence;
+using CoachPulse.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 
 namespace CoachPulse.Infrastructure
 {
@@ -17,6 +20,7 @@ namespace CoachPulse.Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddScoped<ICurrentTenantService, CurrentTenantService>();
             services.AddDbContext<CoachPulseDbContext>(options =>
             {
                 options.UseNpgsql(
