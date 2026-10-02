@@ -11,7 +11,7 @@ namespace CoachPulse.Api.Controllers
 
     [ApiController]
     [Route("api/auth")]
-    public class AuthController : Controller
+    public class AuthController : ControllerBase
     {
         private readonly CoachPulseDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
@@ -24,8 +24,8 @@ namespace CoachPulse.Api.Controllers
             _passwordHasher = passwordHasher;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        [HttpPost("register-tenant")]
+        public async Task<IActionResult> Register(RegisterTenantRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest("Email is required.");
@@ -39,8 +39,7 @@ namespace CoachPulse.Api.Controllers
             if (string.IsNullOrWhiteSpace(request.TenantSlug))
                 return BadRequest("Tenant slug is required.");
 
-            if (request.Role == UserRole.SuperAdmin)
-                return BadRequest("SuperAdmin cannot be registered.");
+      
 
             var email = request.Email.Trim().ToLower();
 
@@ -71,7 +70,7 @@ namespace CoachPulse.Api.Controllers
                 TenantId = tenant.Id,
                 Email = email,
                 PasswordHash = _passwordHasher.Hash(request.Password),
-                Role = request.Role
+                Role = UserRole.Owner
             };
 
             _context.Tenants.Add(tenant);
@@ -85,7 +84,7 @@ namespace CoachPulse.Api.Controllers
                 UserId = user.Id,
                 TenantId = tenant.Id,
                 Email = user.Email,
-                Role = user.Role
+                Role = user.Role.ToString()
             });
         }
     }
