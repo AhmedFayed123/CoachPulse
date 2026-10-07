@@ -15,13 +15,16 @@ namespace CoachPulse.Api.Controllers
     {
         private readonly CoachPulseDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IJwtService _jwtService;
 
         public AuthController(
             CoachPulseDbContext context,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher, IJwtService jwtService)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _jwtService = jwtService;
+
         }
 
         [HttpPost("register-tenant")]
@@ -85,6 +88,64 @@ namespace CoachPulse.Api.Controllers
                 TenantId = tenant.Id,
                 Email = user.Email,
                 Role = user.Role.ToString()
+            });
+        }
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest("Email is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("Password is required.");
+
+            var email = request.Email.Trim().ToLower();
+
+            var user = await _context.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.Email == email);
+
+            if (user == null)
+                return Unauthorized("Invalid email or password.");
+
+            var passwordValid = _passwordHasher.Verify(
+                request.Password,
+                user.PasswordHash);
+
+            if (!passwordValid)
+                return Unauthorized("Invalid email or password.");
+
+            if (user.TenantId.HasValue)
+            {
+                var tenant = await _context.Tenants
+                    .FirstOrDefaultAsync(x => x.Id == user.TenantId.Value);
+
+                if (tenant == null)
+                    return Unauthorized("Tenant not found.");
+
+                if (!string.Equals(
+                        tenant.Status,
+                        "Active",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return Unauthorized("Tenant is not active.");
+                }
+            }
+
+            var accessToken = _jwtService.GenerateAccessToken(user);
+
+            return Ok(new
+            {
+                AccessToken = accessToken,
+                TokenType = "Bearer",
+                ExpiresInMinutes = 60,
+                User = new
+                {
+                    user.Id,
+                    user.Email,
+                    user.TenantId,
+                    user.Role
+                }
             });
         }
     }

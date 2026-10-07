@@ -1,4 +1,5 @@
 ﻿using CoachPulse.Application.Interfaces;
+using CoachPulse.Application.Settings;
 using CoachPulse.Infrastructure.Persistence;
 using CoachPulse.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -22,11 +23,14 @@ namespace CoachPulse.Infrastructure
         {
             services.AddScoped<ICurrentTenantService, CurrentTenantService>();
             services.AddScoped<IPasswordHasher, PasswordHasherService>();
+            services.AddScoped<IJwtService, JwtService>();
+            services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.AddDbContext<CoachPulseDbContext>(options =>
             {
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"));
             });
+
 
             return services;
         }

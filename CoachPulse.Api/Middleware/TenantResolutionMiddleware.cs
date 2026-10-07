@@ -1,42 +1,36 @@
-﻿using CoachPulse.Application.Interfaces;
+﻿using System.Security.Claims;
+using CoachPulse.Application.Interfaces;
 
-namespace CoachPulse.Api.Middleware
+namespace CoachPulse.Api.Middleware;
+
+public class TenantResolutionMiddleware
 {
-    public class TenantResolutionMiddleware
+    private readonly RequestDelegate _next;
+
+    public TenantResolutionMiddleware(RequestDelegate next)
     {
-        private const string TenantHeader = "X-Tenant-Id";
+        _next = next;
+    }
 
-        private readonly RequestDelegate _next;
+    public async Task InvokeAsync(
+        HttpContext context,
+        ICurrentTenantService currentTenantService)
+    {
+        var tenantClaim = context.User.FindFirst("tenantId");
 
-        public TenantResolutionMiddleware(RequestDelegate next)
+        if (tenantClaim != null &&
+            Guid.TryParse(tenantClaim.Value, out var tenantId))
         {
-            _next = next;
+            currentTenantService.SetTenant(tenantId);
         }
 
-        public async Task InvokeAsync(
-            HttpContext context,
-            ICurrentTenantService currentTenantService)
+        try
         {
-            if (context.Request.Headers.TryGetValue(
-                TenantHeader,
-                out var tenantHeader))
-            {
-                if (Guid.TryParse(
-                    tenantHeader.ToString(),
-                    out var tenantId))
-                {
-                    currentTenantService.SetTenant(tenantId);
-                }
-            }
-
-            try
-            {
-                await _next(context);
-            }
-            finally
-            {
-                currentTenantService.Clear();
-            }
+            await _next(context);
+        }
+        finally
+        {
+            currentTenantService.Clear();
         }
     }
 }
