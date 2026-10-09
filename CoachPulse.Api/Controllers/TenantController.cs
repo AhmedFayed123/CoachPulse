@@ -304,4 +304,30 @@ public class TenantController : ControllerBase
             TotalPayments = totalPayments
         });
     }
+    [HttpGet("churn-risk")]
+    public async Task<IActionResult> GetChurnRisk()
+    {
+        var tenantIdClaim = User.FindFirst("tenantId");
+
+        if (tenantIdClaim == null ||
+            !Guid.TryParse(tenantIdClaim.Value, out var tenantId))
+        {
+            return Unauthorized("Tenant not found.");
+        }
+
+        var churnRisks = await _context.ChurnRiskLogs
+            .AsNoTracking()
+            .OrderByDescending(x => x.ComputedAt)
+            .Select(x => new
+            {
+                x.Id,
+                x.ClientId,
+                ClientEmail = x.Client.User.Email,
+                x.RiskScore,
+                x.ComputedAt
+            })
+            .ToListAsync();
+
+        return Ok(churnRisks);
+    }
 }

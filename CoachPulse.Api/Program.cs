@@ -143,3 +143,9 @@ namespace CoachPulse.Api
         }
     }
 }
+
+
+
+
+//"email": "coach1@test.com",
+//  "password": "Coach@12345"
