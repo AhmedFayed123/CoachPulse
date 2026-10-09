@@ -36,6 +36,8 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<ChurnRiskLog> ChurnRiskLogs => Set<ChurnRiskLog>();
         public DbSet<AIGeneratedProgram> AIGeneratedPrograms => Set<AIGeneratedProgram>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<ClientInvitation> ClientInvitations
+    => Set<ClientInvitation>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

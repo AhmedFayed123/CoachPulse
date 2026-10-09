@@ -3,8 +3,11 @@ using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace CoachPulse.Api.Controllers
 {
@@ -177,6 +180,102 @@ namespace CoachPulse.Api.Controllers
                 UserId = user.Id,
                 ClientId = client.Id,
                 TenantId = tenant.Id,
+                Email = user.Email,
+                Role = user.Role.ToString()
+            });
+        }
+        [AllowAnonymous]
+        [HttpPost("accept-invitation")]
+        public async Task<IActionResult> AcceptInvitation(
+    AcceptInvitationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Token))
+                return BadRequest("Invitation token is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("Password is required.");
+
+            if (request.Password.Length < 8)
+                return BadRequest("Password must be at least 8 characters.");
+
+            var tokenHash = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(request.Token)));
+
+            var invitation = await _context.ClientInvitations
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
+
+            if (invitation == null)
+                return BadRequest("Invalid invitation.");
+
+            if (invitation.AcceptedAt.HasValue)
+                return BadRequest("Invitation has already been accepted.");
+
+            if (invitation.ExpiresAt <= DateTime.UtcNow)
+                return BadRequest("Invitation has expired.");
+
+            var tenant = await _context.Tenants
+                .FirstOrDefaultAsync(x => x.Id == invitation.TenantId);
+
+            if (tenant == null ||
+                !string.Equals(
+                    tenant.Status,
+                    "Active",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Tenant is not active.");
+            }
+
+            var existingUser = await _context.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(x =>
+                    x.TenantId == invitation.TenantId &&
+                    x.Email == invitation.Email);
+
+            if (existingUser)
+                return BadRequest("An account already exists for this email.");
+
+            var coach = await _context.Users
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == invitation.CoachId &&
+                    x.TenantId == invitation.TenantId &&
+                    (x.Role == UserRole.Owner ||
+                     x.Role == UserRole.Staff));
+
+            if (coach == null)
+                return BadRequest("Invitation coach is no longer valid.");
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                TenantId = invitation.TenantId,
+                Email = invitation.Email,
+                PasswordHash = _passwordHasher.Hash(request.Password),
+                Role = UserRole.Client
+            };
+
+            var client = new Client
+            {
+                Id = Guid.NewGuid(),
+                TenantId = invitation.TenantId,
+                UserId = user.Id,
+                CoachId = invitation.CoachId
+            };
+
+            invitation.AcceptedAt = DateTime.UtcNow;
+
+            _context.Users.Add(user);
+            _context.Clients.Add(client);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Invitation accepted successfully.",
+                UserId = user.Id,
+                ClientId = client.Id,
+                TenantId = user.TenantId,
                 Email = user.Email,
                 Role = user.Role.ToString()
             });
