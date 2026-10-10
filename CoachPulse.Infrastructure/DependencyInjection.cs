@@ -25,6 +25,7 @@ namespace CoachPulse.Infrastructure
             services.AddScoped<IPasswordHasher, PasswordHasherService>();
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<IFileStorage, LocalFileStorage>();
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.AddDbContext<CoachPulseDbContext>(options =>
             {
