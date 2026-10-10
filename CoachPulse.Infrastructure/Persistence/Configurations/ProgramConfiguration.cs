@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 
 namespace CoachPulse.Infrastructure.Persistence.Configurations
 {
-    public class ProgramConfiguration : IEntityTypeConfiguration<Program>
+    public class ProgramConfiguration
+           : IEntityTypeConfiguration<Program>
     {
         public void Configure(EntityTypeBuilder<Program> builder)
         {
@@ -24,6 +25,7 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
             builder.HasOne(x => x.Client)
                 .WithMany()
                 .HasForeignKey(x => x.ClientId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.Coach)

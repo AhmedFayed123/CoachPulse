@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace CoachPulse.Domain.Entities
 {
-    public class Program:ITenantEntity
+    public class Program : ITenantEntity
     {
         public Guid Id { get; set; }
 
         public Guid TenantId { get; set; }
 
-        public Guid ClientId { get; set; }
+        public Guid? ClientId { get; set; }
 
         public Guid CoachId { get; set; }
 
@@ -21,7 +21,7 @@ namespace CoachPulse.Domain.Entities
 
         public bool IsTemplate { get; set; }
 
-        public Client Client { get; set; } = null!;
+        public Client? Client { get; set; }
 
         public User Coach { get; set; } = null!;
     }

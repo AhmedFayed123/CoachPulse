@@ -269,7 +269,9 @@ public class CoachController : ControllerBase
                 x.Id,
                 x.Title,
                 x.ClientId,
-                ClientEmail = x.Client!.User!.Email,
+                ClientEmail = x.Client != null
+                ? x.Client.User!.Email
+                : null,
                 x.CoachId,
                 x.IsTemplate,
                 x.TenantId
@@ -279,6 +281,63 @@ public class CoachController : ControllerBase
         return Ok(programs);
     }
 
+    [HttpGet("exercises")]
+    public async Task<IActionResult> GetExercises()
+    {
+        var exercises = await _context.Exercises
+            .AsNoTracking()
+            .OrderBy(e => e.Name)
+            .Select(e => new
+            {
+                e.Id,
+                e.Name,
+                e.MuscleGroup,
+                e.VideoUrl
+            })
+            .ToListAsync();
+
+        return Ok(exercises);
+    }
+    [HttpPost("exercises")]
+    [Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> CreateExercise(
+    [FromBody] CreateExerciseRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name) ||
+            string.IsNullOrWhiteSpace(request.MuscleGroup))
+        {
+            return BadRequest(new
+            {
+                message = "Name and MuscleGroup are required."
+            });
+        }
+
+        var name = request.Name.Trim();
+        var muscleGroup = request.MuscleGroup.Trim();
+
+        var exercise = new CoachPulse.Domain.Entities.Exercise
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            MuscleGroup = muscleGroup,
+            VideoUrl = string.IsNullOrWhiteSpace(request.VideoUrl)
+                ? null
+                : request.VideoUrl.Trim()
+        };
+
+        _context.Exercises.Add(exercise);
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Exercise created successfully.",
+            exercise.Id,
+            exercise.Name,
+            exercise.MuscleGroup,
+            exercise.VideoUrl
+        });
+    }
     [HttpPost("programs/{programId:guid}/exercises")]
     public async Task<IActionResult> AddExerciseToProgram(
         Guid programId,
@@ -413,5 +472,238 @@ public class CoachController : ControllerBase
             .ToListAsync();
 
         return Ok(exercises);
+    }
+
+    // POST: api/coach/programs/templates
+    // Create a reusable program template.
+    [HttpPost("programs/templates")]
+    public async Task<IActionResult> CreateProgramTemplate(
+        [FromBody] CreateProgramRequest request)
+    {
+        var userIdValue = User.FindFirst(
+            ClaimTypes.NameIdentifier)?.Value;
+
+        var tenantIdValue = User.FindFirst("tenantId")?.Value;
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (!Guid.TryParse(userIdValue, out var userId) ||
+            !Guid.TryParse(tenantIdValue, out var tenantId))
+        {
+            return Unauthorized();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            return BadRequest(new
+            {
+                message = "Template title is required."
+            });
+        }
+
+        if (role != UserRole.Owner.ToString() &&
+            role != UserRole.Staff.ToString())
+        {
+            return Forbid();
+        }
+
+        var template = new CoachPulse.Domain.Entities.Program
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ClientId = null,
+            CoachId = userId,
+            Title = request.Title.Trim(),
+            IsTemplate = true
+        };
+
+        _context.Programs.Add(template);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Program template created successfully.",
+            template.Id,
+            template.Title,
+            template.TenantId,
+            template.CoachId,
+            template.IsTemplate
+        });
+    }
+
+    // GET: api/coach/programs/templates
+    // List templates available to the current coach/tenant.
+    [HttpGet("programs/templates")]
+    public async Task<IActionResult> GetProgramTemplates()
+    {
+        var userIdValue = User.FindFirst(
+            ClaimTypes.NameIdentifier)?.Value;
+
+        var tenantIdValue = User.FindFirst("tenantId")?.Value;
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (!Guid.TryParse(userIdValue, out var userId) ||
+            !Guid.TryParse(tenantIdValue, out var tenantId))
+        {
+            return Unauthorized();
+        }
+
+        var query = _context.Programs
+            .AsNoTracking()
+            .Where(p =>
+                p.TenantId == tenantId &&
+                p.IsTemplate &&
+                p.ClientId == null);
+
+        if (role == UserRole.Staff.ToString())
+        {
+            query = query.Where(p => p.CoachId == userId);
+        }
+        else if (role != UserRole.Owner.ToString())
+        {
+            return Forbid();
+        }
+
+        var templates = await query
+            .OrderBy(p => p.Title)
+            .Select(p => new
+            {
+                p.Id,
+                p.Title,
+                p.CoachId,
+                p.TenantId
+            })
+            .ToListAsync();
+
+        return Ok(templates);
+    }
+
+    // POST: api/coach/programs/templates/{templateId}/create
+    // Create a client program by copying a template and its exercises.
+    [HttpPost("programs/templates/{templateId:guid}/create")]
+    public async Task<IActionResult> CreateProgramFromTemplate(
+        Guid templateId,
+        [FromBody] CreateProgramFromTemplateRequest request)
+    {
+        var userIdValue = User.FindFirst(
+            ClaimTypes.NameIdentifier)?.Value;
+
+        var tenantIdValue = User.FindFirst("tenantId")?.Value;
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (!Guid.TryParse(userIdValue, out var userId) ||
+            !Guid.TryParse(tenantIdValue, out var tenantId))
+        {
+            return Unauthorized();
+        }
+
+        if (request.ClientId == Guid.Empty)
+        {
+            return BadRequest(new
+            {
+                message = "ClientId is required."
+            });
+        }
+
+        if (role != UserRole.Owner.ToString() &&
+            role != UserRole.Staff.ToString())
+        {
+            return Forbid();
+        }
+
+        var template = await _context.Programs
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p =>
+                p.Id == templateId &&
+                p.TenantId == tenantId &&
+                p.IsTemplate &&
+                p.ClientId == null);
+
+        if (template is null)
+        {
+            return NotFound(new
+            {
+                message = "Template not found."
+            });
+        }
+
+        // Staff can only use their own templates.
+        if (role == UserRole.Staff.ToString() &&
+            template.CoachId != userId)
+        {
+            return Forbid();
+        }
+
+        var client = await _context.Clients
+            .FirstOrDefaultAsync(c =>
+                c.Id == request.ClientId &&
+                c.TenantId == tenantId);
+
+        if (client is null)
+        {
+            return NotFound(new
+            {
+                message = "Client not found."
+            });
+        }
+
+        // Staff can only create programs for their own clients.
+        if (role == UserRole.Staff.ToString() &&
+            client.CoachId != userId)
+        {
+            return Forbid();
+        }
+
+        var templateExercises = await _context.ProgramExercises
+            .AsNoTracking()
+            .Where(pe => pe.ProgramId == template.Id)
+            .ToListAsync();
+
+        var newProgram = new CoachPulse.Domain.Entities.Program
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenantId,
+            ClientId = client.Id,
+            CoachId = userId,
+            Title = string.IsNullOrWhiteSpace(request.Title)
+                ? template.Title
+                : request.Title.Trim(),
+            IsTemplate = false
+        };
+
+        _context.Programs.Add(newProgram);
+
+        foreach (var item in templateExercises)
+        {
+            _context.ProgramExercises.Add(
+                new CoachPulse.Domain.Entities.ProgramExercise
+                {
+                    Id = Guid.NewGuid(),
+                    ProgramId = newProgram.Id,
+                    ExerciseId = item.ExerciseId,
+                    Sets = item.Sets,
+                    Reps = item.Reps,
+                    Day = item.Day
+                });
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Program created from template successfully.",
+            Program = new
+            {
+                newProgram.Id,
+                newProgram.Title,
+                newProgram.ClientId,
+                newProgram.CoachId,
+                newProgram.TenantId,
+                newProgram.IsTemplate
+            },
+            ExercisesCopied = templateExercises.Count
+        });
     }
 }
