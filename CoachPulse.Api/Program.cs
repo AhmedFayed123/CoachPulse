@@ -1,4 +1,5 @@
-﻿using CoachPulse.Api.Middleware;
+﻿using CoachPulse.Api.Hubs;
+using CoachPulse.Api.Middleware;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Infrastructure;
 using CoachPulse.Infrastructure.Data.Seed;
@@ -25,7 +26,7 @@ namespace CoachPulse.Api
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-
+            builder.Services.AddSignalR();
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "CoachPulse API", Version = "v1" });
@@ -136,7 +137,7 @@ namespace CoachPulse.Api
             app.UseMiddleware<TenantResolutionMiddleware>();
 
             app.UseAuthorization();
-
+            app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
             app.MapControllers();
 
             await app.RunAsync();
