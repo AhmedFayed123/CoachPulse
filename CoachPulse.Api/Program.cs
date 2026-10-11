@@ -27,6 +27,7 @@ namespace CoachPulse.Api
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSignalR();
+
             builder.Services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "CoachPulse API", Version = "v1" });
@@ -87,6 +88,23 @@ namespace CoachPulse.Api
 
                         ClockSkew = TimeSpan.Zero
                     };
+
+                    // دعم تمرير الـ Token عبر الـ Query String لمسار الـ ChatHub
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+
+                            if (!string.IsNullOrEmpty(accessToken) &&
+                                path.StartsWithSegments("/hubs/chat"))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddAuthorization(options =>
@@ -137,14 +155,15 @@ namespace CoachPulse.Api
             app.UseMiddleware<TenantResolutionMiddleware>();
 
             app.UseAuthorization();
+
             app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
+
             app.MapControllers();
 
             await app.RunAsync();
         }
     }
 }
-
 
 
 
