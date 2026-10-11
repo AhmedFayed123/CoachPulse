@@ -2,8 +2,11 @@
 using CoachPulse.Api.Middleware;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Infrastructure;
+using CoachPulse.Infrastructure.BackgroundJobs;
 using CoachPulse.Infrastructure.Data.Seed;
 using CoachPulse.Infrastructure.Persistence;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -107,6 +110,15 @@ namespace CoachPulse.Api
                     };
                 });
 
+            // إعداد Hangfire Services
+            builder.Services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))));
+
+            builder.Services.AddHangfireServer();
+
             builder.Services.AddAuthorization(options =>
             {
                 options.AddPolicy("SuperAdminOnly", policy =>
@@ -132,6 +144,7 @@ namespace CoachPulse.Api
 
             var app = builder.Build();
 
+            // إعداد Seeding والـ Recurring Jobs بعد بناء التطبيق
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -140,6 +153,13 @@ namespace CoachPulse.Api
                 var passwordHasher = services.GetRequiredService<IPasswordHasher>();
 
                 await DbSeeder.SeedAsync(context, passwordHasher);
+
+                // جدولة المهمة الخلفية عبر Hangfire
+                var recurringJobManager = services.GetRequiredService<IRecurringJobManager>();
+                recurringJobManager.AddOrUpdate<SubscriptionCheckJob>(
+                    "check-expiring-subscriptions",
+                    job => job.CheckExpiringSubscriptionsAsync(),
+                    Cron.Daily);
             }
 
             if (app.Environment.IsDevelopment())
@@ -147,6 +167,9 @@ namespace CoachPulse.Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            // تفعيل Hangfire Dashboard
+            app.UseHangfireDashboard("/hangfire");
 
             app.UseHttpsRedirection();
 
@@ -164,7 +187,6 @@ namespace CoachPulse.Api
         }
     }
 }
-
 
 
 //"email": "coach1@test.com",

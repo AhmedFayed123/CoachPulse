@@ -1,5 +1,6 @@
 ﻿using CoachPulse.Application.Interfaces;
 using CoachPulse.Application.Settings;
+using CoachPulse.Infrastructure.Payments;
 using CoachPulse.Infrastructure.Persistence;
 using CoachPulse.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -26,13 +27,13 @@ namespace CoachPulse.Infrastructure
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<IFileStorage, LocalFileStorage>();
+            services.AddHttpClient<IPaymobClient, PaymobClient>();
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
             services.AddDbContext<CoachPulseDbContext>(options =>
             {
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"));
             });
-
 
             return services;
         }
