@@ -23,6 +23,8 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Timestamp)
                 .IsRequired();
+            builder.HasIndex(x => new { x.TenantId, x.SenderId, x.ReceiverId, x.Timestamp });
+            builder.HasIndex(x => new { x.TenantId, x.ReceiverId, x.IsRead });
 
             builder.HasOne(x => x.Sender)
                 .WithMany()

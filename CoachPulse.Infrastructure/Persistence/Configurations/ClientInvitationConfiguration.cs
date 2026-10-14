@@ -16,6 +16,7 @@ public class ClientInvitationConfiguration
         builder.Property(x => x.Email)
             .IsRequired()
             .HasMaxLength(255);
+        builder.Property(x => x.InvitedName).HasMaxLength(150);
 
         builder.Property(x => x.TokenHash)
             .IsRequired()

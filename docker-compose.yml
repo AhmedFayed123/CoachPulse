@@ -1,16 +1,45 @@
 services:
-
   postgres:
     image: pgvector/pgvector:pg16
     container_name: coachpulse_postgres
     environment:
       POSTGRES_DB: CoachPulseDb
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5433:5432"
     volumes:
       - coachpulse_postgres_data:/var/lib/postgresql/data
+    networks: [app]
+
+  api:
+    build:
+      context: .
+      dockerfile: CoachPulse.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-CoachPulseDb};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      Ai__BaseUrl: http://coachpulse-ai:8000/
+      Ai__InternalApiKey: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+      PythonAi__BaseUrl: http://coachpulse-ai:8000/
+      Readiness__RequirePythonService: "true"
+    depends_on: [postgres, coachpulse-ai]
+    ports: ["8080:8080"]
+    networks: [app, ai-private]
+
+  coachpulse-ai:
+    build: ./CoachPulse.AI
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      CHURN_MODEL_PATH: /app/models/churn.joblib
+    expose: ["8000"]
+    networks: [ai-private]
 
 volumes:
   coachpulse_postgres_data:
+
+networks:
+  app:
+  ai-private:
+    internal: true

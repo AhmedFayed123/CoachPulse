@@ -3,6 +3,7 @@ using CoachPulse.Api.BackgroundJobs;
 using CoachPulse.Api.Middleware;
 using CoachPulse.Api.Authorization;
 using CoachPulse.Api.Infrastructure;
+using CoachPulse.Api.Services;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Infrastructure;
 using CoachPulse.Infrastructure.BackgroundJobs;
@@ -18,6 +19,7 @@ using Serilog;
 using System.Text;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using CoachPulse.Application.DTOs;
 
 namespace CoachPulse.Api
 {
@@ -34,10 +36,14 @@ namespace CoachPulse.Api
             builder.Host.UseSerilog();
 
             builder.Services.AddControllers();
+            builder.Services.AddMemoryCache();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSignalR();
-            builder.Services.AddHttpClient("python-ai", client =>
-                client.Timeout = TimeSpan.FromSeconds(3));
+            builder.Services.AddHttpClient("python-ai", client => client.Timeout = TimeSpan.FromSeconds(10));
+            builder.Services.AddHttpClient("ai-generation", client => { client.BaseAddress = new Uri(builder.Configuration["Ai:BaseUrl"] ?? builder.Configuration["PythonAi:BaseUrl"] ?? "http://127.0.0.1:8000/"); client.Timeout = TimeSpan.FromSeconds(60); });
+            builder.Services.AddHttpClient("ai-churn", client => { client.BaseAddress = new Uri(builder.Configuration["Ai:BaseUrl"] ?? builder.Configuration["PythonAi:BaseUrl"] ?? "http://127.0.0.1:8000/"); client.Timeout = TimeSpan.FromSeconds(10); });
+            builder.Services.AddScoped<IAiClient, PythonAiClient>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -72,6 +78,9 @@ namespace CoachPulse.Api
                     RateLimitPartition.GetFixedWindowLimiter(
                         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                         _ => new FixedWindowRateLimiterOptions { PermitLimit = 3, Window = TimeSpan.FromHours(1), QueueLimit = 0, AutoReplenishment = true }));
+                options.AddPolicy("public-slug", context =>
+                    RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
             });
 
             builder.Services.AddSwaggerGen(options =>
@@ -105,6 +114,9 @@ namespace CoachPulse.Api
             });
 
             builder.Services.AddInfrastructure(builder.Configuration);
+            builder.Services.AddScoped<CoachPulse.Api.Services.ChatMessageService>();
+            builder.Services.AddScoped<ChurnScoringService>();
+            builder.Services.AddScoped<IChurnFeatureBuilder, ChurnFeatureBuilder>();
 
             var jwtKey = builder.Configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException("JWT Key is missing.");
@@ -200,10 +212,6 @@ namespace CoachPulse.Api
 
                 // جدولة المهمة الخلفية عبر Hangfire
                 var recurringJobManager = services.GetRequiredService<IRecurringJobManager>();
-                recurringJobManager.AddOrUpdate<SubscriptionCheckJob>(
-                    "check-expiring-subscriptions",
-                    job => job.CheckExpiringSubscriptionsAsync(),
-                    Cron.Daily);
                 recurringJobManager.AddOrUpdate<ExpireSubscriptionsJob>("expire-subscriptions-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
                 recurringJobManager.AddOrUpdate<SubscriptionExpiryReminderJob>("subscription-expiry-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
                 recurringJobManager.AddOrUpdate<PendingPaymentReminderJob>("pending-payment-reminders-six-hourly", job => job.RunAsync(CancellationToken.None), Cron.HourInterval(6));
@@ -216,6 +224,9 @@ namespace CoachPulse.Api
                     "cleanup-expired-invitations-daily",
                     job => job.CleanupAsync(CancellationToken.None),
                     Cron.Daily);
+                recurringJobManager.AddOrUpdate<ChurnScoringJob>("churn-scoring-nightly", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+                recurringJobManager.AddOrUpdate<CheckInReminderJob>("check-in-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+                recurringJobManager.AddOrUpdate<CleanupReadNotificationsJob>("cleanup-read-notifications-weekly", job => job.CleanupAsync(CancellationToken.None), Cron.Weekly);
             }
 
             if (app.Environment.IsDevelopment())
@@ -258,19 +269,22 @@ namespace CoachPulse.Api
                 {
                     try
                     {
-                        using var response = await httpClientFactory.CreateClient("python-ai")
-                            .GetAsync(new Uri(baseUri, "ready"), cancellationToken);
+                        var readinessClient = httpClientFactory.CreateClient("python-ai");
+                        var internalKey = configuration["Ai:InternalApiKey"] ?? configuration["PythonAi:InternalApiKey"];
+                        if (!string.IsNullOrWhiteSpace(internalKey)) readinessClient.DefaultRequestHeaders.TryAddWithoutValidation("X-Internal-Api-Key", internalKey);
+                        using var response = await readinessClient.GetAsync(new Uri(baseUri, "ready"), cancellationToken);
                         pythonReady = response.IsSuccessStatusCode;
                     }
                     catch (HttpRequestException) { pythonReady = false; }
                     catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested) { pythonReady = false; }
                 }
 
-                var ready = databaseReady && pythonReady;
+                var requirePython = configuration.GetValue<bool>("Readiness:RequirePythonService");
+                var ready = databaseReady && (!requirePython || pythonReady);
                 return Results.Json(new
                 {
                     status = ready ? "ready" : "not_ready",
-                    checks = new { database = databaseReady, pythonAi = pythonReady }
+                    checks = new { database = databaseReady, pythonAi = requirePython ? pythonReady : (bool?)null }
                 }, statusCode: ready ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
             }).AllowAnonymous();
 

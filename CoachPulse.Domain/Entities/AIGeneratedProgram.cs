@@ -18,8 +18,17 @@ namespace CoachPulse.Domain.Entities
         public string Prompt { get; set; } = string.Empty;
 
         public string GeneratedContent { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool ApprovedByCoach { get; set; }
+        public string Status { get; set; } = "Draft";
+        public string PromptVersion { get; set; } = "program-v1";
+        public string ModelVersion { get; set; } = "unknown";
+        public Guid RequestedByUserId { get; set; }
+        public Guid? ParentGeneratedProgramId { get; set; }
+        public Guid? ApprovedProgramId { get; set; }
+        public Guid? MealPlanId { get; set; }
+        public byte[] RowVersion { get; set; } = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
 
         public Client Client { get; set; } = null!;
     }

@@ -13,7 +13,7 @@ public sealed class ClientAccessService(CoachPulseDbContext db) : IClientAccessS
         return role switch
         {
             UserRole.Owner => query,
-            UserRole.Staff => query.Where(x => x.CoachId == userId),
+            UserRole.Staff => query.Where(x => x.CoachId == userId && db.Users.Any(u => u.Id == userId && u.TenantId == tenantId && u.IsActive && !u.IsDeleted)),
             _ => query.Where(_ => false)
         };
     }

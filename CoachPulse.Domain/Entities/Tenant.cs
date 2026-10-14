@@ -15,6 +15,10 @@ namespace CoachPulse.Domain.Entities
         public string Slug { get; set; } = string.Empty;
 
         public string? LogoUrl { get; set; }
+        public string? PrimaryColor { get; set; }
+        public string? SecondaryColor { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletionScheduledAt { get; set; }
 
         public string Status { get; set; } = string.Empty;
 

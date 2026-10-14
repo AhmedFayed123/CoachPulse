@@ -28,6 +28,8 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<Program> Programs => Set<Program>();
         public DbSet<ProgramExercise> ProgramExercises => Set<ProgramExercise>();
         public DbSet<MealPlan> MealPlans => Set<MealPlan>();
+        public DbSet<Meal> Meals => Set<Meal>();
+        public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
         public DbSet<CheckIn> CheckIns => Set<CheckIn>();
         public DbSet<Message> Messages => Set<Message>();
         public DbSet<Plan> Plans => Set<Plan>();
@@ -45,7 +47,10 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
         public DbSet<UserSecurityToken> UserSecurityTokens => Set<UserSecurityToken>();
         public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
         public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
+        public DbSet<AiUsage> AiUsages => Set<AiUsage>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -55,7 +60,7 @@ namespace CoachPulse.Infrastructure.Persistence
 
             modelBuilder.Entity<User>()
                 .HasQueryFilter(x =>
-                    x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+                    x.TenantId == _currentTenantService.TenantId && !x.IsDeleted && x.IsActive);
 
             modelBuilder.Entity<Client>()
                 .HasQueryFilter(x =>
@@ -71,11 +76,27 @@ namespace CoachPulse.Infrastructure.Persistence
 
             modelBuilder.Entity<MealPlan>()
                 .HasQueryFilter(x =>
-                    x.TenantId == _currentTenantService.TenantId);
+                    x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+            modelBuilder.Entity<WorkoutLog>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+            modelBuilder.Entity<WorkoutLog>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.HasIndex(x => new { x.TenantId, x.ClientId, x.ProgramExerciseId, x.PerformedOn, x.SetNumber }).IsUnique();
+                b.HasIndex(x => new { x.TenantId, x.ClientId, x.PerformedAt });
+                b.Property(x => x.WeightKg).HasPrecision(7, 2);
+            });
+            modelBuilder.Entity<Meal>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                b.Property(x => x.Calories).HasPrecision(8, 2);
+                b.Property(x => x.Protein).HasPrecision(8, 2);
+                b.Property(x => x.Carbs).HasPrecision(8, 2);
+                b.Property(x => x.Fat).HasPrecision(8, 2);
+            });
 
             modelBuilder.Entity<CheckIn>()
-                .HasQueryFilter(x =>
-                    x.TenantId == _currentTenantService.TenantId);
+                .HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
 
             modelBuilder.Entity<Message>()
                 .HasQueryFilter(x =>
@@ -95,6 +116,8 @@ namespace CoachPulse.Infrastructure.Persistence
 
             modelBuilder.Entity<PaymentRefund>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
             modelBuilder.Entity<IdempotencyKey>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+            modelBuilder.Entity<AiUsage>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+            modelBuilder.Entity<AiUsage>(b => { b.HasKey(x => x.Id); b.HasIndex(x => new { x.TenantId, x.CreatedAt }); b.HasIndex(x => new { x.TenantId, x.GeneratedProgramId }).IsUnique(); });
 
             modelBuilder.Entity<PaymentRefund>(b =>
             {
@@ -141,6 +164,22 @@ namespace CoachPulse.Infrastructure.Persistence
                 b.Property(x => x.EventType).HasMaxLength(100).IsRequired();
                 b.Property(x => x.Identifier).HasMaxLength(255);
                 b.HasIndex(x => new { x.UserId, x.CreatedAt });
+                b.HasIndex(x => new { x.TenantId, x.CreatedAt });
+            });
+            modelBuilder.Entity<Notification>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Type).HasMaxLength(80).IsRequired();
+                b.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                b.Property(x => x.Body).HasMaxLength(2000).IsRequired();
+                b.HasIndex(x => new { x.UserId, x.IsRead, x.CreatedAt });
+                b.HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+            });
+            modelBuilder.Entity<NotificationPreference>(b =>
+            {
+                b.HasKey(x => new { x.UserId, x.TenantId, x.Type });
+                b.Property(x => x.Type).HasMaxLength(80);
+                b.HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
             });
             modelBuilder.Entity<ClientNote>(b =>
             {

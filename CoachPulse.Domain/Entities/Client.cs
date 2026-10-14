@@ -25,6 +25,7 @@ namespace CoachPulse.Domain.Entities
         public string? Goals { get; set; }
 
         public string? HealthInfo { get; set; }
+        public bool OnboardingCompleted { get; set; }
 
         public User User { get; set; } = null!;
 

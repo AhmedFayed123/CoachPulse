@@ -15,6 +15,7 @@ namespace CoachPulse.Domain.Entities
         public Guid CoachId { get; set; }
 
         public string Email { get; set; } = string.Empty;
+        public string? InvitedName { get; set; }
 
         // Store the hash, never the raw invitation token.
         public string TokenHash { get; set; } = string.Empty;

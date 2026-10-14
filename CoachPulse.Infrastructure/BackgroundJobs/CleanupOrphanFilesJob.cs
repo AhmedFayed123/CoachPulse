@@ -21,24 +21,28 @@ public sealed class CleanupOrphanFilesJob
     public async Task CleanupAsync(CancellationToken cancellationToken = default)
     {
         var orphanCutoff = DateTime.UtcNow.AddDays(-7);
-        var orphanFiles = await _db.StoredFiles.IgnoreQueryFilters()
-            .Where(file => !file.IsDeleted && file.LinkedEntityId == null && file.LinkedEntityType == null && file.CreatedAt < orphanCutoff)
-            .ToListAsync(cancellationToken);
-
-        foreach (var file in orphanFiles)
+        var tenants = await _db.Tenants.IgnoreQueryFilters().AsNoTracking().Where(t => t.Status == "Active" && !t.IsDeleted).Select(t => t.Id).ToListAsync(cancellationToken);
+        var processed = 0;
+        foreach (var tenantId in tenants)
         {
-            try
+            var orphanFiles = await _db.StoredFiles.IgnoreQueryFilters()
+                .Where(file => file.TenantId == tenantId && !file.IsDeleted && file.LinkedEntityId == null && file.LinkedEntityType == null && file.CreatedAt < orphanCutoff)
+                .ToListAsync(cancellationToken);
+            foreach (var file in orphanFiles)
             {
-                await _storage.DeleteAsync(file.StoragePath, cancellationToken);
-                file.IsDeleted = true;
+                try
+                {
+                    await _storage.DeleteAsync(file.StoragePath, cancellationToken);
+                    file.IsDeleted = true;
+                    processed++;
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    _logger.LogError(exception, "Failed to remove orphaned file {FileId} from tenant {TenantId} storage.", file.Id, tenantId);
+                }
             }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Failed to remove orphaned file {FileId} from storage.", file.Id);
-            }
+            await _db.SaveChangesAsync(cancellationToken);
         }
-
-        await _db.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Cleaned up {Count} orphaned files older than seven days.", orphanFiles.Count(file => file.IsDeleted));
+        _logger.LogInformation("Cleaned up {Count} orphaned files older than seven days across active tenants.", processed);
     }
 }

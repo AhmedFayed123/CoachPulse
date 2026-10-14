@@ -25,6 +25,11 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.ApprovedByCoach)
                 .IsRequired();
+            builder.Property(x => x.Status).HasMaxLength(30).IsRequired();
+            builder.Property(x => x.PromptVersion).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.ModelVersion).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.RowVersion).IsConcurrencyToken().IsRequired();
+            builder.HasIndex(x => new { x.TenantId, x.ClientId, x.Status, x.CreatedAt });
 
             builder.HasOne(x => x.Client)
                 .WithMany()

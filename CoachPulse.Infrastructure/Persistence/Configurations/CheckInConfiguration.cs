@@ -28,6 +28,8 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.PhotoUrl)
                 .HasMaxLength(500);
+            builder.Property(x => x.CoachFeedback).HasMaxLength(2000);
+            builder.HasIndex(x => new { x.TenantId, x.ReviewedAt, x.Date });
 
             builder.HasOne(x => x.Client)
                 .WithMany()

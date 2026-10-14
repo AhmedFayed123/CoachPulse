@@ -16,6 +16,9 @@ namespace CoachPulse.Domain.Entities
         public Guid ClientId { get; set; }
 
         public decimal RiskScore { get; set; }
+        public string RiskLevel { get; set; } = "Low";
+        public string TopFactorsJson { get; set; } = "[]";
+        public string ModelVersion { get; set; } = "unknown";
 
         public DateTime ComputedAt { get; set; } = DateTime.UtcNow;
 

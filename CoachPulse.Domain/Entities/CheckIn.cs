@@ -22,6 +22,10 @@ namespace CoachPulse.Domain.Entities
         public string? Measurements { get; set; }
 
         public string? PhotoUrl { get; set; }
+        public string? CoachFeedback { get; set; }
+        public Guid? ReviewedByUserId { get; set; }
+        public DateTime? ReviewedAt { get; set; }
+        public bool IsDeleted { get; set; }
 
         public Client Client { get; set; } = null!;
     }

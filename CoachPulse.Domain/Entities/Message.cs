@@ -19,6 +19,10 @@ namespace CoachPulse.Domain.Entities
 
         public string Content { get; set; } = string.Empty;
 
+        public bool IsRead { get; set; }
+        public DateTime? ReadAt { get; set; }
+        public bool IsDeleted { get; set; }
+
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         public User Sender { get; set; } = null!;

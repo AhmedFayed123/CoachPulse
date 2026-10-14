@@ -164,17 +164,14 @@ public sealed class WebhooksController : ControllerBase
         var client = payment.Subscription?.Client;
         if (client is not null)
         {
-            await _notifications.Clients.User(client.UserId.ToString()).SendAsync(
-                "PaymentStatusChanged", changed, cancellationToken);
+            await Notify(client.UserId, payment.TenantId, "PaymentStatusChanged", "حالة الدفع", "تم تحديث حالة دفعتك.", changed, cancellationToken);
             if (succeeded)
             {
-                await _notifications.Clients.User(client.UserId.ToString()).SendAsync(
-                    "SubscriptionStatusChanged", new { subscriptionId = payment.SubscriptionId, status = payment.Subscription?.Status }, cancellationToken);
+                await Notify(client.UserId, payment.TenantId, "SubscriptionStatusChanged", "حالة الاشتراك", "تم تحديث حالة اشتراكك.", new { subscriptionId = payment.SubscriptionId, status = payment.Subscription?.Status }, cancellationToken);
             }
             if (client.CoachId.HasValue)
             {
-                await _notifications.Clients.User(client.CoachId.Value.ToString()).SendAsync(
-                    "PaymentStatusChanged", changed, cancellationToken);
+                await Notify(client.CoachId.Value, payment.TenantId, "PaymentStatusChanged", "تحديث دفعة عميل", "تم تحديث حالة دفعة عميل.", changed, cancellationToken);
             }
         }
 
@@ -210,6 +207,9 @@ public sealed class WebhooksController : ControllerBase
 
         return CryptographicOperations.FixedTimeEquals(expected, supplied);
     }
+
+    private Task Notify(Guid userId, Guid tenantId, string type, string title, string body, object data, CancellationToken ct) =>
+        HttpContext.RequestServices.GetRequiredService<INotificationService>().NotifyAsync(userId, tenantId, type, title, body, JsonSerializer.Serialize(data), ct);
 
     private static bool TryGetField(JsonElement obj, string field, out string value)
     {

@@ -24,6 +24,7 @@ namespace CoachPulse.Domain.Entities
         public string Language { get; set; } = "en";
         public Guid? AvatarFileId { get; set; }
         public bool IsDeleted { get; set; }
+        public bool IsActive { get; set; } = true;
         public DateTime? DeletedAt { get; set; }
         public bool EmailConfirmed { get; set; }
 

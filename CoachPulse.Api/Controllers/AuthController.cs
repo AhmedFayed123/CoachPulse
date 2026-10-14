@@ -34,22 +34,24 @@ public sealed class AuthController(
             UserAgent = Request.Headers.UserAgent.ToString(), CreatedAt = DateTime.UtcNow
         });
 
-    [HttpPost("register-tenant")]
+    [AllowAnonymous, HttpPost("register-tenant")]
     [EnableRateLimiting("auth-register")]
     public async Task<IActionResult> Register(RegisterTenantRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.TenantName) || string.IsNullOrWhiteSpace(request.TenantSlug)) return BadRequest("Email, tenant name, and tenant slug are required.");
+        var normalizedSlug = request.TenantSlug.Trim().ToLowerInvariant();
+        if (!PublicController.IsValidSlug(normalizedSlug)) return BadRequest("Tenant slug is invalid or reserved.");
         if (!PasswordPolicy.IsValid(request.Password)) return BadRequest(PasswordPolicy.Message);
         var email = request.Email.Trim().ToLowerInvariant();
         if (await db.Users.IgnoreQueryFilters().AnyAsync(x => !x.IsDeleted && x.Email == email)) return BadRequest("Email already exists.");
-        if (await db.Tenants.AnyAsync(x => x.Slug == request.TenantSlug.Trim().ToLowerInvariant())) return BadRequest("Tenant slug already exists.");
-        var tenant = new Tenant { Id = Guid.NewGuid(), Name = request.TenantName.Trim(), Slug = request.TenantSlug.Trim().ToLowerInvariant(), Status = "Active" };
+        if (await db.Tenants.IgnoreQueryFilters().AnyAsync(x => x.Slug == normalizedSlug)) return BadRequest("Tenant slug already exists.");
+        var tenant = new Tenant { Id = Guid.NewGuid(), Name = request.TenantName.Trim(), Slug = normalizedSlug, Status = "Active" };
         var user = new User { Id = Guid.NewGuid(), TenantId = tenant.Id, Email = email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Owner };
         db.Tenants.Add(tenant); db.Users.Add(user); await db.SaveChangesAsync();
         return Ok(new { Message = "Registration successful.", UserId = user.Id, TenantId = tenant.Id, Email = user.Email, Role = user.Role.ToString() });
     }
 
-    [HttpPost("register-client")]
+    [AllowAnonymous, HttpPost("register-client")]
     [EnableRateLimiting("auth-register")]
     public async Task<IActionResult> RegisterClient(RegisterClientRequest request)
     {
@@ -66,11 +68,11 @@ public sealed class AuthController(
         var tenantId = invite?.TenantId ?? request.TenantId;
         if (tenantId == Guid.Empty) return BadRequest("TenantId or a valid inviteToken is required.");
         var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Id == tenantId);
-        if (tenant is null) return BadRequest("Tenant not found.");
+        if (tenant is null || tenant.IsDeleted) return BadRequest("Tenant not found.");
         if (!string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase)) return BadRequest("Tenant is not active.");
         if (await db.Users.IgnoreQueryFilters().AnyAsync(x => !x.IsDeleted && x.TenantId == tenantId && x.Email == email)) return BadRequest("Email already exists in this tenant.");
         var coachId = invite?.CoachId ?? request.CoachId;
-        if (coachId.HasValue && !await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == coachId && x.TenantId == tenantId && !x.IsDeleted && (x.Role == UserRole.Owner || x.Role == UserRole.Staff))) return BadRequest("Invalid coach for this tenant.");
+        if (coachId.HasValue && !await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == coachId && x.TenantId == tenantId && !x.IsDeleted && x.IsActive && (x.Role == UserRole.Owner || x.Role == UserRole.Staff))) return BadRequest("Invalid coach for this tenant.");
         var user = new User { Id = Guid.NewGuid(), TenantId = tenantId, Email = email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Client };
         var client = new Client { Id = Guid.NewGuid(), TenantId = tenantId, UserId = user.Id, CoachId = coachId, Goals = request.Goals?.Trim(), HealthInfo = request.HealthInfo?.Trim() };
         db.Users.Add(user); db.Clients.Add(client); if (invite is not null) invite.AcceptedAt = DateTime.UtcNow;
@@ -109,13 +111,13 @@ public sealed class AuthController(
         return Ok(new { Message = "Invitation accepted successfully.", UserId = user.Id, TenantId = invite.TenantId, Email = user.Email, Role = user.Role.ToString() });
     }
 
-    [HttpPost("login")]
+    [AllowAnonymous, HttpPost("login")]
     [EnableRateLimiting("auth-login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password)) return BadRequest("Email and password are required.");
         var email = request.Email.Trim().ToLowerInvariant();
-        var query = db.Users.IgnoreQueryFilters().Where(x => !x.IsDeleted && x.Email == email);
+        var query = db.Users.IgnoreQueryFilters().Where(x => !x.IsDeleted && x.IsActive && x.Email == email);
         if (!string.IsNullOrWhiteSpace(request.TenantSlug))
         {
             var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Slug == request.TenantSlug.Trim().ToLowerInvariant());
@@ -129,7 +131,7 @@ public sealed class AuthController(
         if (user.TenantId.HasValue)
         {
             var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Id == user.TenantId.Value);
-            if (tenant is null || !string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            if (tenant is null || tenant.IsDeleted || !string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase))
             {
                 Audit("login.failed", user.Id, user.TenantId, user.Email); await db.SaveChangesAsync();
                 return Unauthorized("Tenant is not active.");
@@ -141,7 +143,7 @@ public sealed class AuthController(
         return Ok(new { AccessToken = jwt.GenerateAccessToken(user), RefreshToken = raw, TokenType = "Bearer", ExpiresInMinutes = 60, RefreshTokenExpiresAt = token.ExpiresAt, User = new { user.Id, user.Email, user.TenantId, user.Role } });
     }
 
-    [HttpPost("refresh-token")]
+    [AllowAnonymous, HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken(RefreshTokenRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken)) return BadRequest("Refresh token is required.");
@@ -155,6 +157,11 @@ public sealed class AuthController(
             return Unauthorized("Refresh token reuse detected.");
         }
         if (token.ExpiresAt <= DateTime.UtcNow || token.User is null || token.User.IsDeleted) return Unauthorized("Refresh token has expired.");
+        if (token.User.TenantId.HasValue)
+        {
+            var tenant = await db.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == token.User.TenantId.Value);
+            if (tenant is null || tenant.IsDeleted || !string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase)) return Unauthorized("Tenant is not active.");
+        }
         token.RevokedAt = DateTime.UtcNow;
         var raw = refreshTokens.GenerateToken(); var replacement = new RefreshToken { Id = Guid.NewGuid(), UserId = token.UserId, TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddDays(7) };
         db.RefreshTokens.Add(replacement); await db.SaveChangesAsync();

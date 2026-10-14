@@ -31,16 +31,51 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<bool>("ApprovedByCoach")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("ApprovedProgramId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("GeneratedContent")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("MealPlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ParentGeneratedProgramId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Prompt")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -49,9 +84,37 @@ namespace CoachPulse.Infrastructure.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "ClientId", "Status", "CreatedAt");
 
                     b.ToTable("AIGeneratedPrograms", (string)null);
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.AiUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GeneratedProgramId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.HasIndex("TenantId", "GeneratedProgramId")
+                        .IsUnique();
+
+                    b.ToTable("AiUsages");
                 });
 
             modelBuilder.Entity("CoachPulse.Domain.Entities.CheckIn", b =>
@@ -63,8 +126,15 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CoachFeedback")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Measurements")
                         .HasMaxLength(2000)
@@ -73,6 +143,12 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<string>("PhotoUrl")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -85,7 +161,7 @@ namespace CoachPulse.Infrastructure.Migrations
 
                     b.HasIndex("ClientId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "ReviewedAt", "Date");
 
                     b.ToTable("CheckIns", (string)null);
                 });
@@ -102,6 +178,16 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<DateTime>("ComputedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RiskLevel")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<decimal>("RiskScore")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
@@ -109,11 +195,15 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("TopFactorsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ClientId");
+                    b.HasIndex("ClientId", "ComputedAt");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "RiskLevel", "ComputedAt");
 
                     b.ToTable("ChurnRiskLog", (string)null);
                 });
@@ -140,6 +230,11 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<string>("HealthInfo")
                         .HasMaxLength(4000)
                         .HasColumnType("character varying(4000)");
+
+                    b.Property<bool>("OnboardingCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
@@ -185,6 +280,10 @@ namespace CoachPulse.Infrastructure.Migrations
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvitedName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -318,27 +417,105 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.ToTable("IdempotencyKeys");
                 });
 
+            modelBuilder.Entity("CoachPulse.Domain.Entities.Meal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Calories")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<decimal>("Carbs")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<decimal>("Fat")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<Guid>("MealPlanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("Protein")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<TimeOnly?>("Time")
+                        .HasColumnType("time without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MealPlanId");
+
+                    b.ToTable("Meals");
+                });
+
             modelBuilder.Entity("CoachPulse.Domain.Entities.MealPlan", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ClientId")
+                    b.Property<Guid?>("ClientId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsTemplate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Meals")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bytea")
+                        .HasDefaultValueSql("gen_random_bytes(8)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Draft");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("Meal plan");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ClientId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "ClientId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Active' AND \"ClientId\" IS NOT NULL AND \"IsTemplate\" = false AND \"IsDeleted\" = false");
 
                     b.ToTable("MealPlans", (string)null);
                 });
@@ -353,6 +530,15 @@ namespace CoachPulse.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(5000)
                         .HasColumnType("character varying(5000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ReceiverId")
                         .HasColumnType("uuid");
@@ -372,9 +558,80 @@ namespace CoachPulse.Infrastructure.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.HasIndex("TenantId");
+                    b.HasIndex("TenantId", "ReceiverId", "IsRead");
+
+                    b.HasIndex("TenantId", "SenderId", "ReceiverId", "Timestamp");
 
                     b.ToTable("Messages", (string)null);
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DataJson")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.NotificationPreference", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<bool>("EmailEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("InAppEnabled")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId", "TenantId", "Type");
+
+                    b.ToTable("NotificationPreferences");
                 });
 
             modelBuilder.Entity("CoachPulse.Domain.Entities.Payment", b =>
@@ -708,8 +965,23 @@ namespace CoachPulse.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Action")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ActorRole")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EntityId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("text");
 
                     b.Property<string>("EventType")
                         .IsRequired()
@@ -723,6 +995,12 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<string>("IpAddress")
                         .HasColumnType("text");
 
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uuid");
 
@@ -733,6 +1011,8 @@ namespace CoachPulse.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CreatedAt");
 
                     b.HasIndex("UserId", "CreatedAt");
 
@@ -915,6 +1195,9 @@ namespace CoachPulse.Infrastructure.Migrations
                         .HasColumnType("character varying(16)")
                         .HasDefaultValue("ar");
 
+                    b.Property<DateTime?>("DeletionScheduledAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("InstaPayAccountNumber")
                         .HasMaxLength(34)
                         .HasColumnType("character varying(34)");
@@ -925,6 +1208,9 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<string>("InstaPayId")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(500)
@@ -938,10 +1224,16 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<bool>("PaymobEnabled")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("PrimaryColor")
+                        .HasColumnType("text");
+
                     b.Property<int>("ReminderDays")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(7);
+
+                    b.Property<string>("SecondaryColor")
+                        .HasColumnType("text");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -986,6 +1278,9 @@ namespace CoachPulse.Infrastructure.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
@@ -1061,6 +1356,53 @@ namespace CoachPulse.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("UserSecurityTokens");
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.WorkoutLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("PerformedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("PerformedOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("ProgramExerciseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Reps")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SetNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("numeric(7,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ClientId", "PerformedAt");
+
+                    b.HasIndex("TenantId", "ClientId", "ProgramExerciseId", "PerformedOn", "SetNumber")
+                        .IsUnique();
+
+                    b.ToTable("WorkoutLogs");
                 });
 
             modelBuilder.Entity("CoachPulse.Domain.Entities.AIGeneratedProgram", b =>
@@ -1149,13 +1491,21 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("CoachPulse.Domain.Entities.Meal", b =>
+                {
+                    b.HasOne("CoachPulse.Domain.Entities.MealPlan", null)
+                        .WithMany("Items")
+                        .HasForeignKey("MealPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CoachPulse.Domain.Entities.MealPlan", b =>
                 {
                     b.HasOne("CoachPulse.Domain.Entities.Client", "Client")
                         .WithMany()
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("CoachPulse.Domain.Entities.Tenant", null)
                         .WithMany()
@@ -1322,6 +1672,11 @@ namespace CoachPulse.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.MealPlan", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

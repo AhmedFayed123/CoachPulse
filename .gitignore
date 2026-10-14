@@ -13,6 +13,8 @@
 # Environment
 .env
 .env.*
+!.env.example
+!CoachPulse.AI/.env.example
 
 # Development configuration
 appsettings.Development.json
@@ -47,3 +49,5 @@ appsettings.Development.json
 # OS
 .DS_Store
 Thumbs.db
+!.env.example
+!CoachPulse.AI/.env.example

@@ -64,7 +64,8 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
         var program = await db.Programs.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id && !x.IsTemplate).OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.CoachId, x.CreatedAt }).FirstOrDefaultAsync();
         var subscription = await db.Subscriptions.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.EndDate).Select(x => new { x.Id, x.Status, x.StartDate, x.EndDate, x.Plan.Name, x.Plan.Price }).FirstOrDefaultAsync();
         var checkIn = await db.CheckIns.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.Date).Select(x => new { x.Id, x.Date, x.Weight }).FirstOrDefaultAsync();
-        return Ok(new { client.Id, client.Email, CurrentProgram = program, Subscription = subscription, LatestCheckIn = checkIn, ChurnRisk = (decimal?)null });
+        var churn = await db.ChurnRiskLogs.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.ComputedAt).Select(x => new { x.RiskScore, x.RiskLevel, x.ComputedAt }).FirstOrDefaultAsync();
+        return Ok(new { client.Id, client.Email, CurrentProgram = program, Subscription = subscription, LatestCheckIn = checkIn, ChurnRisk = churn });
     }
 
     [HttpPut("{id:guid}/assign-coach")]

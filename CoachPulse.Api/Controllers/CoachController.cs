@@ -65,6 +65,7 @@ public class CoachController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest("Email is required.");
+        if (request.Name?.Length > 150) return UnprocessableEntity("Invite name must be at most 150 characters.");
 
         var email = request.Email.Trim().ToLowerInvariant();
 
@@ -112,6 +113,7 @@ public class CoachController : ControllerBase
             TenantId = tenantId,
             CoachId = coachId,
             Email = email,
+            InvitedName = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim(),
             TokenHash = tokenHash,
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddHours(24)
@@ -188,15 +190,9 @@ public class CoachController : ControllerBase
             var normalizedRisk = riskLevel.Trim().ToLowerInvariant();
             if (normalizedRisk is not ("high" or "medium" or "low"))
                 return BadRequest("riskLevel must be low, medium or high.");
-            query = query.Where(x => _context.ChurnRiskLogs
-                .Where(r => r.ClientId == x.Id)
-                .OrderByDescending(r => r.ComputedAt)
-                .Select(r => r.RiskScore)
-                .FirstOrDefault() >= (normalizedRisk == "high" ? 0.7m : normalizedRisk == "medium" ? 0.4m : 0m));
-            if (normalizedRisk == "low")
-                query = query.Where(x => !_context.ChurnRiskLogs.Any(r => r.ClientId == x.Id) || _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() < 0.4m);
-            else if (normalizedRisk == "medium")
-                query = query.Where(x => _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() < 0.7m);
+            if (normalizedRisk == "high") query = query.Where(x => _context.ChurnRiskLogs.Any(r => r.ClientId == x.Id) && _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() > 0.7m);
+            else if (normalizedRisk == "medium") query = query.Where(x => _context.ChurnRiskLogs.Any(r => r.ClientId == x.Id) && _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() >= 0.4m && _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() <= 0.7m);
+            else query = query.Where(x => _context.ChurnRiskLogs.Any(r => r.ClientId == x.Id) && _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() < 0.4m);
         }
 
         var clients = await query

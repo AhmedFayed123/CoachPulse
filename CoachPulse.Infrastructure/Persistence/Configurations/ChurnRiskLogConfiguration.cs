@@ -19,6 +19,11 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.RiskScore)
                 .HasPrecision(5, 2);
+            builder.Property(x => x.RiskLevel).HasMaxLength(10).IsRequired();
+            builder.Property(x => x.TopFactorsJson).IsRequired();
+            builder.Property(x => x.ModelVersion).HasMaxLength(100).IsRequired();
+            builder.HasIndex(x => new { x.ClientId, x.ComputedAt });
+            builder.HasIndex(x => new { x.TenantId, x.RiskLevel, x.ComputedAt });
 
             builder.HasOne(x => x.Client)
                 .WithMany()

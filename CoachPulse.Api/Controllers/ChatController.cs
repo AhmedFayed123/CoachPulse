@@ -26,16 +26,18 @@ public class ChatController : ControllerBase
     public async Task<IActionResult> GetMessages(
         Guid otherUserId,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery] int pageSize = 50,
+        [FromQuery] Guid? before = null,
+        [FromQuery] int? limit = null)
     {
         if (Request.Path.StartsWithSegments("/api/chat/conversations")) RouteDeprecation.AddHeaders(Response, $"/api/messages/{otherUserId}");
-        return await GetMessagesCore(otherUserId, page, pageSize);
+        return await GetMessagesCore(otherUserId, page, pageSize, before, limit);
     }
 
     [HttpGet("~/api/messages/{clientId:guid}")]
-    public Task<IActionResult> GetMessagesCanonical(Guid clientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50) => GetMessagesCore(clientId, page, pageSize);
+    public Task<IActionResult> GetMessagesCanonical(Guid clientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] Guid? before = null, [FromQuery] int? limit = null) => GetMessagesCore(clientId, page, pageSize, before, limit);
 
-    private async Task<IActionResult> GetMessagesCore(Guid otherUserId, int page, int pageSize)
+    private async Task<IActionResult> GetMessagesCore(Guid otherUserId, int page, int pageSize, Guid? before = null, int? limit = null)
     {
         var userIdValue = User.FindFirst(
             ClaimTypes.NameIdentifier)?.Value;
@@ -67,6 +69,7 @@ public class ChatController : ControllerBase
             });
         }
 
+        pageSize = limit ?? pageSize;
         if (pageSize < 1 || pageSize > 100)
         {
             return BadRequest(new
@@ -87,7 +90,11 @@ public class ChatController : ControllerBase
                     c.CoachId == otherUserId &&
                     c.TenantId == tenantId);
         }
-        else if (role is "Owner" or "Staff")
+        else if (role == "Owner")
+        {
+            canChat = await _context.Clients.AsNoTracking().AnyAsync(c => c.UserId == otherUserId && c.TenantId == tenantId);
+        }
+        else if (role == "Staff")
         {
             canChat = await _context.Clients
                 .AsNoTracking()
@@ -98,26 +105,37 @@ public class ChatController : ControllerBase
         }
         else
         {
-            return Forbid();
+            return NotFound();
         }
 
         if (!canChat)
         {
-            return Forbid();
+            return NotFound();
         }
 
+        var firstParticipant = userId;
+        var secondParticipant = otherUserId;
+        if (role == "Owner")
+        {
+            var assignedCoach = await _context.Clients.Where(c => c.TenantId == tenantId && c.UserId == otherUserId).Select(c => c.CoachId).FirstOrDefaultAsync();
+            if (assignedCoach is null) return NotFound();
+            firstParticipant = otherUserId;
+            secondParticipant = assignedCoach.Value;
+        }
         var query = _context.Messages
             .AsNoTracking()
             .Where(m =>
                 m.TenantId == tenantId &&
                 (
-                    (m.SenderId == userId &&
-                     m.ReceiverId == otherUserId)
+                    (m.SenderId == firstParticipant &&
+                     m.ReceiverId == secondParticipant)
                     ||
-                    (m.SenderId == otherUserId &&
-                     m.ReceiverId == userId)
+                    (m.SenderId == secondParticipant &&
+                     m.ReceiverId == firstParticipant)
                 ));
 
+        if (role == "Owner") { _context.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = "chat.conversation.read", Identifier = $"client={otherUserId}", CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(); }
+        if (before.HasValue) { var cursor = await _context.Messages.Where(m => m.Id == before && m.TenantId == tenantId && ((m.SenderId == firstParticipant && m.ReceiverId == secondParticipant) || (m.SenderId == secondParticipant && m.ReceiverId == firstParticipant))).Select(m => (DateTime?)m.Timestamp).FirstOrDefaultAsync(); if (cursor is null) return UnprocessableEntity("before must belong to this conversation."); query = query.Where(m => m.Timestamp < cursor); }
         var totalCount = await query.CountAsync();
 
         // Retrieve the newest page first.
@@ -131,8 +149,9 @@ public class ChatController : ControllerBase
                 m.Id,
                 m.SenderId,
                 m.ReceiverId,
-                m.Content,
-                m.Timestamp
+                Content = m.IsDeleted ? "تم حذف الرسالة" : m.Content,
+                m.Timestamp,
+                FileIds = m.IsDeleted ? Array.Empty<Guid>() : _context.StoredFiles.Where(f => f.LinkedEntityType == "Message" && f.LinkedEntityId == m.Id && !f.IsDeleted).Select(f => f.Id).ToArray()
             })
             .ToListAsync();
 
