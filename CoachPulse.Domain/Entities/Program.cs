@@ -20,6 +20,12 @@ namespace CoachPulse.Domain.Entities
         public string Title { get; set; } = string.Empty;
 
         public bool IsTemplate { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string Status { get; set; } = "Draft";
+        public DateTime? StartDate { get; set; }
+        public int DurationDays { get; set; } = 7;
+        public byte[] RowVersion { get; set; } = System.Security.Cryptography.RandomNumberGenerator.GetBytes(8);
+        public bool IsDeleted { get; set; }
 
         public Client? Client { get; set; }
 

@@ -16,7 +16,11 @@ namespace CoachPulse.Domain.Entities
 
         public int Sets { get; set; }
 
-        public int Reps { get; set; }
+        public string Reps { get; set; } = "";
+
+        public int RestSeconds { get; set; }
+
+        public int SortOrder { get; set; }
 
         public int Day { get; set; }
 

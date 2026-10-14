@@ -3,16 +3,18 @@ using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
+using CoachPulse.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace CoachPulse.Api.Controllers;
 
 [ApiController]
 [Route("api/tenant")]
-[Authorize(Policy = "OwnerOnly")]
+[Authorize]
 public class TenantController : ControllerBase
 {
     private readonly CoachPulseDbContext _context;
@@ -26,6 +28,7 @@ public class TenantController : ControllerBase
     }
 
     [HttpPut("branding")]
+    [Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> UpdateBranding(
         UpdateBrandingRequest request)
     {
@@ -69,6 +72,7 @@ public class TenantController : ControllerBase
         });
     }
     [HttpGet("coaches")]
+    [Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> GetCoaches()
     {
         var tenantIdClaim = User.FindFirst("tenantId");
@@ -98,6 +102,7 @@ public class TenantController : ControllerBase
         return Ok(coaches);
     }
     [HttpPost("coaches")]
+    [Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> CreateCoach(
     CreateCoachRequest request)
     {
@@ -169,6 +174,7 @@ public class TenantController : ControllerBase
         });
     }
     [HttpGet("plans")]
+    [Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> GetPlans()
     {
         var tenantIdClaim = User.FindFirst("tenantId");
@@ -195,6 +201,7 @@ public class TenantController : ControllerBase
         return Ok(plans);
     }
     [HttpPost("plans")]
+    [Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> CreatePlan(CreatePlanRequest request)
     {
         var tenantIdClaim = User.FindFirst("tenantId");
@@ -255,7 +262,19 @@ public class TenantController : ControllerBase
         });
     }
     [HttpGet("dashboard-summary")]
+    [Authorize(Policy = "OwnerOnly")]
+    [Obsolete("Use GET /api/tenant/dashboard/summary.")]
     public async Task<IActionResult> GetDashboardSummary()
+    {
+        if (Request.Path == "/api/tenant/dashboard-summary") RouteDeprecation.AddHeaders(Response, "/api/tenant/dashboard/summary");
+        return await GetDashboardSummaryCore();
+    }
+
+    [HttpGet("~/api/tenant/dashboard/summary")]
+    [Authorize(Policy = "OwnerOnly")]
+    public Task<IActionResult> GetDashboardSummaryCanonical() => GetDashboardSummaryCore();
+
+    private async Task<IActionResult> GetDashboardSummaryCore()
     {
         var tenantIdClaim = User.FindFirst("tenantId");
 
@@ -305,7 +324,19 @@ public class TenantController : ControllerBase
         });
     }
     [HttpGet("churn-risk")]
+    [Authorize(Policy = "OwnerOnly")]
+    [Obsolete("Use GET /api/tenant/dashboard/churn-risk.")]
     public async Task<IActionResult> GetChurnRisk()
+    {
+        if (Request.Path == "/api/tenant/churn-risk") RouteDeprecation.AddHeaders(Response, "/api/tenant/dashboard/churn-risk");
+        return await GetChurnRiskCore();
+    }
+
+    [HttpGet("~/api/tenant/dashboard/churn-risk")]
+    [Authorize(Policy = "OwnerOnly")]
+    public Task<IActionResult> GetChurnRiskCanonical() => GetChurnRiskCore();
+
+    private async Task<IActionResult> GetChurnRiskCore()
     {
         var tenantIdClaim = User.FindFirst("tenantId");
 
@@ -330,4 +361,96 @@ public class TenantController : ControllerBase
 
         return Ok(churnRisks);
     }
+
+    [HttpGet]
+    [Authorize(Policy = "CoachOnly")]
+    public async Task<IActionResult> GetTenant()
+    {
+        if (!TryTenant(out var tenantId, out var userId, out var role)) return Unauthorized();
+        var tenant = await _context.Tenants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == tenantId);
+        if (tenant is null) return NotFound();
+        return Ok(new
+        {
+            tenant.Id, tenant.Name, tenant.Slug, tenant.LogoUrl, tenant.Status,
+            tenant.Currency, tenant.TimeZone, tenant.ReminderDays, tenant.DefaultLanguage,
+            PaymentSettings = role == UserRole.Owner ? new { tenant.PaymobEnabled, tenant.InstaPayEnabled, tenant.InstaPayId, tenant.InstaPayAccountNumber } : null
+        });
+    }
+
+    [HttpPut("settings")]
+    [Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> UpdateSettings(UpdateTenantSettingsRequest request)
+    {
+        if (!TryTenant(out var tenantId, out var userId, out _)) return Unauthorized();
+        var currency = (request.Currency ?? string.Empty).Trim().ToUpperInvariant();
+        if (!Regex.IsMatch(currency, "^[A-Z]{3}$")) return BadRequest("Currency must be a three-letter ISO code.");
+        if (request.ReminderDays is < 1 or > 14) return BadRequest("ReminderDays must be between 1 and 14.");
+        if (string.IsNullOrWhiteSpace(request.TimeZone) || !TimeZoneInfo.TryConvertIanaIdToWindowsId(request.TimeZone.Trim(), out _))
+            return BadRequest("TimeZone must be a valid IANA time zone.");
+        try { _ = TimeZoneInfo.FindSystemTimeZoneById(request.TimeZone.Trim()); }
+        catch (TimeZoneNotFoundException) { return BadRequest("TimeZone must be a valid IANA time zone."); }
+        catch (InvalidTimeZoneException) { return BadRequest("TimeZone must be a valid IANA time zone."); }
+        if (string.IsNullOrWhiteSpace(request.DefaultLanguage) || request.DefaultLanguage.Trim().Length > 16) return BadRequest("DefaultLanguage is required and must be at most 16 characters.");
+        var tenant = await _context.Tenants.FirstOrDefaultAsync(x => x.Id == tenantId);
+        if (tenant is null) return NotFound();
+        if (!string.Equals(tenant.Currency, currency, StringComparison.OrdinalIgnoreCase) &&
+            (await _context.Subscriptions.AnyAsync(x => x.TenantId == tenantId) || await _context.Payments.AnyAsync(x => x.TenantId == tenantId)))
+            return Conflict("Currency cannot change after subscriptions or payments exist.");
+        tenant.Currency = currency; tenant.TimeZone = request.TimeZone.Trim(); tenant.ReminderDays = request.ReminderDays; tenant.DefaultLanguage = request.DefaultLanguage.Trim();
+        AddAudit(userId, tenantId, "tenant.settings.changed", "currency,timezone,reminderDays,defaultLanguage");
+        await _context.SaveChangesAsync(); return NoContent();
+    }
+
+    [HttpGet("payment-settings")]
+    [Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> GetPaymentSettings()
+    {
+        if (!TryTenant(out var tenantId, out _, out _)) return Unauthorized();
+        var tenant = await _context.Tenants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == tenantId);
+        return tenant is null ? NotFound() : Ok(new { tenant.PaymobEnabled, tenant.InstaPayEnabled, tenant.InstaPayId, tenant.InstaPayAccountNumber });
+    }
+
+    [HttpPut("payment-settings")]
+    [Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> UpdatePaymentSettings(UpdatePaymentSettingsRequest request)
+    {
+        if (!TryTenant(out var tenantId, out var userId, out _)) return Unauthorized();
+        var instaPayId = string.IsNullOrWhiteSpace(request.InstaPayId) ? null : request.InstaPayId.Trim();
+        var accountNumber = string.IsNullOrWhiteSpace(request.InstaPayAccountNumber) ? null : request.InstaPayAccountNumber.Trim();
+        if (instaPayId is not null && !Regex.IsMatch(instaPayId, "^[A-Za-z0-9._@+-]{3,64}$")) return BadRequest("InstaPayId has an invalid format.");
+        if (accountNumber is not null && !Regex.IsMatch(accountNumber, "^[0-9]{10,34}$")) return BadRequest("InstaPayAccountNumber must contain 10 to 34 digits.");
+        if (request.InstaPayEnabled && instaPayId is null && accountNumber is null) return BadRequest("An InstaPay ID or account number is required when InstaPay is enabled.");
+        var tenant = await _context.Tenants.FirstOrDefaultAsync(x => x.Id == tenantId);
+        if (tenant is null) return NotFound();
+        if (!request.PaymobEnabled && !request.InstaPayEnabled && await _context.Subscriptions.AnyAsync(x => x.TenantId == tenantId && x.Status == SubscriptionStatus.Pending))
+            return Conflict("At least one payment method must remain enabled while pending subscriptions exist.");
+        var changed = tenant.PaymobEnabled != request.PaymobEnabled || tenant.InstaPayEnabled != request.InstaPayEnabled || tenant.InstaPayId != instaPayId || tenant.InstaPayAccountNumber != accountNumber;
+        tenant.PaymobEnabled = request.PaymobEnabled; tenant.InstaPayEnabled = request.InstaPayEnabled; tenant.InstaPayId = instaPayId; tenant.InstaPayAccountNumber = accountNumber;
+        if (changed) AddAudit(userId, tenantId, "tenant.payment-settings.changed", $"paymob={request.PaymobEnabled};instapay={request.InstaPayEnabled}");
+        await _context.SaveChangesAsync(); return NoContent();
+    }
+
+    [HttpGet("usage")]
+    [Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> Usage()
+    {
+        if (!TryTenant(out var tenantId, out _, out _)) return Unauthorized();
+        var clients = await _context.Clients.CountAsync(x => x.TenantId == tenantId);
+        var storageBytes = await _context.StoredFiles.Where(x => x.TenantId == tenantId && !x.IsDeleted).SumAsync(x => (long?)x.SizeBytes) ?? 0L;
+        return Ok(new { TenantId = tenantId, ClientCount = clients, AiUsage = 0, StorageBytes = storageBytes });
+    }
+
+    private bool TryTenant(out Guid tenantId, out Guid userId, out UserRole role)
+    {
+        tenantId = userId = Guid.Empty; role = default;
+        return Guid.TryParse(User.FindFirst("tenantId")?.Value, out tenantId) &&
+            Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out userId) &&
+            Enum.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out role) && role is UserRole.Owner or UserRole.Staff;
+    }
+
+    private void AddAudit(Guid userId, Guid tenantId, string eventType, string identifier) => _context.SecurityAuditLogs.Add(new SecurityAuditLog
+    {
+        Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = eventType, Identifier = identifier,
+        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(), UserAgent = Request.Headers.UserAgent.ToString(), CreatedAt = DateTime.UtcNow
+    });
 }

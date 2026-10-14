@@ -19,6 +19,14 @@ namespace CoachPulse.Domain.Entities
 
         public UserRole Role { get; set; }
 
+        public string? Name { get; set; }
+        public string? Phone { get; set; }
+        public string Language { get; set; } = "en";
+        public Guid? AvatarFileId { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+        public bool EmailConfirmed { get; set; }
+
         public Tenant? Tenant { get; set; }
     }
 }

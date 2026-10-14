@@ -38,6 +38,12 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<ClientInvitation> ClientInvitations
     => Set<ClientInvitation>();
+        public DbSet<PaymobWebhookEvent> WebhookEvents => Set<PaymobWebhookEvent>();
+        public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+        public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
+        public DbSet<UserSecurityToken> UserSecurityTokens => Set<UserSecurityToken>();
+        public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
+        public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -47,7 +53,7 @@ namespace CoachPulse.Infrastructure.Persistence
 
             modelBuilder.Entity<User>()
                 .HasQueryFilter(x =>
-                    x.TenantId == _currentTenantService.TenantId);
+                    x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
 
             modelBuilder.Entity<Client>()
                 .HasQueryFilter(x =>
@@ -55,7 +61,11 @@ namespace CoachPulse.Infrastructure.Persistence
 
             modelBuilder.Entity<Program>()
                 .HasQueryFilter(x =>
-                    x.TenantId == _currentTenantService.TenantId);
+                    x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+
+            modelBuilder.Entity<Exercise>()
+                .HasQueryFilter(x => !x.IsDeleted &&
+                    (x.TenantId == null || x.TenantId == _currentTenantService.TenantId));
 
             modelBuilder.Entity<MealPlan>()
                 .HasQueryFilter(x =>
@@ -88,6 +98,39 @@ namespace CoachPulse.Infrastructure.Persistence
             modelBuilder.Entity<AIGeneratedProgram>()
                 .HasQueryFilter(x =>
                     x.TenantId == _currentTenantService.TenantId);
+
+            modelBuilder.Entity<StoredFile>()
+                .HasQueryFilter(x =>
+                    x.TenantId == _currentTenantService.TenantId);
+
+            modelBuilder.Entity<StaffInvitation>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Email).HasMaxLength(255).IsRequired();
+                b.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+                b.HasIndex(x => x.TokenHash).IsUnique();
+                b.HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+            });
+            modelBuilder.Entity<UserSecurityToken>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Purpose).HasMaxLength(40).IsRequired();
+                b.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+                b.HasIndex(x => x.TokenHash).IsUnique();
+            });
+            modelBuilder.Entity<SecurityAuditLog>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.EventType).HasMaxLength(100).IsRequired();
+                b.Property(x => x.Identifier).HasMaxLength(255);
+                b.HasIndex(x => new { x.UserId, x.CreatedAt });
+            });
+            modelBuilder.Entity<ClientNote>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.Property(x => x.Content).HasMaxLength(4000).IsRequired();
+                b.HasIndex(x => new { x.TenantId, x.ClientId, x.CreatedAt });
+            });
         }
     }
 }

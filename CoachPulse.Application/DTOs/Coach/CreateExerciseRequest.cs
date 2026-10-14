@@ -13,5 +13,7 @@ namespace CoachPulse.Application.DTOs.Coach
         public string MuscleGroup { get; set; } = string.Empty;
 
         public string? VideoUrl { get; set; }
+        public string? Equipment { get; set; }
+        public Guid? VideoFileId { get; set; }
     }
 }

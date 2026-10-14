@@ -35,6 +35,13 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(50);
 
+            builder.Property(x => x.Currency).IsRequired().HasMaxLength(3).HasDefaultValue("EGP");
+            builder.Property(x => x.TimeZone).IsRequired().HasMaxLength(100).HasDefaultValue("Africa/Cairo");
+            builder.Property(x => x.ReminderDays).IsRequired().HasDefaultValue(7);
+            builder.Property(x => x.DefaultLanguage).IsRequired().HasMaxLength(16).HasDefaultValue("ar");
+            builder.Property(x => x.InstaPayId).HasMaxLength(64);
+            builder.Property(x => x.InstaPayAccountNumber).HasMaxLength(34);
+
             builder.Property(x => x.CreatedAt)
                 .IsRequired();
         }

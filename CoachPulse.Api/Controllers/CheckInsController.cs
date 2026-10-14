@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace CoachPulse.Api.Controllers
 {
@@ -18,10 +19,12 @@ namespace CoachPulse.Api.Controllers
     {
         private readonly CoachPulseDbContext _context;
         private readonly IFileStorage _fileStorage;
-        public CheckInsController(CoachPulseDbContext context, IFileStorage fileStorage)
+        private readonly IClientAccessService _clientAccess;
+        public CheckInsController(CoachPulseDbContext context, IFileStorage fileStorage, IClientAccessService clientAccess)
         {
             _context = context;
             _fileStorage = fileStorage;
+            _clientAccess = clientAccess;
         }
 
         // GET: /api/clients/{clientId}/checkins
@@ -34,23 +37,12 @@ namespace CoachPulse.Api.Controllers
             if (!TryGetIdentity(out var userId, out var tenantId))
                 return Unauthorized();
 
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-            var clientQuery = _context.Clients.Where(c =>
-                c.Id == clientId &&
-                c.TenantId == tenantId);
-
-            if (role == UserRole.Staff.ToString())
-            {
-                clientQuery = clientQuery.Where(c =>
-                    c.CoachId == userId);
-            }
-            else if (role != UserRole.Owner.ToString())
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff))
             {
                 return Forbid();
             }
 
-            var client = await clientQuery.FirstOrDefaultAsync();
+            var client = await _clientAccess.VisibleClients(tenantId, userId, role).FirstOrDefaultAsync(c => c.Id == clientId);
 
             if (client is null)
             {
@@ -119,6 +111,7 @@ namespace CoachPulse.Api.Controllers
             }
 
             string? storageKey = null;
+            string? photoExtension = null;
 
             if (request.Photo is not null)
             {
@@ -146,6 +139,7 @@ namespace CoachPulse.Api.Controllers
                 }
 
                 var folder = $"{tenantId:N}/{client.Id:N}";
+                photoExtension = detectedExtension;
 
                 await using var stream = request.Photo.OpenReadStream();
 
@@ -167,9 +161,41 @@ namespace CoachPulse.Api.Controllers
                 PhotoUrl = storageKey
             };
 
+            StoredFile? storedPhoto = null;
+            if (request.Photo is not null && storageKey is not null)
+            {
+                var detectedContentType = photoExtension switch
+                {
+                    ".jpg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".webp" => "image/webp",
+                    _ => throw new InvalidOperationException("Unexpected check-in photo type.")
+                };
+
+                await using var hashStream = request.Photo.OpenReadStream();
+                storedPhoto = new StoredFile
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    OwnerUserId = userId,
+                    Purpose = "checkin-photo",
+                    OriginalName = GetSafeOriginalName(request.Photo.FileName),
+                    ContentType = detectedContentType,
+                    SizeBytes = request.Photo.Length,
+                    StoragePath = storageKey,
+                    Sha256 = Convert.ToHexString(await SHA256.HashDataAsync(hashStream, cancellationToken)).ToLowerInvariant(),
+                    CreatedAt = DateTime.UtcNow,
+                    LinkedEntityType = "CheckIn",
+                    LinkedEntityId = checkIn.Id,
+                    IsDeleted = false
+                };
+            }
+
             try
             {
                 _context.CheckIns.Add(checkIn);
+                if (storedPhoto is not null)
+                    _context.StoredFiles.Add(storedPhoto);
                 await _context.SaveChangesAsync(cancellationToken);
             }
             catch
@@ -319,6 +345,7 @@ namespace CoachPulse.Api.Controllers
 
         [HttpGet("my/checkins/{checkInId:guid}/photo")]
         [Authorize(Policy = "ClientOnly")]
+        [Obsolete("Use GET /api/files/{id}.")]
         public async Task<IActionResult> GetMyCheckInPhoto(
             Guid checkInId,
             CancellationToken cancellationToken)
@@ -345,14 +372,24 @@ namespace CoachPulse.Api.Controllers
             if (checkIn is null || string.IsNullOrWhiteSpace(checkIn.PhotoUrl))
                 return NotFound(new { message = "Photo not found." });
 
+            var storedPhoto = await _context.StoredFiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(file =>
+                    file.LinkedEntityType == "CheckIn" &&
+                    file.LinkedEntityId == checkIn.Id &&
+                    file.Purpose == "checkin-photo" &&
+                    !file.IsDeleted,
+                    cancellationToken);
+
+            var storagePath = storedPhoto?.StoragePath ?? checkIn.PhotoUrl;
             var stream = await _fileStorage.OpenReadAsync(
-                checkIn.PhotoUrl,
+                storagePath,
                 cancellationToken);
 
             if (stream is null)
                 return NotFound(new { message = "Photo file not found." });
 
-            var contentType = Path.GetExtension(checkIn.PhotoUrl)
+            var contentType = storedPhoto?.ContentType ?? Path.GetExtension(checkIn.PhotoUrl)
                 .ToLowerInvariant() switch
             {
                 ".jpg" => "image/jpeg",
@@ -362,6 +399,13 @@ namespace CoachPulse.Api.Controllers
             };
 
             return File(stream, contentType);
+        }
+
+        private static string GetSafeOriginalName(string? suppliedName)
+        {
+            var normalized = (suppliedName ?? "check-in-photo").Replace('\\', '/');
+            var leafName = normalized[(normalized.LastIndexOf('/') + 1)..];
+            return string.IsNullOrWhiteSpace(leafName) ? "check-in-photo" : leafName[..Math.Min(leafName.Length, 255)];
         }
         [HttpGet("my/progress")]
         [Authorize(Policy = "ClientOnly")]
@@ -464,12 +508,11 @@ namespace CoachPulse.Api.Controllers
             if (!TryGetIdentity(out var userId, out var tenantId))
                 return Unauthorized();
 
-            var client = await _context.Clients
-                .AsNoTracking()
-                .FirstOrDefaultAsync(
-                    c => c.Id == clientId &&
-                         c.TenantId == tenantId,
-                    cancellationToken);
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff))
+                return Forbid();
+
+            var client = await _clientAccess.VisibleClients(tenantId, userId, role)
+                .AsNoTracking().FirstOrDefaultAsync(c => c.Id == clientId, cancellationToken);
 
             if (client is null)
             {
@@ -477,14 +520,6 @@ namespace CoachPulse.Api.Controllers
                 {
                     message = "Client not found."
                 });
-            }
-
-            // Staff can access only their assigned clients.
-            // Owners can access clients across their own tenant.
-            if (User.IsInRole("Staff") &&
-                client.CoachId != userId)
-            {
-                return Forbid();
             }
 
             var checkIns = await _context.CheckIns

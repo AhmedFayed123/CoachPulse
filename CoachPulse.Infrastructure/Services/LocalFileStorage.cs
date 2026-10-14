@@ -28,7 +28,8 @@ namespace CoachPulse.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(folder))
                 throw new ArgumentException("Folder is required.");
 
-            if (extension is not ".jpg" and not ".png" and not ".webp")
+            if (extension is not ".jpg" and not ".jpeg" and not ".png" and not ".webp" and
+                not ".pdf" and not ".doc" and not ".docx" and not ".mp4" and not ".webm")
                 throw new ArgumentException("Unsupported file extension.");
 
             var safeFolder = string.Join(

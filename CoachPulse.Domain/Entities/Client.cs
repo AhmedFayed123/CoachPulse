@@ -1,4 +1,5 @@
-﻿using CoachPulse.Domain.Interfaces;
+using CoachPulse.Domain.Interfaces;
+using CoachPulse.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,10 @@ namespace CoachPulse.Domain.Entities
 
         public Guid? CoachId { get; set; }
 
+        public ClientStatus Status { get; set; } = ClientStatus.Active;
+        public CheckInFrequency? CheckInFrequency { get; set; }
+        public DayOfWeek? CheckInDayOfWeek { get; set; }
+
         public string? Goals { get; set; }
 
         public string? HealthInfo { get; set; }
@@ -26,3 +31,4 @@ namespace CoachPulse.Domain.Entities
         public User? Coach { get; set; }
     }
 }
+

@@ -1,6 +1,7 @@
 ﻿
 using System.Security.Claims;
 using CoachPulse.Infrastructure.Persistence;
+using CoachPulse.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +22,20 @@ public class ChatController : ControllerBase
 
     // GET /api/chat/conversations/{otherUserId}/messages?page=1&pageSize=50
     [HttpGet("conversations/{otherUserId:guid}/messages")]
+    [Obsolete("Use GET /api/messages/{clientId}.")]
     public async Task<IActionResult> GetMessages(
         Guid otherUserId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
+    {
+        if (Request.Path.StartsWithSegments("/api/chat/conversations")) RouteDeprecation.AddHeaders(Response, $"/api/messages/{otherUserId}");
+        return await GetMessagesCore(otherUserId, page, pageSize);
+    }
+
+    [HttpGet("~/api/messages/{clientId:guid}")]
+    public Task<IActionResult> GetMessagesCanonical(Guid clientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50) => GetMessagesCore(clientId, page, pageSize);
+
+    private async Task<IActionResult> GetMessagesCore(Guid otherUserId, int page, int pageSize)
     {
         var userIdValue = User.FindFirst(
             ClaimTypes.NameIdentifier)?.Value;

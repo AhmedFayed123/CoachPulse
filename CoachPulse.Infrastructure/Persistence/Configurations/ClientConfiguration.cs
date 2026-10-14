@@ -37,6 +37,9 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.HealthInfo)
                 .HasMaxLength(4000);
+
+            builder.Property(x => x.Status).IsRequired().HasDefaultValue(CoachPulse.Domain.Enums.ClientStatus.Active);
+            builder.HasIndex(x => new { x.TenantId, x.Status });
         }
     }
 }

@@ -26,6 +26,8 @@ namespace CoachPulse.Infrastructure
             services.AddScoped<IPasswordHasher, PasswordHasherService>();
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<IClientAccessService, ClientAccessService>();
+            services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
             services.AddScoped<IFileStorage, LocalFileStorage>();
             services.AddHttpClient<IPaymobClient, PaymobClient>();
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));

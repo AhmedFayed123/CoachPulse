@@ -8,10 +8,11 @@ namespace CoachPulse.Application.DTOs.Coach
 {
     public class CreateProgramRequest
     {
-        public Guid ClientId { get; set; }
+        public Guid? ClientId { get; set; }
 
         public string Title { get; set; } = string.Empty;
 
         public bool IsTemplate { get; set; }
+        public int DurationDays { get; set; } = 7;
     }
 }

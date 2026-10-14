@@ -12,8 +12,13 @@ namespace CoachPulse.Application.DTOs.Coach
 
         public int Sets { get; set; }
 
-        public int Reps { get; set; }
+        [System.Text.Json.Serialization.JsonConverter(typeof(FlexibleRepsConverter))]
+        public string Reps { get; set; } = "";
 
         public int Day { get; set; }
+
+        public int RestSeconds { get; set; }
+
+        public byte[]? RowVersion { get; set; }
     }
 }

@@ -31,7 +31,9 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(x => x.Reps)
-                .IsRequired();
+                .IsRequired().HasMaxLength(30);
+            builder.Property(x => x.RestSeconds).IsRequired().HasDefaultValue(0);
+            builder.Property(x => x.SortOrder).IsRequired().HasDefaultValue(0);
 
             builder.Property(x => x.Day)
                 .IsRequired();

@@ -18,15 +18,18 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.HasKey(x => x.Id);
 
-            builder.Property(x => x.Token)
+            builder.Property(x => x.TokenHash)
                 .IsRequired()
                 .HasMaxLength(500);
 
-            builder.HasIndex(x => x.Token)
+            builder.HasIndex(x => x.TokenHash)
                 .IsUnique();
 
             builder.Property(x => x.ExpiresAt)
                 .IsRequired();
+
+            builder.Property(x => x.RevokedAt)
+                .IsConcurrencyToken();
 
             builder.Property(x => x.CreatedAt)
                 .IsRequired();

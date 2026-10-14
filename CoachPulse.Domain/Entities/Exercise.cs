@@ -10,10 +10,18 @@ namespace CoachPulse.Domain.Entities
     {
         public Guid Id { get; set; }
 
+        public Guid? TenantId { get; set; }
+
         public string Name { get; set; } = string.Empty;
 
         public string MuscleGroup { get; set; } = string.Empty;
 
         public string? VideoUrl { get; set; }
+
+        public Guid? VideoFileId { get; set; }
+
+        public string? Equipment { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }

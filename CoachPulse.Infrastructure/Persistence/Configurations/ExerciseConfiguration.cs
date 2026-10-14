@@ -22,6 +22,9 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.VideoUrl)
                 .HasMaxLength(500);
+            builder.Property(x => x.Equipment).HasMaxLength(100);
+            builder.Property(x => x.IsDeleted).IsRequired().HasDefaultValue(false);
+            builder.HasIndex(x => new { x.TenantId, x.MuscleGroup, x.Equipment });
         }
     }
 }
