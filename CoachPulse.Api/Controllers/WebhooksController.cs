@@ -1,5 +1,6 @@
 using CoachPulse.Api.Hubs;
 using CoachPulse.Domain.Entities;
+using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -33,17 +34,20 @@ public sealed class WebhooksController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<WebhooksController> _logger;
     private readonly IHubContext<NotificationsHub> _notifications;
+    private readonly ISubscriptionActivationService _activation;
 
     public WebhooksController(
         CoachPulseDbContext context,
         IConfiguration configuration,
         ILogger<WebhooksController> logger,
-        IHubContext<NotificationsHub> notifications)
+        IHubContext<NotificationsHub> notifications,
+        ISubscriptionActivationService activation)
     {
         _context = context;
         _configuration = configuration;
         _logger = logger;
         _notifications = notifications;
+        _activation = activation;
     }
 
     [HttpPost("paymob")]
@@ -130,12 +134,20 @@ public sealed class WebhooksController : ControllerBase
 
         if (payment.Status != PaymentStatus.Confirmed)
         {
+            payment.GatewayTransactionId = transactionId;
             payment.Status = succeeded ? PaymentStatus.Confirmed : PaymentStatus.Failed;
+            payment.Version = Guid.NewGuid().ToByteArray();
             if (succeeded && payment.Subscription is not null)
             {
-                payment.Subscription.Status = SubscriptionStatus.Active;
-                payment.Subscription.StartDate = DateTime.UtcNow;
-                payment.Subscription.EndDate = DateTime.UtcNow.AddDays(payment.Subscription.Plan.DurationDays);
+                try
+                {
+                    await _activation.ActivateAsync(payment.Subscription, SubscriptionActivationSource.PaymobWebhook, cancellationToken);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Paymob payment {PaymentId} could not activate subscription {SubscriptionId}.", payment.Id, payment.SubscriptionId);
+                    payment.Status = PaymentStatus.Failed;
+                }
             }
         }
 
@@ -154,6 +166,11 @@ public sealed class WebhooksController : ControllerBase
         {
             await _notifications.Clients.User(client.UserId.ToString()).SendAsync(
                 "PaymentStatusChanged", changed, cancellationToken);
+            if (succeeded)
+            {
+                await _notifications.Clients.User(client.UserId.ToString()).SendAsync(
+                    "SubscriptionStatusChanged", new { subscriptionId = payment.SubscriptionId, status = payment.Subscription?.Status }, cancellationToken);
+            }
             if (client.CoachId.HasValue)
             {
                 await _notifications.Clients.User(client.CoachId.Value.ToString()).SendAsync(

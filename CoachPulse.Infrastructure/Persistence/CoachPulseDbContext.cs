@@ -33,6 +33,8 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<Plan> Plans => Set<Plan>();
         public DbSet<Subscription> Subscriptions => Set<Subscription>();
         public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<PaymentRefund> PaymentRefunds => Set<PaymentRefund>();
+        public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
         public DbSet<ChurnRiskLog> ChurnRiskLogs => Set<ChurnRiskLog>();
         public DbSet<AIGeneratedProgram> AIGeneratedPrograms => Set<AIGeneratedProgram>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -90,6 +92,21 @@ namespace CoachPulse.Infrastructure.Persistence
             modelBuilder.Entity<Payment>()
                 .HasQueryFilter(x =>
                     x.TenantId == _currentTenantService.TenantId);
+
+            modelBuilder.Entity<PaymentRefund>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+            modelBuilder.Entity<IdempotencyKey>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+
+            modelBuilder.Entity<PaymentRefund>(b =>
+            {
+                b.HasKey(x => x.Id); b.Property(x => x.Amount).HasPrecision(18, 2); b.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+                b.HasOne<Payment>().WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<IdempotencyKey>(b =>
+            {
+                b.HasKey(x => x.Id); b.Property(x => x.Key).HasMaxLength(128).IsRequired(); b.Property(x => x.Endpoint).HasMaxLength(200).IsRequired();
+                b.Property(x => x.RequestHash).HasMaxLength(64).IsRequired(); b.Property(x => x.ResponseSnapshot).IsRequired();
+                b.HasIndex(x => new { x.TenantId, x.UserId, x.Endpoint, x.Key }).IsUnique();
+            });
 
             modelBuilder.Entity<ChurnRiskLog>()
                 .HasQueryFilter(x =>

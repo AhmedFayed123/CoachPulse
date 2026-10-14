@@ -23,6 +23,11 @@ namespace CoachPulse.Domain.Entities
         public DateTime StartDate { get; set; }
 
         public DateTime EndDate { get; set; }
+        public decimal SnapshotPrice { get; set; }
+        public int SnapshotDurationDays { get; set; }
+        public int? RemainingDays { get; set; }
+        public DateTime? PausedAt { get; set; }
+        public string? StateChangeReason { get; set; }
 
         public Client Client { get; set; } = null!;
 

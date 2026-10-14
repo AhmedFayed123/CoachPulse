@@ -25,6 +25,7 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.EndDate)
                 .IsRequired();
+            builder.Property(x => x.SnapshotPrice).HasPrecision(18, 2).HasDefaultValue(0m);
 
             builder.HasOne(x => x.Client)
                 .WithMany()

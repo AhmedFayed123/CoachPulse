@@ -30,9 +30,15 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Status)
                 .IsRequired();
+            builder.Property(x => x.Version).IsConcurrencyToken();
+            builder.Property(x => x.ReferenceNumber).HasMaxLength(120);
+            builder.Property(x => x.CreatedAt).IsRequired();
+            builder.HasIndex(x => new { x.TenantId, x.ReferenceNumber }).IsUnique().HasFilter("\"ReferenceNumber\" IS NOT NULL");
 
             builder.Property(x => x.GatewayReference)
                 .HasMaxLength(200);
+            builder.Property(x => x.GatewayTransactionId).HasMaxLength(100);
+            builder.HasIndex(x => new { x.TenantId, x.GatewayTransactionId }).IsUnique().HasFilter("\"GatewayTransactionId\" IS NOT NULL");
 
             builder.Property(x => x.ReceiptUrl)
                 .HasMaxLength(500);

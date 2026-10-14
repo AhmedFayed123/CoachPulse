@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace CoachPulse.Application.Interfaces
 {
+    public sealed record PaymobIntentionResult(string ClientSecret, string OrderId);
     public interface IPaymobClient
     {
-        Task<string> CreatePaymentIntentionAsync(
+        Task<PaymobIntentionResult> CreatePaymentIntentionAsync(
         decimal amount,
         string currency,
         string orderId,
@@ -17,5 +18,7 @@ namespace CoachPulse.Application.Interfaces
         string billingLastName,
         string billingPhone,
         CancellationToken cancellationToken);
+
+        Task<string> RefundAsync(string transactionId, decimal amount, CancellationToken cancellationToken);
     }
 }

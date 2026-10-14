@@ -11,6 +11,9 @@ namespace CoachPulse.Domain.Enums
         Pending = 1,
         Confirmed = 2,
         Failed = 3,
-        Refunded = 4
+        Refunded = 4,
+        PendingVerification = 5,
+        Rejected = 6,
+        PartiallyRefunded = 7
     }
 }

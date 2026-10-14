@@ -1,4 +1,5 @@
 using CoachPulse.Api.Hubs;
+using CoachPulse.Api.BackgroundJobs;
 using CoachPulse.Api.Middleware;
 using CoachPulse.Api.Authorization;
 using CoachPulse.Api.Infrastructure;
@@ -203,6 +204,10 @@ namespace CoachPulse.Api
                     "check-expiring-subscriptions",
                     job => job.CheckExpiringSubscriptionsAsync(),
                     Cron.Daily);
+                recurringJobManager.AddOrUpdate<ExpireSubscriptionsJob>("expire-subscriptions-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+                recurringJobManager.AddOrUpdate<SubscriptionExpiryReminderJob>("subscription-expiry-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
+                recurringJobManager.AddOrUpdate<PendingPaymentReminderJob>("pending-payment-reminders-six-hourly", job => job.RunAsync(CancellationToken.None), Cron.HourInterval(6));
+                recurringJobManager.AddOrUpdate<PaymobReconciliationJob>("paymob-reconciliation-hourly", job => job.RunAsync(CancellationToken.None), Cron.Hourly);
                 recurringJobManager.AddOrUpdate<CleanupOrphanFilesJob>(
                     "cleanup-orphan-files-weekly",
                     job => job.CleanupAsync(CancellationToken.None),

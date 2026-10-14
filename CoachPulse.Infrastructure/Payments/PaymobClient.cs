@@ -2,6 +2,8 @@
 using System.Net.Http.Json;
 using CoachPulse.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CoachPulse.Infrastructure.Payments;
 
@@ -16,7 +18,7 @@ public class PaymobClient : IPaymobClient
         _configuration = configuration;
     }
 
-    public async Task<string> CreatePaymentIntentionAsync(
+    public async Task<PaymobIntentionResult> CreatePaymentIntentionAsync(
         decimal amount,
         string currency,
         string orderId,
@@ -40,6 +42,7 @@ public class PaymobClient : IPaymobClient
             amount = amountCents,
             currency = currency,
             payment_methods = new[] { int.Parse(integrationId) },
+            items = new[] { new { name = "Subscription", amount = amountCents, description = "CoachPulse subscription", quantity = 1 } },
             billing_data = new
             {
                 email = billingEmail,
@@ -56,10 +59,7 @@ public class PaymobClient : IPaymobClient
                 country = "EG",
                 state = "NA"
             },
-            extras = new
-            {
-                order_id = orderId
-            }
+            special_reference = orderId
         };
 
         // إعداد الـ Authorization Header بالـ Secret Key
@@ -73,12 +73,34 @@ public class PaymobClient : IPaymobClient
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<PaymobIntentionResponse>(cancellationToken: cancellationToken);
+        if (result is null || string.IsNullOrWhiteSpace(result.ClientSecret) || result.IntentionOrderId.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            throw new InvalidOperationException("Paymob response did not include intention order id/client secret.");
+        return new PaymobIntentionResult(result.ClientSecret, result.IntentionOrderId.ToString());
+    }
 
-        return result?.ClientSecret ?? throw new InvalidOperationException("Failed to create Paymob payment intention.");
+    public async Task<string> RefundAsync(string transactionId, decimal amount, CancellationToken cancellationToken)
+    {
+        var apiKey = _configuration["Paymob:ApiKey"] ?? throw new InvalidOperationException("Paymob ApiKey is required for refunds.");
+        using var authResponse = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens", new { api_key = apiKey }, cancellationToken);
+        authResponse.EnsureSuccessStatusCode();
+        var auth = await authResponse.Content.ReadFromJsonAsync<PaymobAuthResponse>(cancellationToken: cancellationToken);
+        if (string.IsNullOrWhiteSpace(auth?.Token)) throw new InvalidOperationException("Paymob did not return an auth token.");
+        var response = await _httpClient.PostAsJsonAsync("https://accept.paymob.com/api/acceptance/void_refund/refund", new { auth_token = auth.Token, transaction_id = transactionId, amount_cents = decimal.ToInt64(decimal.Round(amount * 100m, 0, MidpointRounding.AwayFromZero)) }, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 }
 
 internal class PaymobIntentionResponse
 {
+    [JsonPropertyName("client_secret")]
     public string ClientSecret { get; set; } = string.Empty;
+    [JsonPropertyName("intention_order_id")]
+    public JsonElement IntentionOrderId { get; set; }
+}
+
+internal class PaymobAuthResponse
+{
+    [JsonPropertyName("token")]
+    public string Token { get; set; } = string.Empty;
 }

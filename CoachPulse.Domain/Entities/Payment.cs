@@ -25,10 +25,16 @@ namespace CoachPulse.Domain.Entities
         public PaymentStatus Status { get; set; }
 
         public string? GatewayReference { get; set; }
+        public string? GatewayTransactionId { get; set; }
 
         public string? ReceiptUrl { get; set; }
 
         public Guid? ConfirmedByAdminId { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? ReferenceNumber { get; set; }
+        public Guid? ReceiptFileId { get; set; }
+        public string? RejectionReason { get; set; }
+        public byte[] Version { get; set; } = Guid.NewGuid().ToByteArray();
 
         public Subscription Subscription { get; set; } = null!;
 

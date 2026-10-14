@@ -26,6 +26,7 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.DurationDays)
                 .IsRequired();
+            builder.Property(x => x.IsActive).HasDefaultValue(true);
 
             builder.HasOne(x => x.Tenant)
                 .WithMany()

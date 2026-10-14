@@ -27,6 +27,8 @@ namespace CoachPulse.Infrastructure
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<IClientAccessService, ClientAccessService>();
+            services.AddScoped<ISubscriptionActivationService, SubscriptionActivationService>();
+            services.AddScoped<ISubscriptionStateMachine>(sp => (ISubscriptionStateMachine)sp.GetRequiredService<ISubscriptionActivationService>());
             services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
             services.AddScoped<IFileStorage, LocalFileStorage>();
             services.AddHttpClient<IPaymobClient, PaymobClient>();

@@ -11,6 +11,7 @@ namespace CoachPulse.Domain.Enums
         Pending = 1,
         Active = 2,
         Expired = 3,
-        Cancelled = 4
+        Cancelled = 4,
+        Paused = 5
     }
 }
