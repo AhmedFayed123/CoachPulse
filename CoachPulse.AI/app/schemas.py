@@ -113,6 +113,27 @@ class ChurnResponse(BaseModel):
     modelVersion: str
 
 
+class ProgressMetric(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    current: float | None = Field(default=None, ge=-100000, le=100000)
+    previous: float | None = Field(default=None, ge=-100000, le=100000)
+    unit: str = Field(default="", max_length=30)
+
+
+class ProgressSummaryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    clientId: UUID
+    language: Literal["ar", "en"]
+    metrics: list[ProgressMetric] = Field(min_length=1, max_length=30)
+    coachNotes: str | None = Field(default=None, max_length=2000)
+
+
+class ProgressSummaryResponse(BaseModel):
+    summary: str = Field(min_length=1, max_length=4000)
+    highlights: list[str] = Field(max_length=20)
+    recommendations: list[str] = Field(max_length=20)
+
+
 class ChurnBatchRequest(BaseModel):
     items: list[ChurnRequest] = Field(min_length=1, max_length=500)
 

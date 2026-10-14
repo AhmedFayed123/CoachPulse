@@ -52,6 +52,17 @@ public sealed class AiGatewayTests
         Assert.Empty(await f.Db.AiUsages.ToListAsync());
     }
 
+    [Fact]
+    public async Task ProgressSummaryIsTenantScopedAndUsesGenerationQuota()
+    {
+        await using var f=await Fixture.Create(limit:1);
+        var first=Assert.IsType<OkObjectResult>(await f.Controller.ProgressSummary(f.ClientId,new AiProgressSummaryRequest("en"),CancellationToken.None));
+        Assert.NotNull(first.Value);Assert.Single(await f.Db.AiUsages.ToListAsync());
+        var rejected=Assert.IsType<ObjectResult>(await f.Controller.ProgressSummary(f.ClientId,new AiProgressSummaryRequest("en"),CancellationToken.None));
+        Assert.Equal(429,rejected.StatusCode);Assert.Single(await f.Db.AiUsages.ToListAsync());
+        Assert.IsType<NotFoundResult>(await f.Controller.ProgressSummary(Guid.NewGuid(),new AiProgressSummaryRequest("en"),CancellationToken.None));
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private Fixture(CoachPulseDbContext db, TenantState state, Guid tenant, Guid user, Guid client, Guid exercise, AiController controller, DefaultHttpContext context)
@@ -87,6 +98,7 @@ public sealed class AiGatewayTests
         private AiWorkoutContent Content() { if (failing) throw new HttpRequestException("down"); using var d = JsonDocument.Parse($"{{\"weeks\":[{{\"week\":1,\"days\":[{{\"day\":\"Sunday\",\"focus\":\"strength\",\"exercises\":[{{\"exerciseId\":\"{exerciseId}\",\"name\":\"Squat\",\"sets\":3,\"reps\":\"10-12\",\"restSeconds\":60,\"notes\":\"\"}}]}}]}}]}}"); using var m = JsonDocument.Parse("{\"dailyCalories\":2000,\"macros\":{\"proteinG\":100,\"carbsG\":200,\"fatG\":60},\"days\":[{\"day\":\"Sunday\",\"meals\":[]}]}"); return new AiWorkoutContent(d.RootElement.Clone(), m.RootElement.Clone(), []); }
         public Task<AiChurnResponse> PredictChurnAsync(AiChurnRequest request, CancellationToken ct) => throw new NotImplementedException();
         public Task<AiChurnBatchResponse> PredictChurnBatchAsync(IReadOnlyList<AiChurnRequest> requests, CancellationToken ct) => throw new NotImplementedException();
+        public Task<AiProgressSummary> CreateProgressSummaryAsync(AiProgressSummaryInput request, CancellationToken ct) => Task.FromResult(new AiProgressSummary("summary", [], []));
     }
     private sealed class NullHub : IHubContext<NotificationsHub> { public IHubClients Clients => throw new NotImplementedException(); public IGroupManager Groups => throw new NotImplementedException(); }
 }

@@ -5,9 +5,9 @@ services:
     environment:
       POSTGRES_DB: CoachPulseDb
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - coachpulse_postgres_data:/var/lib/postgresql/data
     networks: [app]
@@ -17,8 +17,15 @@ services:
       context: .
       dockerfile: CoachPulse.Api/Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Docker
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-CoachPulseDb};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN in .env}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL in .env}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD in .env}
+      Paymob__SecretKey: ${PAYMOB_SECRET_KEY:-}
+      Paymob__IntegrationId: ${PAYMOB_INTEGRATION_ID:-}
+      Paymob__HmacSecret: ${PAYMOB_HMAC_SECRET:-}
       Ai__BaseUrl: http://coachpulse-ai:8000/
       Ai__InternalApiKey: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
       PythonAi__BaseUrl: http://coachpulse-ai:8000/
@@ -32,7 +39,7 @@ services:
     environment:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
-      CHURN_MODEL_PATH: /app/models/churn.joblib
+      CHURN_MODEL_PATH: /srv/coachpulse-ai/models/churn.joblib
     expose: ["8000"]
     networks: [ai-private]
 

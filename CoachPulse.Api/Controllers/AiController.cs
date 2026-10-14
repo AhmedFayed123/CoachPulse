@@ -197,6 +197,52 @@ public sealed class AiController(CoachPulseDbContext db, IAiClient ai, IClientAc
     [HttpGet("usage"), Authorize(Policy = "OwnerOnly")]
     public async Task<IActionResult> Usage(CancellationToken ct) { var today = DateTime.UtcNow.Date; var used = await db.AiUsages.CountAsync(x => x.CreatedAt >= today && x.CreatedAt < today.AddDays(1), ct); return Ok(new { dailyLimit = DailyLimit, used, remaining = Math.Max(0, DailyLimit - used), resetsAt = today.AddDays(1) }); }
 
+    [HttpPost("progress-summary/{clientId:guid}")]
+    public async Task<IActionResult> ProgressSummary(Guid clientId, [FromBody] AiProgressSummaryRequest request, CancellationToken ct)
+    {
+        if (request.Language is not ("ar" or "en") || (request.CoachNotes?.Length ?? 0) > 2000) return UnprocessableEntity("Invalid summary request.");
+        var client = await VisibleClients().FirstOrDefaultAsync(x => x.Id == clientId, ct);
+        if (client is null) return NotFound();
+        var metrics = await db.CheckIns.AsNoTracking().Where(x => x.TenantId == Tenant && x.ClientId == clientId && !x.IsDeleted)
+            .OrderByDescending(x => x.Date).Take(2).Select(x => new { x.Weight, x.Date }).ToListAsync(ct);
+        var workouts = await db.WorkoutLogs.AsNoTracking().Where(x => x.TenantId == Tenant && x.ClientId == clientId && !x.IsDeleted && x.PerformedAt >= DateTime.UtcNow.AddDays(-14)).CountAsync(ct);
+        var inputMetrics = new List<AiProgressMetric>
+        {
+            new("checkInsLast14Days", await db.CheckIns.CountAsync(x => x.TenantId == Tenant && x.ClientId == clientId && !x.IsDeleted && x.Date >= DateTime.UtcNow.AddDays(-14), ct), null, "count"),
+            new("workoutLogsLast14Days", workouts, null, "count")
+        };
+        if (metrics.Count > 0) inputMetrics.Add(new("weightKg", (double)metrics[0].Weight, metrics.Count > 1 ? (double?)metrics[1].Weight : null, "kg"));
+        var notes = string.IsNullOrWhiteSpace(request.CoachNotes) ? null : request.CoachNotes.Trim();
+        var input = new AiProgressSummaryInput(Guid.NewGuid(), request.Language, inputMetrics, notes);
+        var gate = QuotaLocks.GetOrAdd(Tenant, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
+        try
+        {
+            if (db.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+                var bytes = SHA256.HashData(Tenant.ToByteArray());
+                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({BitConverter.ToInt64(bytes, 0)})", ct);
+            }
+            var today = DateTime.UtcNow.Date;
+            var used = await db.AiUsages.CountAsync(x => x.CreatedAt >= today && x.CreatedAt < today.AddDays(1), ct);
+            if (used >= DailyLimit)
+            {
+                Response.Headers.RetryAfter = Math.Max(1, (int)(today.AddDays(1) - DateTime.UtcNow).TotalSeconds).ToString();
+                return StatusCode(429, new ProblemDetails { Status = 429, Title = "Daily AI generation quota exceeded" });
+            }
+            AiProgressSummary result;
+            try { result = await ai.CreateProgressSummaryAsync(input, ct); }
+            catch (HttpRequestException) { return PythonUnavailable(); }
+            db.AiUsages.Add(new AiUsage { Id = Guid.NewGuid(), TenantId = Tenant, UserId = UserId, GeneratedProgramId = null });
+            await db.SaveChangesAsync(ct);
+            if (transaction is not null) await transaction.CommitAsync(ct);
+            return Ok(result);
+        }
+        finally { if (transaction is not null) await transaction.DisposeAsync(); gate.Release(); }
+    }
+
     [HttpGet("churn/clients/{id:guid}")]
     public async Task<IActionResult> Churn(Guid id, CancellationToken ct) { if (!await VisibleClients().AnyAsync(x => x.Id == id, ct)) return NotFound(); var score = await db.ChurnRiskLogs.Where(x => x.TenantId == Tenant && x.ClientId == id).OrderByDescending(x => x.ComputedAt).FirstOrDefaultAsync(ct); return score is null ? Ok(null) : Ok(new { score.ClientId, score.RiskScore, score.RiskLevel, TopFactors = JsonDocument.Parse(score.TopFactorsJson).RootElement, score.ModelVersion, score.ComputedAt }); }
     [HttpGet("churn/clients/{id:guid}/history")]

@@ -98,7 +98,7 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("GeneratedProgramId")
+                    b.Property<Guid?>("GeneratedProgramId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TenantId")
@@ -333,6 +333,56 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.ToTable("ClientNotes");
                 });
 
+            modelBuilder.Entity("CoachPulse.Domain.Entities.DataExportRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DownloadTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("DownloadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureCode")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<string>("StoragePath")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("StoredFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("DataExportRequests");
+                });
+
             modelBuilder.Entity("CoachPulse.Domain.Entities.Exercise", b =>
                 {
                     b.Property<Guid>("Id")
@@ -417,6 +467,20 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.ToTable("IdempotencyKeys");
                 });
 
+            modelBuilder.Entity("CoachPulse.Domain.Entities.InvoiceSequence", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TenantId");
+
+                    b.ToTable("InvoiceSequences");
+                });
+
             modelBuilder.Entity("CoachPulse.Domain.Entities.Meal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -455,6 +519,37 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.HasIndex("MealPlanId");
 
                     b.ToTable("Meals");
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.MealLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("LoggedOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("MealId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MealId");
+
+                    b.HasIndex("TenantId", "ClientId", "MealId", "LoggedOn")
+                        .IsUnique();
+
+                    b.ToTable("MealLogs");
                 });
 
             modelBuilder.Entity("CoachPulse.Domain.Entities.MealPlan", b =>
@@ -665,6 +760,9 @@ namespace CoachPulse.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int?>("InvoiceNumber")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Method")
                         .HasColumnType("integer");
 
@@ -706,11 +804,18 @@ namespace CoachPulse.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("\"GatewayTransactionId\" IS NOT NULL");
 
+                    b.HasIndex("TenantId", "InvoiceNumber")
+                        .IsUnique()
+                        .HasFilter("\"InvoiceNumber\" IS NOT NULL");
+
                     b.HasIndex("TenantId", "ReferenceNumber")
                         .IsUnique()
                         .HasFilter("\"ReferenceNumber\" IS NOT NULL");
 
-                    b.ToTable("Payments", (string)null);
+                    b.ToTable("Payments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Payments_Method", "\"Method\" IN (1, 2, 3)");
+                        });
                 });
 
             modelBuilder.Entity("CoachPulse.Domain.Entities.PaymentRefund", b =>
@@ -1497,6 +1602,15 @@ namespace CoachPulse.Infrastructure.Migrations
                         .WithMany("Items")
                         .HasForeignKey("MealPlanId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CoachPulse.Domain.Entities.MealLog", b =>
+                {
+                    b.HasOne("CoachPulse.Domain.Entities.Meal", null)
+                        .WithMany()
+                        .HasForeignKey("MealId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

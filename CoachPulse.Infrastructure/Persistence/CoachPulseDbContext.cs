@@ -29,6 +29,7 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<ProgramExercise> ProgramExercises => Set<ProgramExercise>();
         public DbSet<MealPlan> MealPlans => Set<MealPlan>();
         public DbSet<Meal> Meals => Set<Meal>();
+        public DbSet<MealLog> MealLogs => Set<MealLog>();
         public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
         public DbSet<CheckIn> CheckIns => Set<CheckIn>();
         public DbSet<Message> Messages => Set<Message>();
@@ -36,6 +37,8 @@ namespace CoachPulse.Infrastructure.Persistence
         public DbSet<Subscription> Subscriptions => Set<Subscription>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<PaymentRefund> PaymentRefunds => Set<PaymentRefund>();
+        public DbSet<InvoiceSequence> InvoiceSequences => Set<InvoiceSequence>();
+        public DbSet<DataExportRequest> DataExportRequests => Set<DataExportRequest>();
         public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
         public DbSet<ChurnRiskLog> ChurnRiskLogs => Set<ChurnRiskLog>();
         public DbSet<AIGeneratedProgram> AIGeneratedPrograms => Set<AIGeneratedProgram>();
@@ -77,6 +80,9 @@ namespace CoachPulse.Infrastructure.Persistence
             modelBuilder.Entity<MealPlan>()
                 .HasQueryFilter(x =>
                     x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
+            modelBuilder.Entity<InvoiceSequence>(b => { b.HasKey(x => x.TenantId); b.HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId); });
+            modelBuilder.Entity<DataExportRequest>(b => { b.HasKey(x => x.Id); b.HasIndex(x => new { x.UserId, x.CreatedAt }); b.Property(x => x.Status).HasMaxLength(24).IsRequired(); b.Property(x => x.DownloadTokenHash).HasMaxLength(64).IsRequired(); });
+            modelBuilder.Entity<Payment>().HasIndex(x => new { x.TenantId, x.InvoiceNumber }).IsUnique().HasFilter("\"InvoiceNumber\" IS NOT NULL");
             modelBuilder.Entity<WorkoutLog>().HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId && !x.IsDeleted);
             modelBuilder.Entity<WorkoutLog>(b =>
             {
@@ -93,6 +99,13 @@ namespace CoachPulse.Infrastructure.Persistence
                 b.Property(x => x.Protein).HasPrecision(8, 2);
                 b.Property(x => x.Carbs).HasPrecision(8, 2);
                 b.Property(x => x.Fat).HasPrecision(8, 2);
+            });
+            modelBuilder.Entity<MealLog>(b =>
+            {
+                b.HasKey(x => x.Id);
+                b.HasQueryFilter(x => x.TenantId == _currentTenantService.TenantId);
+                b.HasIndex(x => new { x.TenantId, x.ClientId, x.MealId, x.LoggedOn }).IsUnique();
+                b.HasOne<Meal>().WithMany().HasForeignKey(x => x.MealId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<CheckIn>()

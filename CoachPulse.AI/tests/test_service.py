@@ -71,3 +71,15 @@ def test_churn_single_and_batch(tmp_path, monkeypatch):
     batch = client.post("/predict-churn/batch", json={"items": [item, item]}, headers=headers)
     assert single.status_code == 200 and 0 <= single.json()["riskScore"] <= 1
     assert batch.status_code == 200 and len(batch.json()["items"]) == 2
+
+
+def test_progress_summary_auth_validation_and_success(monkeypatch):
+    monkeypatch.setenv("INTERNAL_API_KEY", KEY)
+    client = TestClient(create_app())
+    payload = {"clientId": str(uuid4()), "language": "en", "metrics": [{"name": "weightKg", "current": 80, "previous": 82, "unit": "kg"}]}
+    assert client.post("/progress-summary", json=payload).status_code == 401
+    response = client.post("/progress-summary", json=payload, headers={"X-Internal-Api-Key": KEY})
+    assert response.status_code == 200
+    assert response.json()["summary"]
+    payload["language"] = "fr"
+    assert client.post("/progress-summary", json=payload, headers={"X-Internal-Api-Key": KEY}).status_code == 422

@@ -9,6 +9,7 @@ namespace CoachPulse.Domain.Enums
     public enum PaymentMethod
     {
         Card = 1,
-        InstaPay = 2
+        InstaPay = 2,
+        Cash = 3
     }
 }

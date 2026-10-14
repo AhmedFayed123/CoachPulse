@@ -21,7 +21,8 @@ public sealed class AuthController(
     IPasswordHasher passwords,
     IJwtService jwt,
     IRefreshTokenService refreshTokens,
-    IEmailSender emails) : ControllerBase
+    IEmailSender emails,
+    IConfiguration? configuration = null) : ControllerBase
 {
     private const string UniformResponse = "If the account is eligible, instructions will be sent.";
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
@@ -138,9 +139,11 @@ public sealed class AuthController(
             }
         }
         var raw = refreshTokens.GenerateToken();
-        var token = new RefreshToken { Id = Guid.NewGuid(), UserId = user.Id, TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddDays(7) };
+        var accessTokenMinutes = configuration?.GetValue("Jwt:AccessTokenMinutes", 15) ?? 15;
+        var refreshTokenDays = configuration?.GetValue("Jwt:RefreshTokenDays", 7) ?? 7;
+        var token = new RefreshToken { Id = Guid.NewGuid(), UserId = user.Id, TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays) };
         db.RefreshTokens.Add(token); Audit("login.succeeded", user.Id, user.TenantId); await db.SaveChangesAsync();
-        return Ok(new { AccessToken = jwt.GenerateAccessToken(user), RefreshToken = raw, TokenType = "Bearer", ExpiresInMinutes = 60, RefreshTokenExpiresAt = token.ExpiresAt, User = new { user.Id, user.Email, user.TenantId, user.Role } });
+        return Ok(new { AccessToken = jwt.GenerateAccessToken(user), RefreshToken = raw, TokenType = "Bearer", ExpiresInMinutes = accessTokenMinutes, RefreshTokenExpiresAt = token.ExpiresAt, User = new { user.Id, user.Email, user.TenantId, user.Role } });
     }
 
     [AllowAnonymous, HttpPost("refresh-token")]

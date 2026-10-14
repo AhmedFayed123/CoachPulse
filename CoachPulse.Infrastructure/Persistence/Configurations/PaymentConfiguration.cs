@@ -13,7 +13,7 @@ namespace CoachPulse.Infrastructure.Persistence.Configurations
     {
         public void Configure(EntityTypeBuilder<Payment> builder)
         {
-            builder.ToTable("Payments");
+            builder.ToTable("Payments", table => table.HasCheckConstraint("CK_Payments_Method", "\"Method\" IN (1, 2, 3)"));
 
             builder.HasKey(x => x.Id);
 

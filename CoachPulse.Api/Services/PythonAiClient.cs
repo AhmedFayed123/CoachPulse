@@ -53,5 +53,6 @@ public sealed class PythonAiClient(IHttpClientFactory factory, IConfiguration co
     public Task<AiChurnResponse> PredictChurnAsync(AiChurnRequest request, CancellationToken ct) => Send<AiChurnResponse>("ai-churn", HttpMethod.Post, "predict-churn", request, ct);
     public Task<AiChurnBatchResponse> PredictChurnBatchAsync(IReadOnlyList<AiChurnRequest> requests, CancellationToken ct) => Send<AiChurnBatchResponse>("ai-churn", HttpMethod.Post, "predict-churn/batch", new { items = requests }, ct);
     public Task<AiModelInfo> GetModelInfoAsync(CancellationToken ct) => Send<AiModelInfo>("ai-churn", HttpMethod.Get, "models/churn/info", null, ct);
+    public Task<AiProgressSummary> CreateProgressSummaryAsync(AiProgressSummaryInput request, CancellationToken ct) => Send<AiProgressSummary>("ai-generation", HttpMethod.Post, "progress-summary", request, ct);
     public async Task<bool> IsReadyAsync(CancellationToken ct) { try { await Send<JsonElement>("ai-churn", HttpMethod.Get, "ready", null, ct); return true; } catch { return false; } }
 }

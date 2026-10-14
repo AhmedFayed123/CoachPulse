@@ -53,6 +53,22 @@ public sealed class ClientMealPlanController(CoachPulseDbContext db,IClientAcces
 {
  [HttpGet] public async Task<IActionResult> Get(Guid id,CancellationToken ct){if(!Guid.TryParse(User.FindFirstValue("tenantId"),out var t)||!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var u)||!Enum.TryParse<UserRole>(User.FindFirstValue(ClaimTypes.Role),out var role))return Unauthorized();var c=await access.VisibleClients(t,u,role).FirstOrDefaultAsync(x=>x.Id==id,ct);if(c is null)return NotFound();var p=await db.MealPlans.Include(x=>x.Items).FirstOrDefaultAsync(x=>x.ClientId==id&&x.Status=="Active",ct);return p is null?Ok(null):Ok(new{p.Id,p.Title,meals=p.Items});}
 }
+[ApiController,Route("api/my/meal-logs"),Authorize(Policy="ClientOnly")]
+public sealed class MyMealLogsController(CoachPulseDbContext db):ControllerBase
+{
+ [HttpPost]
+ public async Task<IActionResult> Log(MyMealLogRequest request,CancellationToken ct)
+ {
+  if(!Guid.TryParse(User.FindFirstValue("tenantId"),out var tenant)||!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var user))return Unauthorized();
+  var client=await db.Clients.FirstOrDefaultAsync(x=>x.TenantId==tenant&&x.UserId==user,ct);if(client is null)return NotFound();
+  if(request.LoggedOn>DateOnly.FromDateTime(DateTime.UtcNow))return UnprocessableEntity("LoggedOn cannot be in the future.");
+  var meal=await db.Meals.FirstOrDefaultAsync(x=>x.Id==request.MealId&&db.MealPlans.Any(p=>p.Id==x.MealPlanId&&p.TenantId==tenant&&p.ClientId==client.Id&&p.Status=="Active"&&!p.IsTemplate),ct);if(meal is null)return UnprocessableEntity("Meal must belong to the client's current meal plan.");
+  var row=new CoachPulse.Domain.Entities.MealLog{Id=Guid.NewGuid(),TenantId=tenant,ClientId=client.Id,MealId=meal.Id,LoggedOn=request.LoggedOn,CreatedAt=DateTime.UtcNow};db.MealLogs.Add(row);
+  try{await db.SaveChangesAsync(ct);}catch(DbUpdateException){return Conflict("This meal has already been logged for that date.");}
+  return StatusCode(201,new{row.Id,row.MealId,row.LoggedOn,row.CreatedAt});
+ }
+}
+public sealed record MyMealLogRequest(Guid MealId,DateOnly LoggedOn);
 public sealed record MealPlanCreate(string Title,bool IsTemplate=false,Guid? ClientId=null);
 public sealed record MealPlanUpdate(string Title,byte[]? RowVersion);
 public sealed record MealPlanAssign(Guid ClientId);

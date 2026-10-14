@@ -17,3 +17,7 @@ public sealed record AiGeneratedProgramEdit(string RowVersion, JsonElement Worko
 
 public sealed record AiGenerateApiRequest(Guid ClientId, string Goal, string Level, int DaysPerWeek, int SessionMinutes, int DurationWeeks, List<string> Equipment, List<string> Injuries, List<string> DietaryRestrictions, int? CaloriesTarget, string Language, string ExtraNotes);
 public sealed record AiRegenerateApiRequest(string CoachNotes);
+public sealed record AiProgressSummaryInput(Guid ClientId, string Language, IReadOnlyList<AiProgressMetric> Metrics, string? CoachNotes);
+public sealed record AiProgressMetric(string Name, double? Current, double? Previous, string Unit);
+public sealed record AiProgressSummary(string Summary, IReadOnlyList<string> Highlights, IReadOnlyList<string> Recommendations);
+public sealed record AiProgressSummaryRequest(string Language, string? CoachNotes = null);

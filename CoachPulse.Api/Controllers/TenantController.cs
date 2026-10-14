@@ -600,6 +600,33 @@ public class TenantController : ControllerBase
         return Ok(new { TenantId = tenantId, ClientCount = clients, AiUsage = aiUsage, StorageBytes = storageBytes });
     }
 
+    [HttpGet("~/api/tenant/analytics/coach-performance"), Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> CoachPerformance(CancellationToken ct)
+    {
+        if (!TryTenant(out var tenantId, out _, out _)) return Unauthorized();
+        var activeClients = await _context.Clients.AsNoTracking().Where(x => x.TenantId == tenantId && x.Status == ClientStatus.Active).Select(x => x.Id).ToListAsync(ct);
+        var windowStart = DateTime.UtcNow.AddDays(-30); var windowEnd = DateTime.UtcNow;
+        var adherenceValues = new List<decimal>();
+        foreach (var clientId in activeClients)
+        {
+            var adherence = await CoachPulse.Api.Services.WorkoutAdherenceCalculator.CalculateAsync(_context, tenantId, clientId, windowStart, windowEnd, ct);
+            if (adherence.Rate.HasValue) adherenceValues.Add(adherence.Rate.Value);
+        }
+        var cohortStart = DateTime.UtcNow.AddDays(-90);
+        var cohortClients = await _context.Subscriptions.AsNoTracking().Where(x => x.TenantId == tenantId && x.StartDate >= cohortStart && x.Status != SubscriptionStatus.Pending).Select(x => x.ClientId).Distinct().ToListAsync(ct);
+        var retained = cohortClients.Count == 0 ? 0 : await _context.Subscriptions.AsNoTracking().Where(x => x.TenantId == tenantId && cohortClients.Contains(x.ClientId) && x.Status == SubscriptionStatus.Active).Select(x => x.ClientId).Distinct().CountAsync(ct);
+        return Ok(new
+        {
+            periodDays = 30,
+            activeClients = activeClients.Count,
+            adherenceRate = adherenceValues.Count == 0 ? (decimal?)null : adherenceValues.Average(),
+            adherenceClientsIncluded = adherenceValues.Count,
+            retentionPeriodDays = 90,
+            subscriptionRetentionRate = cohortClients.Count == 0 ? (decimal?)null : (decimal)retained / cohortClients.Count,
+            retentionCohortClients = cohortClients.Count
+        });
+    }
+
     private bool TryTenant(out Guid tenantId, out Guid userId, out UserRole role)
     {
         tenantId = userId = Guid.Empty; role = default;

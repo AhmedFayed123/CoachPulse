@@ -29,10 +29,11 @@ public sealed class ChatHub(CoachPulseDbContext db, ChatMessageService messageSe
     }
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        if(TryIdentity(out var user,out _,out _) && Connections.TryGetValue(user,out var count))
+        if(TryIdentity(out var user,out _,out _))
         {
-            if(count<=1){Connections.TryRemove(user,out _);if(ConnectionPartners.TryRemove(Context.ConnectionId,out var partners))foreach(var partner in partners)await Clients.User(partner.ToString()).SendAsync("PresenceChanged",new{userId=user,isOnline=false});}
-            else Connections[user]=count-1;
+            ConnectionPartners.TryRemove(Context.ConnectionId,out var partners);
+            var remaining=Connections.AddOrUpdate(user,0,(_,n)=>Math.Max(0,n-1));
+            if(remaining==0){Connections.TryRemove(user,out _);if(partners is not null)foreach(var partner in partners)await Clients.User(partner.ToString()).SendAsync("PresenceChanged",new{userId=user,isOnline=false});}
         }
         await base.OnDisconnectedAsync(exception);
     }

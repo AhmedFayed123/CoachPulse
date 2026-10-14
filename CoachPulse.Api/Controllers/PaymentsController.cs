@@ -53,6 +53,79 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
         return StatusCode(201,result);
     }
 
+    [HttpPost("~/api/tenant/payments/manual"), Authorize(Policy = "OwnerOnly")]
+    public async Task<IActionResult> RegisterManualPayment([FromBody] ManualPaymentRequest req, CancellationToken ct)
+    {
+        if (!Identity(out var tenant, out var owner, out _)) return Unauthorized();
+        var key = Request.Headers["Idempotency-Key"].ToString();
+        if (string.IsNullOrWhiteSpace(key)) return BadRequest("Idempotency-Key is required.");
+        if (req.Amount <= 0) return UnprocessableEntity("Amount must be positive.");
+        var replay = await Replay(key, tenant, owner, "payment.manual", req, ct);
+        if (replay is not null) return replay;
+
+        await using var tx = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(ct) : null;
+        if (db.Database.IsNpgsql())
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({req.SubscriptionId.ToString()}, 0))", ct);
+        var afterLock = await Replay(key, tenant, owner, "payment.manual", req, ct);
+        if (afterLock is not null) return afterLock;
+        var subscription = await db.Subscriptions.Include(x => x.Plan).Include(x => x.Client)
+            .FirstOrDefaultAsync(x => x.Id == req.SubscriptionId && x.TenantId == tenant, ct);
+        if (subscription is null) return NotFound();
+        if (subscription.Status != SubscriptionStatus.Pending) return Conflict("Only a pending subscription can receive a manual payment.");
+        if (req.Amount != subscription.SnapshotPrice) return UnprocessableEntity("Amount must match the subscription snapshot price.");
+        var tenantSettings = await db.Tenants.FirstOrDefaultAsync(x => x.Id == tenant, ct);
+        if (tenantSettings is null) return NotFound();
+        var payment = new Payment { Id = Guid.NewGuid(), TenantId = tenant, SubscriptionId = subscription.Id,
+            Amount = req.Amount, Currency = tenantSettings.Currency, Method = PaymentMethod.Cash,
+            Status = PaymentStatus.Confirmed, ConfirmedByAdminId = owner, CreatedAt = DateTime.UtcNow };
+        try
+        {
+            await activation.ActivateAsync(subscription, SubscriptionActivationSource.OwnerManual, ct);
+        }
+        catch (InvalidOperationException ex) { return Conflict(ex.Message); }
+        db.Payments.Add(payment);
+        Audit(owner, tenant, "payment.manual.confirmed", $"payment={payment.Id};subscription={subscription.Id};amount={payment.Amount}");
+        var response = new { paymentId = payment.Id, subscriptionId = subscription.Id, payment.Method, paymentStatus = payment.Status, subscriptionStatus = subscription.Status };
+        SaveKey(key, tenant, owner, "payment.manual", req, 201, response);
+        try { await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); }
+        catch (DbUpdateException) { if (tx is not null) await tx.RollbackAsync(ct); return Conflict("Payment or idempotency key was already processed."); }
+        await Notify(subscription.Client.UserId, tenant, "PaymentStatusChanged", "Payment confirmed", "Your cash payment was recorded.", new { paymentId = payment.Id, subscriptionId = subscription.Id, status = payment.Status }, ct);
+        await Notify(subscription.Client.UserId, tenant, "SubscriptionStatusChanged", "Subscription activated", "Your subscription is active.", new { subscriptionId = subscription.Id, status = subscription.Status }, ct);
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    [HttpGet("~/api/my/payments/{id:guid}/invoice"), Authorize(Policy = "ClientOnly")]
+    public async Task<IActionResult> Invoice(Guid id, CancellationToken ct)
+    {
+        if (!Identity(out var tenant, out var user, out _)) return Unauthorized();
+        await using var tx = db.Database.IsRelational() ? await db.Database.BeginTransactionAsync(ct) : null;
+        if (db.Database.IsNpgsql())
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({tenant.ToString()}, 0))", ct);
+        var payment = await db.Payments.Include(x => x.Subscription).ThenInclude(x => x.Client).Include(x => x.Subscription).ThenInclude(x => x.Plan)
+            .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenant && x.Subscription.Client.UserId == user, ct);
+        if (payment is null) return NotFound();
+        if (payment.Status != PaymentStatus.Confirmed) return Conflict("An invoice is available only for confirmed payments.");
+        if (payment.InvoiceNumber is null)
+        {
+            var sequence = await db.InvoiceSequences.FirstOrDefaultAsync(x => x.TenantId == tenant, ct);
+            if (sequence is null)
+            {
+                sequence = new InvoiceSequence { TenantId = tenant, NextNumber = 2 };
+                payment.InvoiceNumber = 1;
+                db.InvoiceSequences.Add(sequence);
+            }
+            else { payment.InvoiceNumber = sequence.NextNumber; sequence.NextNumber++; }
+            try { await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); }
+            catch (DbUpdateException) { if (tx is not null) await tx.RollbackAsync(ct); return Conflict("Invoice allocation raced. Retry the request."); }
+        }
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers.ContentDisposition = $"attachment; filename=\"invoice-{payment.InvoiceNumber:D8}.pdf\"";
+        var tenantInfo = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == tenant, ct);
+        var pdf = InvoicePdf.Create(new[] { "CoachPulse receipt", $"Invoice: {payment.InvoiceNumber:D8}", $"Date: {payment.CreatedAt:yyyy-MM-dd}",
+            $"Tenant: {tenantInfo?.Name ?? "Fitness provider"}", $"Plan: {payment.Subscription.Plan.Name}", $"Amount paid: {payment.Amount:0.00} {payment.Currency}", "Status: Paid" });
+        return File(pdf, "application/pdf");
+    }
+
     [HttpGet("~/api/my/payments"),Authorize(Policy="ClientOnly")]
     public async Task<IActionResult> MyPayments(CancellationToken ct){if(!Identity(out var tenant,out var user,out _))return Unauthorized();return Ok(await db.Payments.AsNoTracking().Where(x=>x.TenantId==tenant&&x.Subscription.Client.UserId==user).OrderByDescending(x=>x.CreatedAt).Select(x=>PaymentDto(x)).ToListAsync(ct));}
     [HttpGet("~/api/my/payments/{id:guid}"),Authorize(Policy="ClientOnly")]
@@ -115,3 +188,20 @@ public sealed record CreatePaymentRequest(Guid PlanId, decimal Amount=0m);
 public sealed record InstaPaySubmitRequest(Guid SubscriptionId, string ReferenceNumber, Guid ReceiptFileId, decimal Amount);
 public sealed record RejectPaymentRequest(string Reason);
 public sealed record RefundRequest(decimal Amount,string? Reason);
+public sealed record ManualPaymentRequest(Guid SubscriptionId, decimal Amount);
+
+internal static class InvoicePdf
+{
+    public static byte[] Create(IEnumerable<string> lines)
+    {
+        static string Safe(string value) => new string(value.Select(c => c is >= ' ' and <= '~' ? c : '?').ToArray()).Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+        var text = "BT /F1 12 Tf 50 790 Td " + string.Join(" T* ", lines.Select(x => $"({Safe(x)}) Tj")) + " ET";
+        var objects = new[] { "<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>", $"<< /Length {Encoding.ASCII.GetByteCount(text)} >>\nstream\n{text}\nendstream" };
+        var output = new StringBuilder("%PDF-1.4\n"); var offsets = new List<int> { 0 };
+        for (var i = 0; i < objects.Length; i++) { offsets.Add(Encoding.ASCII.GetByteCount(output.ToString())); output.Append($"{i + 1} 0 obj\n{objects[i]}\nendobj\n"); }
+        var xref = Encoding.ASCII.GetByteCount(output.ToString()); output.Append($"xref\n0 {objects.Length + 1}\n0000000000 65535 f \n");
+        foreach (var offset in offsets.Skip(1)) output.Append($"{offset:D10} 00000 n \n");
+        output.Append($"trailer\n<< /Size {objects.Length + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF");
+        return Encoding.ASCII.GetBytes(output.ToString());
+    }
+}

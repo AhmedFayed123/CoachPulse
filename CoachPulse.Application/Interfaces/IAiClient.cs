@@ -10,6 +10,7 @@ public interface IAiClient
     Task<AiChurnBatchResponse> PredictChurnBatchAsync(IReadOnlyList<AiChurnRequest> requests, CancellationToken cancellationToken);
     Task<AiModelInfo> GetModelInfoAsync(CancellationToken cancellationToken);
     Task<bool> IsReadyAsync(CancellationToken cancellationToken);
+    Task<AiProgressSummary> CreateProgressSummaryAsync(AiProgressSummaryInput request, CancellationToken cancellationToken);
 }
 
 public interface IChurnFeatureBuilder

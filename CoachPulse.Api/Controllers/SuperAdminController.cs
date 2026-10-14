@@ -141,6 +141,55 @@ public class SuperAdminController : ControllerBase
         e.IsDeleted = true; await _context.SaveChangesAsync(ct); return NoContent();
     }
 
+    [HttpPost("exercises/import"), RequestSizeLimit(2_097_152)]
+    public async Task<IActionResult> ImportExercises([FromForm] IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length is <= 0 or > 2_097_152) return UnprocessableEntity("CSV must be between 1 byte and 2 MB.");
+        var rejected = new List<object>(); var exercises = new List<CoachPulse.Domain.Entities.Exercise>();
+        using var reader = new StreamReader(file.OpenReadStream());
+        var header = await reader.ReadLineAsync(ct);
+        if (header is null || !ParseCsv(header).SequenceEqual(new[] { "name", "muscleGroup", "equipment", "videoUrl" }, StringComparer.OrdinalIgnoreCase))
+            return UnprocessableEntity("CSV header must be name,muscleGroup,equipment,videoUrl.");
+        var rowNumber = 1;
+        while (await reader.ReadLineAsync(ct) is { } line)
+        {
+            rowNumber++;
+            if (rowNumber > 1001) return UnprocessableEntity("CSV is limited to 1000 data rows.");
+            var cells = ParseCsv(line);
+            var error = cells.Count != 4 ? "Expected exactly four columns." : null;
+            var name = cells.ElementAtOrDefault(0)?.Trim() ?? ""; var muscle = cells.ElementAtOrDefault(1)?.Trim() ?? "";
+            var equipment = cells.ElementAtOrDefault(2)?.Trim(); var video = cells.ElementAtOrDefault(3)?.Trim();
+            if (error is null && (name.Length is 0 or > 200 || muscle.Length is 0 or > 100 || (equipment?.Length ?? 0) > 100)) error = "Name, muscle group, or equipment length is invalid.";
+            if (error is null && !string.IsNullOrEmpty(video) && (!Uri.TryCreate(video, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) error = "Video URL must use HTTP or HTTPS.";
+            if (error is not null) { rejected.Add(new { row = rowNumber, value = CsvSafe(name), error }); continue; }
+            exercises.Add(new CoachPulse.Domain.Entities.Exercise { Id = Guid.NewGuid(), TenantId = null, Name = name, MuscleGroup = muscle, Equipment = string.IsNullOrWhiteSpace(equipment) ? null : equipment, VideoUrl = string.IsNullOrWhiteSpace(video) ? null : video });
+        }
+        if (exercises.Count > 0)
+        {
+            await using var tx = _context.Database.IsRelational() ? await _context.Database.BeginTransactionAsync(ct) : null;
+            _context.Exercises.AddRange(exercises);
+            try { await _context.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); }
+            catch (DbUpdateException) { if (tx is not null) await tx.RollbackAsync(ct); return Conflict("Exercise import failed; no rows were committed."); }
+        }
+        return Ok(new { accepted = exercises.Count, rejected = rejected.Count, rejectedRows = rejected });
+    }
+
+    private static string CsvSafe(string value) => value.Length > 0 && value[0] is '=' or '+' or '-' or '@' ? "'" + value : value;
+    private static List<string> ParseCsv(string line)
+    {
+        var cells = new List<string>(); var cell = new System.Text.StringBuilder(); var quoted = false;
+        for (var i = 0; i < line.Length; i++)
+        {
+            var c = line[i];
+            if (c == '"' && quoted && i + 1 < line.Length && line[i + 1] == '"') { cell.Append('"'); i++; }
+            else if (c == '"') quoted = !quoted;
+            else if (c == ',' && !quoted) { cells.Add(cell.ToString()); cell.Clear(); }
+            else cell.Append(c);
+        }
+        if (quoted) return [];
+        cells.Add(cell.ToString()); return cells;
+    }
+
     [HttpGet("tenants")]
     public async Task<IActionResult> GetTenants()
     {

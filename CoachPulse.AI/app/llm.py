@@ -23,6 +23,9 @@ class FakeLLMClient(LLMClient):
         return True
 
     def complete(self, system_prompt: str, user_data: dict) -> str:
+        if "Summarize fitness progress" in system_prompt:
+            language = user_data.get("language", "en")
+            return json.dumps({"summary": "Progress summary" if language == "en" else "ملخص التقدم", "highlights": [], "recommendations": []}, ensure_ascii=False)
         allowed_fields = set(GenerateProgramRequest.model_fields)
         req = GenerateProgramRequest.model_validate({key: value for key, value in user_data.items() if key in allowed_fields})
         exercise = req.availableExercises[0]

@@ -34,6 +34,7 @@ namespace CoachPulse.Domain.Entities
         public string? ReferenceNumber { get; set; }
         public Guid? ReceiptFileId { get; set; }
         public string? RejectionReason { get; set; }
+        public int? InvoiceNumber { get; set; }
         public byte[] Version { get; set; } = Guid.NewGuid().ToByteArray();
 
         public Subscription Subscription { get; set; } = null!;

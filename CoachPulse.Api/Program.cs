@@ -38,7 +38,12 @@ namespace CoachPulse.Api
             builder.Services.AddControllers();
             builder.Services.AddMemoryCache();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSignalR();
+            builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 64 * 1024);
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+            builder.Services.AddCors(options => options.AddPolicy("ConfiguredOrigins", policy =>
+            {
+                if (allowedOrigins.Length > 0) policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+            }));
             builder.Services.AddHttpClient("python-ai", client => client.Timeout = TimeSpan.FromSeconds(10));
             builder.Services.AddHttpClient("ai-generation", client => { client.BaseAddress = new Uri(builder.Configuration["Ai:BaseUrl"] ?? builder.Configuration["PythonAi:BaseUrl"] ?? "http://127.0.0.1:8000/"); client.Timeout = TimeSpan.FromSeconds(60); });
             builder.Services.AddHttpClient("ai-churn", client => { client.BaseAddress = new Uri(builder.Configuration["Ai:BaseUrl"] ?? builder.Configuration["PythonAi:BaseUrl"] ?? "http://127.0.0.1:8000/"); client.Timeout = TimeSpan.FromSeconds(10); });
@@ -47,6 +52,9 @@ namespace CoachPulse.Api
             builder.Services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                    RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
                 options.AddFixedWindowLimiter("paymob-webhook", limiter =>
                 {
                     limiter.PermitLimit = 100;
@@ -68,7 +76,7 @@ namespace CoachPulse.Api
                         }));
                 options.AddPolicy("auth-login", context =>
                     RateLimitPartition.GetFixedWindowLimiter(
-                        $"{context.Connection.RemoteIpAddress}|{context.Request.Headers["X-Login-Email"]}",
+                        $"{context.Connection.RemoteIpAddress}|{context.Items["LoginRateLimitEmail"]}",
                         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
                 options.AddPolicy("auth-register", context =>
                     RateLimitPartition.GetFixedWindowLimiter(
@@ -120,6 +128,11 @@ namespace CoachPulse.Api
 
             var jwtKey = builder.Configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException("JWT Key is missing.");
+            if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+                throw new InvalidOperationException("JWT Key must contain at least 32 UTF-8 bytes and be supplied through a secret store or environment variable.");
+            var accessTokenMinutes = builder.Configuration.GetValue("Jwt:AccessTokenMinutes", 15);
+            if (accessTokenMinutes is < 5 or > 30)
+                throw new InvalidOperationException("Jwt:AccessTokenMinutes must be between 5 and 30 minutes.");
 
             var jwtIssuer = builder.Configuration["Jwt:Issuer"]
                 ?? throw new InvalidOperationException("JWT Issuer is missing.");
@@ -208,7 +221,7 @@ namespace CoachPulse.Api
                 var context = services.GetRequiredService<CoachPulseDbContext>();
                 var passwordHasher = services.GetRequiredService<IPasswordHasher>();
 
-                await DbSeeder.SeedAsync(context, passwordHasher);
+                await DbSeeder.SeedAsync(context, passwordHasher, app.Configuration);
 
                 // جدولة المهمة الخلفية عبر Hangfire
                 var recurringJobManager = services.GetRequiredService<IRecurringJobManager>();
@@ -227,6 +240,7 @@ namespace CoachPulse.Api
                 recurringJobManager.AddOrUpdate<ChurnScoringJob>("churn-scoring-nightly", job => job.RunAsync(CancellationToken.None), Cron.Daily);
                 recurringJobManager.AddOrUpdate<CheckInReminderJob>("check-in-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
                 recurringJobManager.AddOrUpdate<CleanupReadNotificationsJob>("cleanup-read-notifications-weekly", job => job.CleanupAsync(CancellationToken.None), Cron.Weekly);
+                recurringJobManager.AddOrUpdate<GenerateUserDataExportJob>("cleanup-data-exports-daily", job => job.CleanupAsync(CancellationToken.None), Cron.Daily);
             }
 
             if (app.Environment.IsDevelopment())
@@ -236,11 +250,35 @@ namespace CoachPulse.Api
             }
 
             // تفعيل Hangfire Dashboard
+            if (app.Environment.IsProduction())
+            {
+                app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    context.Response.ContentType = "application/problem+json";
+                    await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails { Status = 500, Title = "An unexpected error occurred." });
+                }));
+                app.UseHsts();
+            }
             app.UseHttpsRedirection();
+            app.Use(async (context, next) =>
+            {
+                context.Response.OnStarting(() =>
+                {
+                    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                    context.Response.Headers["X-Frame-Options"] = "DENY";
+                    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+                    return Task.CompletedTask;
+                });
+                await next();
+            });
+            app.UseCors("ConfiguredOrigins");
 
             app.UseMiddleware<RouteDeprecationMiddleware>();
 
             app.UseAuthentication();
+
+            app.UseMiddleware<LoginRateLimitKeyMiddleware>();
 
             app.UseRateLimiter();
 
@@ -298,7 +336,3 @@ namespace CoachPulse.Api
         }
     }
 }
-
-
-//"email": "coach1@test.com",
-//  "password": "Coach@12345"

@@ -105,6 +105,30 @@ public sealed class SubscriptionPaymentCoreTests
         Assert.IsType<NotFoundResult>(await controller.Status(f.Payment.Id,CancellationToken.None));
     }
 
+    [Fact]
+    public async Task ManualCashPayment_RequiresIdempotencyAndActivatesOnce()
+    {
+        await using var f=await PaymentFixture.Create(UserRole.Owner);var controller=f.Controller();f.Http.Request.Headers["Idempotency-Key"]="cash-once";
+        var request=new ManualPaymentRequest(f.Subscription.Id,125m);
+        var first=Assert.IsType<ObjectResult>(await controller.RegisterManualPayment(request,CancellationToken.None));Assert.Equal(201,first.StatusCode);
+        var replay=Assert.IsType<ContentResult>(await controller.RegisterManualPayment(request,CancellationToken.None));Assert.Equal(201,replay.StatusCode);
+        Assert.Equal(SubscriptionStatus.Active,f.Subscription.Status);
+        Assert.Single(await f.Db.Payments.Where(x=>x.Method==PaymentMethod.Cash).ToListAsync());
+        Assert.Single(await f.Db.SecurityAuditLogs.Where(x=>x.EventType=="payment.manual.confirmed").ToListAsync());
+    }
+
+    [Fact]
+    public async Task Invoice_ConfirmedOnlyOwnedAndSequentialPerTenant()
+    {
+        await using var f=await PaymentFixture.Create(UserRole.Client);var controller=f.Controller();
+        Assert.IsType<ConflictObjectResult>(await controller.Invoice(f.Payment.Id,CancellationToken.None));
+        f.Payment.Status=PaymentStatus.Confirmed;await f.Db.SaveChangesAsync();
+        var first=Assert.IsType<FileContentResult>(await controller.Invoice(f.Payment.Id,CancellationToken.None));
+        var second=Assert.IsType<FileContentResult>(await controller.Invoice(f.Payment.Id,CancellationToken.None));
+        Assert.Equal("application/pdf",first.ContentType);Assert.StartsWith("%PDF-1.4",System.Text.Encoding.ASCII.GetString(first.FileContents));
+        Assert.Equal(first.FileDownloadName,second.FileDownloadName);var sequence=await f.Db.InvoiceSequences.SingleAsync(x=>x.TenantId==f.TenantId);Assert.Equal(2,sequence.NextNumber);
+    }
+
     private sealed class TenantState : ICurrentTenantService
     {
         public Guid? TenantId { get; private set; }
