@@ -8,7 +8,7 @@ CoachPulse is a multi-tenant coaching platform for client onboarding, training a
 
 | Coach workspace | Client workspace | SuperAdmin |
 |---|---|---|
-| _Screenshot placeholder_ | _Screenshot placeholder_ | _Screenshot placeholder_ |
+| ![Coach workspace](docs/screenshots/coach-workspace.png) | ![Client workspace](docs/screenshots/client-workspace.png) | ![SuperAdmin dashboard](docs/screenshots/superadmin-dashboard.png) |
 
 ## Features by role
 
