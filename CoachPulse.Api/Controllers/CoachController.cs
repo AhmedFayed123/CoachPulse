@@ -1,6 +1,7 @@
-﻿
+
 using CoachPulse.Application.DTOs.Auth;
 using CoachPulse.Application.DTOs.Coach;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
@@ -122,7 +123,8 @@ public class CoachController : ControllerBase
         _context.ClientInvitations.Add(invitation);
 
         await _context.SaveChangesAsync();
-        await _emailSender.SendAsync(email, "Client invitation", $"Use this invitation token to register: {rawToken}", HttpContext.RequestAborted);
+        await _emailSender.SendTemplateAsync(email, EmailTemplateType.ClientInvitation, tenant.DefaultLanguage,
+            new Dictionary<string, string> { ["token"] = rawToken, ["name"] = request.Name ?? string.Empty }, HttpContext.RequestAborted);
 
         return Ok(new
         {
@@ -137,18 +139,21 @@ public class CoachController : ControllerBase
     }
     [HttpGet("clients")]
     [Obsolete("Use GET /api/clients.")]
-    public async Task<IActionResult> GetClients([FromQuery] string? status = null, [FromQuery] Guid? coachId = null, [FromQuery] string? search = null, [FromQuery] string? riskLevel = null)
+    [ProducesResponseType(typeof(PagedResult<ClientListItem>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetClients([FromQuery] string? status = null, [FromQuery] Guid? coachId = null, [FromQuery] string? search = null, [FromQuery] string? riskLevel = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         if (Request.Path == "/api/coach/clients")
             RouteDeprecation.AddHeaders(Response, "/api/clients");
-        return await GetClientsCore(status, coachId, search, riskLevel);
+        return await GetClientsCore(status, coachId, search, riskLevel, page, pageSize);
     }
 
     [HttpGet("~/api/clients")]
-    public Task<IActionResult> GetClientsCanonical([FromQuery] string? status = null, [FromQuery] Guid? coachId = null, [FromQuery] string? search = null, [FromQuery] string? riskLevel = null) => GetClientsCore(status, coachId, search, riskLevel);
+    [ProducesResponseType(typeof(PagedResult<ClientListItem>), StatusCodes.Status200OK)]
+    public Task<IActionResult> GetClientsCanonical([FromQuery] string? status = null, [FromQuery] Guid? coachId = null, [FromQuery] string? search = null, [FromQuery] string? riskLevel = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20) => GetClientsCore(status, coachId, search, riskLevel, page, pageSize);
 
-    private async Task<IActionResult> GetClientsCore(string? status, Guid? coachId, string? search, string? riskLevel)
+    private async Task<IActionResult> GetClientsCore(string? status, Guid? coachId, string? search, string? riskLevel, int page, int pageSize)
     {
+        if (page < 1 || pageSize is < 1 or > 100) return UnprocessableEntity("page must be at least 1 and pageSize must be between 1 and 100.");
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         var tenantIdClaim = User.FindFirst("tenantId");
         var roleClaim = User.FindFirst(ClaimTypes.Role);
@@ -162,7 +167,7 @@ public class CoachController : ControllerBase
             return Unauthorized("Invalid user or tenant information.");
         }
 
-        if (!Enum.TryParse<UserRole>(roleClaim.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff))
+        if (!Enum.TryParse<UserRole>(roleClaim.Value, out var role) || role is not (UserRole.TenantOwner or UserRole.CoachStaff))
         {
             return Forbid();
         }
@@ -195,20 +200,16 @@ public class CoachController : ControllerBase
             else query = query.Where(x => _context.ChurnRiskLogs.Any(r => r.ClientId == x.Id) && _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => r.RiskScore).FirstOrDefault() < 0.4m);
         }
 
+        var totalCount = await query.CountAsync();
         var clients = await query
             .OrderBy(x => x.User!.Email)
-            .Select(x => new
-            {
-                x.Id,
-                x.UserId,
-                Email = x.User!.Email,
-                x.CoachId,
-                x.Goals,
-                x.Status
-            })
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new ClientListItem(x.Id, x.UserId, x.User!.Name, x.User.Email, x.CoachId, x.Goals, x.Status,
+                _context.ChurnRiskLogs.Where(r => r.ClientId == x.Id).OrderByDescending(r => r.ComputedAt).Select(r => (string?)r.RiskLevel).FirstOrDefault()))
             .ToListAsync();
 
-        return Ok(clients);
+        return Ok(PagedResult<ClientListItem>.Create(clients, page, pageSize, totalCount));
     }
     [HttpPost("programs")]
     [Obsolete("Use POST /api/programs.")]
@@ -243,15 +244,15 @@ public class CoachController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Title))
             return BadRequest("Program title is required.");
 
-        if (roleClaim.Value is not ("Owner" or "Staff")) return Forbid();
+        if (roleClaim.Value is not ("TenantOwner" or "CoachStaff")) return Forbid();
         if (request.DurationDays is < 1 or > 365) return UnprocessableEntity("DurationDays must be between 1 and 365.");
         Client? client = null;
-        if (!request.IsTemplate)
+        if (!request.IsTemplate && request.ClientId.HasValue)
         {
-            if (request.ClientId is null || request.ClientId == Guid.Empty) return BadRequest("ClientId is required.");
+            if (request.ClientId == Guid.Empty) return BadRequest("ClientId must be a valid identifier.");
             client = await _context.Clients.FirstOrDefaultAsync(x => x.Id == request.ClientId && x.TenantId == tenantId);
             if (client is null) return NotFound("Client not found.");
-            if (roleClaim.Value == UserRole.Staff.ToString() && client.CoachId != userId) return NotFound();
+            if (roleClaim.Value == UserRole.CoachStaff.ToString() && client.CoachId != userId) return NotFound();
         }
 
         var program = new CoachPulse.Domain.Entities.Program
@@ -319,12 +320,12 @@ public class CoachController : ControllerBase
             .AsNoTracking()
             .Where(x => x.TenantId == tenantId);
 
-        if (roleClaim.Value == UserRole.Staff.ToString())
+        if (roleClaim.Value == UserRole.CoachStaff.ToString())
         {
             query = query.Where(x => x.IsTemplate || (x.ClientId == null && x.CoachId == userId) ||
                 (x.ClientId != null && _context.Clients.Any(c => c.Id == x.ClientId && c.CoachId == userId)));
         }
-        else if (roleClaim.Value != UserRole.Owner.ToString())
+        else if (roleClaim.Value != UserRole.TenantOwner.ToString())
         {
             return Forbid();
         }
@@ -486,7 +487,7 @@ public class CoachController : ControllerBase
         if (request.Day > program.DurationDays) return UnprocessableEntity("Day must be within the program duration.");
 
         // Staff can manage only their own programs.
-        if (role == "Staff" && !program.IsTemplate && (program.ClientId is not Guid assignedClient || !await _context.Clients.AnyAsync(c => c.Id == assignedClient && c.CoachId == userId && c.TenantId == tenantId)))
+        if (role == "CoachStaff" && !program.IsTemplate && (program.ClientId is not Guid assignedClient || !await _context.Clients.AnyAsync(c => c.Id == assignedClient && c.CoachId == userId && c.TenantId == tenantId)))
         {
             return NotFound();
         }
@@ -569,7 +570,7 @@ public class CoachController : ControllerBase
             return NotFound(new { message = "Program not found." });
         }
 
-        if (role == "Staff" && !program.IsTemplate && (program.ClientId is not Guid assignedClient || !await _context.Clients.AnyAsync(c => c.Id == assignedClient && c.CoachId == userId && c.TenantId == tenantId)))
+        if (role == "CoachStaff" && !program.IsTemplate && (program.ClientId is not Guid assignedClient || !await _context.Clients.AnyAsync(c => c.Id == assignedClient && c.CoachId == userId && c.TenantId == tenantId)))
         {
             return NotFound();
         }
@@ -615,7 +616,7 @@ public class CoachController : ControllerBase
         if (!Guid.TryParse(userId, out var coachId) || !Guid.TryParse(tenantId, out var tid)) return Unauthorized();
         var source = await _context.Programs.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tid && !p.IsTemplate);
         if (source is null) return NotFound();
-        if (User.FindFirstValue(ClaimTypes.Role) == UserRole.Staff.ToString() &&
+        if (User.FindFirstValue(ClaimTypes.Role) == UserRole.CoachStaff.ToString() &&
             (source.ClientId is Guid cid ? !await _context.Clients.AnyAsync(c => c.Id == cid && c.CoachId == coachId && c.TenantId == tid) : source.CoachId != coachId)) return NotFound();
         var template = new CoachPulse.Domain.Entities.Program { Id = Guid.NewGuid(), TenantId = tid, CoachId = coachId, Title = string.IsNullOrWhiteSpace(title) ? source.Title : title.Trim(), IsTemplate = true, Status = "Draft", DurationDays = source.DurationDays };
         _context.Programs.Add(template);
@@ -648,8 +649,8 @@ public class CoachController : ControllerBase
             });
         }
 
-        if (role != UserRole.Owner.ToString() &&
-            role != UserRole.Staff.ToString())
+        if (role != UserRole.TenantOwner.ToString() &&
+            role != UserRole.CoachStaff.ToString())
         {
             return Forbid();
         }
@@ -713,7 +714,7 @@ public class CoachController : ControllerBase
                 p.IsTemplate &&
                 p.ClientId == null);
 
-        if (role != UserRole.Staff.ToString() && role != UserRole.Owner.ToString())
+        if (role != UserRole.CoachStaff.ToString() && role != UserRole.TenantOwner.ToString())
         {
             return Forbid();
         }
@@ -770,8 +771,8 @@ public class CoachController : ControllerBase
             });
         }
 
-        if (role != UserRole.Owner.ToString() &&
-            role != UserRole.Staff.ToString())
+        if (role != UserRole.TenantOwner.ToString() &&
+            role != UserRole.CoachStaff.ToString())
         {
             return Forbid();
         }
@@ -806,7 +807,7 @@ public class CoachController : ControllerBase
         }
 
         // Staff can only create programs for their own clients.
-        if (role == UserRole.Staff.ToString() &&
+        if (role == UserRole.CoachStaff.ToString() &&
             client.CoachId != userId)
         {
             return NotFound();

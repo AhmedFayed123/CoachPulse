@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using CoachPulse.Api.Infrastructure;
 using CoachPulse.Application.DTOs.Clients;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
@@ -62,7 +63,7 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
         var client = await Visible(tenant, user, role).AsNoTracking().Where(x => x.Id == id).Select(x => new { x.Id, Email = x.User!.Email }).FirstOrDefaultAsync();
         if (client is null) return NotFound();
         var program = await db.Programs.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id && !x.IsTemplate).OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.CoachId, x.CreatedAt }).FirstOrDefaultAsync();
-        var subscription = await db.Subscriptions.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.EndDate).Select(x => new { x.Id, x.Status, x.StartDate, x.EndDate, x.Plan.Name, x.Plan.Price }).FirstOrDefaultAsync();
+        var subscription = await db.Subscriptions.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.EndDate).Select(x => new { x.Id, x.Status, x.StartDate, x.EndDate, x.RemainingDays, x.SnapshotPrice, x.SnapshotDurationDays, PlanName = x.Plan.Name }).FirstOrDefaultAsync();
         var checkIn = await db.CheckIns.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.Date).Select(x => new { x.Id, x.Date, x.Weight }).FirstOrDefaultAsync();
         var churn = await db.ChurnRiskLogs.AsNoTracking().Where(x => x.TenantId == tenant && x.ClientId == id).OrderByDescending(x => x.ComputedAt).Select(x => new { x.RiskScore, x.RiskLevel, x.ComputedAt }).FirstOrDefaultAsync();
         return Ok(new { client.Id, client.Email, CurrentProgram = program, Subscription = subscription, LatestCheckIn = checkIn, ChurnRisk = churn });
@@ -73,10 +74,10 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
     public async Task<IActionResult> AssignCoach(Guid id, AssignCoachRequest request)
     {
         if (!TryScope(out var tenant, out var user, out var role)) return Unauthorized();
-        if (role != UserRole.Owner) return Forbid();
+        if (role != UserRole.TenantOwner) return Forbid();
         var client = await Visible(tenant, user, role).FirstOrDefaultAsync(x => x.Id == id);
         if (client is null) return NotFound();
-        var coach = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == request.CoachId && x.TenantId == tenant && !x.IsDeleted && (x.Role == UserRole.Owner || x.Role == UserRole.Staff));
+        var coach = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == request.CoachId && x.TenantId == tenant && x.IsActive && !x.IsDeleted && (x.Role == UserRole.TenantOwner || x.Role == UserRole.CoachStaff));
         if (coach is null) return BadRequest("Coach must be active and belong to this tenant.");
         client.CoachId = coach.Id; await db.SaveChangesAsync(); return NoContent();
     }
@@ -134,7 +135,7 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
         if (!await Visible(tenant, user, role).AnyAsync(x => x.Id == id)) return NotFound();
         var note = await db.Set<ClientNote>().FirstOrDefaultAsync(x => x.Id == noteId && x.ClientId == id && x.TenantId == tenant);
         if (note is null) return NotFound();
-        if (role != UserRole.Owner && note.AuthorUserId != user) return Forbid();
+        if (role != UserRole.TenantOwner && note.AuthorUserId != user) return Forbid();
         db.Remove(note); await db.SaveChangesAsync(); return NoContent();
     }
 
@@ -155,8 +156,8 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
     {
         if (!TryScope(out var tenant, out var user, out var role)) return Unauthorized();
         var query = db.ClientInvitations.IgnoreQueryFilters().Where(x => x.TenantId == tenant);
-        if (role == UserRole.Staff) query = query.Where(x => x.CoachId == user);
-        else if (role != UserRole.Owner) return Forbid();
+        if (role == UserRole.CoachStaff) query = query.Where(x => x.CoachId == user);
+        else if (role != UserRole.TenantOwner) return Forbid();
         var now = DateTime.UtcNow;
         var items = await query.OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Email, x.CoachId, x.CreatedAt, x.ExpiresAt, x.AcceptedAt, Status = x.AcceptedAt != null ? "Accepted" : x.ExpiresAt <= now ? "Expired" : "Pending" }).ToListAsync();
         return Ok(items);
@@ -168,14 +169,16 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
     {
         if (!TryScope(out var tenant, out var user, out var role)) return Unauthorized();
         var query = db.ClientInvitations.IgnoreQueryFilters().Where(x => x.TenantId == tenant && x.Id == id);
-        if (role == UserRole.Staff) query = query.Where(x => x.CoachId == user);
-        else if (role != UserRole.Owner) return Forbid();
+        if (role == UserRole.CoachStaff) query = query.Where(x => x.CoachId == user);
+        else if (role != UserRole.TenantOwner) return Forbid();
         var invitation = await query.FirstOrDefaultAsync(); if (invitation is null) return NotFound();
         if (invitation.AcceptedAt.HasValue) return Conflict("Accepted invitations cannot be resent.");
         var token = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
         invitation.TokenHash = Hash(token); invitation.CreatedAt = DateTime.UtcNow; invitation.ExpiresAt = DateTime.UtcNow.AddHours(24);
         await db.SaveChangesAsync();
-        await emailSender.SendAsync(invitation.Email, "Client invitation", $"Use this invitation token to register: {token}", HttpContext.RequestAborted);
+        var tenantLanguage = await db.Tenants.Where(x => x.Id == tenant).Select(x => x.DefaultLanguage).FirstOrDefaultAsync() ?? "en";
+        await emailSender.SendTemplateAsync(invitation.Email, EmailTemplateType.ClientInvitation, tenantLanguage,
+            new Dictionary<string, string> { ["token"] = token, ["name"] = invitation.InvitedName ?? string.Empty }, HttpContext.RequestAborted);
         return Ok(new { invitation.Id, invitation.Email, invitation.ExpiresAt, InvitationToken = environment.IsDevelopment() ? token : null });
     }
 
@@ -185,8 +188,8 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
     {
         if (!TryScope(out var tenant, out var user, out var role)) return Unauthorized();
         var query = db.ClientInvitations.IgnoreQueryFilters().Where(x => x.TenantId == tenant && x.Id == id);
-        if (role == UserRole.Staff) query = query.Where(x => x.CoachId == user);
-        else if (role != UserRole.Owner) return Forbid();
+        if (role == UserRole.CoachStaff) query = query.Where(x => x.CoachId == user);
+        else if (role != UserRole.TenantOwner) return Forbid();
         var invitation = await query.FirstOrDefaultAsync(); if (invitation is null) return NotFound();
         if (invitation.AcceptedAt.HasValue || invitation.ExpiresAt <= DateTime.UtcNow) return Conflict("Only pending invitations can be deleted.");
         db.Remove(invitation); await db.SaveChangesAsync(); return NoContent();

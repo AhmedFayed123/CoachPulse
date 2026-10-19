@@ -1,4 +1,4 @@
-﻿using CoachPulse.Api.Models;
+using CoachPulse.Api.Models;
 using CoachPulse.Application.DTOs.Coach;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Entities;
@@ -38,7 +38,7 @@ namespace CoachPulse.Api.Controllers
             if (!TryGetIdentity(out var userId, out var tenantId))
                 return Unauthorized();
 
-            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff))
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.TenantOwner or UserRole.CoachStaff))
             {
                 return Forbid();
             }
@@ -276,12 +276,12 @@ namespace CoachPulse.Api.Controllers
         public async Task<IActionResult> GetClientCheckIn(Guid id, Guid checkInId, CancellationToken ct)
         {
             if (!TryGetIdentity(out var userId, out var tenantId)) return Unauthorized();
-            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff)) return Forbid();
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.TenantOwner or UserRole.CoachStaff)) return Forbid();
             var c = await _clientAccess.VisibleClients(tenantId, userId, role).Where(x => x.Id == id).Select(x => x.Id).FirstOrDefaultAsync(ct);
             if (c == Guid.Empty) return NotFound();
             var item = await _context.CheckIns.AsNoTracking().Where(x => x.Id == checkInId && x.ClientId == id && !x.IsDeleted).Select(x => new { x.Id, x.ClientId, x.Date, x.Weight, x.Measurements, x.CoachFeedback, x.ReviewedAt }).FirstOrDefaultAsync(ct);
             if (item is null) return NotFound();
-            if (role == UserRole.Owner) { _context.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = "chat.checkin.read", Identifier = $"client={id};checkin={checkInId}", CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(ct); }
+            if (role == UserRole.TenantOwner) { _context.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = "chat.checkin.read", Identifier = $"client={id};checkin={checkInId}", CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(ct); }
             return Ok(item);
         }
 
@@ -301,11 +301,11 @@ namespace CoachPulse.Api.Controllers
 
         [HttpGet("checkins/pending-review")]
         [Authorize(Policy = "CoachOnly")]
-        public async Task<IActionResult> PendingReview([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default)
+        public async Task<IActionResult> PendingReview([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
         {
             if (!TryGetIdentity(out var userId, out var tenantId)) return Unauthorized();
             if (page < 1 || pageSize is < 1 or > 100) return UnprocessableEntity();
-            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff)) return Forbid();
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.TenantOwner or UserRole.CoachStaff)) return Forbid();
             var q = from c in _context.CheckIns where c.TenantId == tenantId && c.ReviewedAt == null && !c.IsDeleted join cl in _clientAccess.VisibleClients(tenantId,userId,role) on c.ClientId equals cl.Id select new { c.Id, c.ClientId, ClientName = c.Client.User.Name, c.Date, c.Weight };
             var total = await q.CountAsync(ct); var rows = await q.OrderBy(x => x.Date).Skip((page-1)*pageSize).Take(pageSize).ToListAsync(ct); return Ok(new { page, pageSize, total, items = rows });
         }
@@ -596,7 +596,7 @@ namespace CoachPulse.Api.Controllers
             if (!TryGetIdentity(out var userId, out var tenantId))
                 return Unauthorized();
 
-            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.Owner or UserRole.Staff))
+            if (!Enum.TryParse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value, out var role) || role is not (UserRole.TenantOwner or UserRole.CoachStaff))
                 return Forbid();
 
             var client = await _clientAccess.VisibleClients(tenantId, userId, role)

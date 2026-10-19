@@ -16,6 +16,19 @@ public sealed class PublicController(CoachPulseDbContext db, IMemoryCache cache)
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase) { "admin", "api", "hangfire", "hubs", "superadmin", "www", "app", "login", "register", "health", "healthz", "readyz", "root", "support", "static", "assets" };
     public static bool IsValidSlug(string? slug) => slug is { Length: >= 3 and <= 30 } && Regex.IsMatch(slug, "^[a-z0-9]+(?:-[a-z0-9]+)*$") && !Reserved.Contains(slug);
 
+    [HttpGet("tenants")]
+    [EnableRateLimiting("public-slug")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
+    public async Task<IActionResult> Tenants(CancellationToken ct)
+    {
+        var tenants = await db.Tenants.AsNoTracking()
+            .Where(x => x.Status == "Active" && !x.IsDeleted && !x.Slug.StartsWith("e2e-"))
+            .OrderBy(x => x.Name)
+            .Select(x => new { x.Name, x.Slug, x.LogoUrl })
+            .ToListAsync(ct);
+        return Ok(tenants);
+    }
+
     [HttpGet("tenants/{slug}")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "slug" })]
     public async Task<IActionResult> Tenant(string slug, CancellationToken ct)

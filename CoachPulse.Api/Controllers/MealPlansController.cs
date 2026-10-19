@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Domain.Entities;
@@ -13,7 +13,7 @@ namespace CoachPulse.Api.Controllers;
 [ApiController,Route("api/meal-plans"),Authorize(Policy="CoachOnly")]
 public sealed class MealPlansController(CoachPulseDbContext db,IClientAccessService access):ControllerBase
 {
- private Guid? Tenant=>Guid.TryParse(User.FindFirstValue("tenantId"),out var x)?x:null;private Guid? UserId=>Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var x)?x:null;private bool Owner=>User.IsInRole("Owner");
+ private Guid? Tenant=>Guid.TryParse(User.FindFirstValue("tenantId"),out var x)?x:null;private Guid? UserId=>Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier),out var x)?x:null;private bool Owner=>User.IsInRole("TenantOwner");
  [HttpGet]
  public async Task<IActionResult> List(CancellationToken ct){if(Tenant is not{}t)return Unauthorized();var plans=await db.MealPlans.AsNoTracking().Where(x=>x.TenantId==t&&(Owner||x.IsTemplate||(x.ClientId!=null&&x.Client!.CoachId==UserId))).ToListAsync(ct);return Ok(plans.Select(View));}
  [HttpPost]

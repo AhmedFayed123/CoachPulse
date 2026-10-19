@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using CoachPulse.Infrastructure.Persistence;
 using CoachPulse.Application.DTOs.Account;
 using CoachPulse.Application.Interfaces;
@@ -102,6 +102,7 @@ public class AccountController : ControllerBase
         if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash)) return BadRequest("Current password is incorrect.");
         if (!PasswordPolicy.IsValid(request.NewPassword)) return BadRequest(PasswordPolicy.Message);
         user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+        user.MustChangePassword = false;
         await RevokeAllRefreshTokens(userId);
         _context.SecurityAuditLogs.Add(new CoachPulse.Domain.Entities.SecurityAuditLog { Id = Guid.NewGuid(), UserId = userId, TenantId = user.TenantId, EventType = "password.changed", IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(), UserAgent = Request.Headers.UserAgent.ToString() });
         await _context.SaveChangesAsync();
@@ -114,7 +115,7 @@ public class AccountController : ControllerBase
         if (!TryUserId(out var userId)) return Unauthorized();
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (user is null) return NotFound("User not found.");
-        if (user.Role == UserRole.Owner && user.TenantId.HasValue)
+        if (user.Role == UserRole.TenantOwner && user.TenantId.HasValue)
         {
             var tenant = await _context.Tenants.FirstOrDefaultAsync(x => x.Id == user.TenantId.Value);
             if (tenant is not null && string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase) &&
@@ -131,6 +132,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("data-export")]
+    [ProducesResponseType(typeof(DataExportAcceptedResponse), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> RequestDataExport(CancellationToken ct)
     {
         if (!TryUserId(out var userId)) return Unauthorized();
@@ -149,18 +152,21 @@ public class AccountController : ControllerBase
         await _context.SaveChangesAsync(ct);
         if (transaction is not null) await transaction.CommitAsync(ct);
         _backgroundJobs.Enqueue<GenerateUserDataExportJob>(job => job.RunAsync(export.Id, CancellationToken.None));
-        return AcceptedAtAction(nameof(DataExportStatus), new { id = export.Id }, new { export.Id, export.Status, downloadToken = token, statusUrl = Url.ActionLink(nameof(DataExportStatus), values: new { id = export.Id }), downloadUrl = Url.ActionLink(nameof(DownloadDataExport), values: new { id = export.Id }) });
+        return AcceptedAtAction(nameof(DataExportStatus), new { id = export.Id }, new DataExportAcceptedResponse(export.Id, export.Status, token, Url.ActionLink(nameof(DataExportStatus), values: new { id = export.Id }), Url.ActionLink(nameof(DownloadDataExport), values: new { id = export.Id })));
     }
 
     [HttpGet("data-export/{id:guid}")]
+    [ProducesResponseType(typeof(DataExportStatusResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> DataExportStatus(Guid id, CancellationToken ct)
     {
         if (!TryUserId(out var userId)) return Unauthorized();
         var export = await _context.DataExportRequests.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
-        return export is null ? NotFound() : Ok(new { export.Id, export.Status, export.CreatedAt, export.ExpiresAt, export.DownloadedAt, export.FailureCode });
+        return export is null ? NotFound() : Ok(new DataExportStatusResponse(export.Id, export.Status, export.CreatedAt, export.ExpiresAt, export.DownloadedAt, export.FailureCode));
     }
 
     [HttpGet("data-export/{id:guid}/download")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> DownloadDataExport(Guid id, [FromQuery] string token, CancellationToken ct)
     {
         if (!TryUserId(out var userId)) return Unauthorized();

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using CoachPulse.Api.Hubs;
 using CoachPulse.Application.Interfaces;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
@@ -12,14 +13,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
+using CoachPulse.Application.DTOs.Payments;
 
 namespace CoachPulse.Api.Controllers;
 
 [ApiController, Route("api/payments"), Authorize]
 public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient paymob, ISubscriptionActivationService activation,
-    ISubscriptionStateMachine states, IHubContext<NotificationsHub> hub, INotificationService? notificationService = null) : ControllerBase
+    ISubscriptionStateMachine states, IHubContext<NotificationsHub> hub, IDataProtectionProvider dataProtectionProvider,
+    INotificationService? notificationService = null) : ControllerBase
 {
+    private readonly IDataProtector _snapshotProtector = dataProtectionProvider.CreateProtector("CoachPulse.Idempotency.ResponseSnapshot.v1");
+
     [HttpPost("paymob/create-intention"), Authorize(Policy="ClientOnly")]
+    [ProducesResponseType(typeof(PaymobCheckoutResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreatePaymobIntention([FromBody] CreatePaymentRequest req,CancellationToken ct)
     {
         if(!Identity(out var tenant,out var user,out _))return Unauthorized();var key=Request.Headers["Idempotency-Key"].ToString();if(string.IsNullOrWhiteSpace(key))return BadRequest("Idempotency-Key is required.");
@@ -29,8 +36,17 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
         var t=await db.Tenants.FirstOrDefaultAsync(x=>x.Id==tenant,ct);if(t is null)return NotFound();if(!t.PaymobEnabled)return Conflict("Paymob is disabled for this tenant.");
         var sub=await db.Subscriptions.FirstOrDefaultAsync(x=>x.TenantId==tenant&&x.ClientId==client.Id&&x.PlanId==plan.Id&&x.Status==SubscriptionStatus.Pending,ct);
         if(sub is null){if(await db.Subscriptions.AnyAsync(x=>x.TenantId==tenant&&x.ClientId==client.Id&&x.PlanId==plan.Id&&x.Status==SubscriptionStatus.Active,ct))return Conflict("An active subscription already exists.");sub=new(){Id=Guid.NewGuid(),TenantId=tenant,ClientId=client.Id,PlanId=plan.Id,Status=SubscriptionStatus.Pending,StartDate=DateTime.UtcNow,EndDate=DateTime.UtcNow,SnapshotPrice=plan.Price,SnapshotDurationDays=plan.DurationDays};db.Subscriptions.Add(sub);}
-        var order=Guid.NewGuid().ToString("N");var payment=new Payment{Id=Guid.NewGuid(),TenantId=tenant,SubscriptionId=sub.Id,Amount=sub.SnapshotPrice,Currency=t.Currency,Method=PaymentMethod.Card,Status=PaymentStatus.Pending,CreatedAt=DateTime.UtcNow};db.Payments.Add(payment);
-        try{var intention=await paymob.CreatePaymentIntentionAsync(payment.Amount,payment.Currency,order,client.User.Email,client.User.Name??"Client","",client.User.Phone??"+200000000000",ct);payment.GatewayReference=intention.OrderId;var result=new{PaymentId=payment.Id,SubscriptionId=sub.Id,CheckoutUrl=intention.ClientSecret,ClientSecret=intention.ClientSecret,PaymentOrderId=intention.OrderId,Amount=payment.Amount,Currency=payment.Currency};SaveKey(key,tenant,user,"paymob.create-intention",req,200,result);await db.SaveChangesAsync(ct);return Ok(result);}catch(HttpRequestException){return StatusCode(502,new{message="Payment provider unavailable."});}
+        var order=Guid.NewGuid().ToString("N");var payment=new Payment{Id=Guid.NewGuid(),TenantId=tenant,SubscriptionId=sub.Id,Amount=sub.SnapshotPrice,Currency=t.Currency,Method=PaymentMethod.Paymob,Status=PaymentStatus.Pending,CreatedAt=DateTime.UtcNow};db.Payments.Add(payment);
+        try
+        {
+            var intention=await paymob.CreatePaymentIntentionAsync(payment.Amount,payment.Currency,order,client.User.Email,client.User.Name??"Client","",client.User.Phone??"+200000000000",ct);
+            payment.GatewayReference=intention.OrderId;
+            var result=new PaymobCheckoutResponse(payment.Id,sub.Id,intention.CheckoutUrl,intention.OrderId,payment.Amount,payment.Currency);
+            SaveKey(key,tenant,user,"paymob.create-intention",req,200,result);
+            await db.SaveChangesAsync(ct);
+            return Ok(result);
+        }
+        catch(HttpRequestException){return StatusCode(502,new{message="Payment provider unavailable."});}
     }
 
     [HttpGet("{id:guid}/status"),Authorize(Policy="ClientOnly")]
@@ -49,7 +65,7 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
         var receipt=await db.StoredFiles.FirstOrDefaultAsync(x=>x.Id==req.ReceiptFileId&&x.TenantId==tenant&&x.OwnerUserId==user&&!x.IsDeleted&&x.Purpose=="receipt",ct);if(receipt is null)return NotFound();
         var p=new Payment{Id=Guid.NewGuid(),TenantId=tenant,SubscriptionId=sub.Id,Amount=req.Amount,Currency=t.Currency,Method=PaymentMethod.InstaPay,Status=PaymentStatus.PendingVerification,ReferenceNumber=req.ReferenceNumber.Trim(),ReceiptFileId=receipt.Id,CreatedAt=DateTime.UtcNow};receipt.LinkedEntityType="PaymentReceipt";receipt.LinkedEntityId=p.Id;db.Payments.Add(p);
         var result=new{p.Id,p.SubscriptionId,p.Amount,p.Currency,p.Status};SaveKey(key,tenant,user,"instapay.submit",req,201,result);try{await db.SaveChangesAsync(ct);}catch(DbUpdateException){return Conflict("Payment reference or idempotency key was already used.");}
-        var owners=await db.Users.IgnoreQueryFilters().Where(x=>x.TenantId==tenant&&x.Role==UserRole.Owner&&!x.IsDeleted).Select(x=>x.Id).ToListAsync(ct);foreach(var owner in owners)await Notify(owner,tenant,"PendingPaymentCreated","تحويل دفع بانتظار المراجعة","يوجد تحويل دفع بانتظار المراجعة.",new{paymentId=p.Id,subscriptionId=p.SubscriptionId,amount=p.Amount,currency=p.Currency},ct);
+        var owners=await db.Users.IgnoreQueryFilters().Where(x=>x.TenantId==tenant&&x.Role==UserRole.TenantOwner&&!x.IsDeleted).Select(x=>x.Id).ToListAsync(ct);foreach(var owner in owners)await Notify(owner,tenant,"PendingPaymentCreated","تحويل دفع بانتظار المراجعة","يوجد تحويل دفع بانتظار المراجعة.",new{paymentId=p.Id,subscriptionId=p.SubscriptionId,amount=p.Amount,currency=p.Currency},ct);
         return StatusCode(201,result);
     }
 
@@ -127,18 +143,23 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
     }
 
     [HttpGet("~/api/my/payments"),Authorize(Policy="ClientOnly")]
+    [ProducesResponseType(typeof(PagedResult<PaymentListItem>), StatusCodes.Status200OK)]
     public async Task<IActionResult> MyPayments(CancellationToken ct){if(!Identity(out var tenant,out var user,out _))return Unauthorized();return Ok(await db.Payments.AsNoTracking().Where(x=>x.TenantId==tenant&&x.Subscription.Client.UserId==user).OrderByDescending(x=>x.CreatedAt).Select(x=>PaymentDto(x)).ToListAsync(ct));}
     [HttpGet("~/api/my/payments/{id:guid}"),Authorize(Policy="ClientOnly")]
+    [ProducesResponseType(typeof(PaymentListItem), StatusCodes.Status200OK)]
     public async Task<IActionResult> MyPayment(Guid id,CancellationToken ct){if(!Identity(out var tenant,out var user,out _))return Unauthorized();var x=await db.Payments.AsNoTracking().Where(x=>x.Id==id&&x.TenantId==tenant&&x.Subscription.Client.UserId==user).Select(x=>PaymentDto(x)).FirstOrDefaultAsync(ct);return x is null?NotFound():Ok(x);}
 
     [HttpGet("~/api/tenant/payments"),Authorize(Policy="CoachOnly")]
-    public async Task<IActionResult> TenantPayments(CancellationToken ct)=>await PaymentList(false,ct);
+    [ProducesResponseType(typeof(PagedResult<PaymentListItem>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> TenantPayments([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)=>await PaymentList(false,page,pageSize,ct);
     [HttpGet("~/api/tenant/payments/pending"),Authorize(Policy="CoachOnly")]
-    public async Task<IActionResult> Pending(CancellationToken ct)=>await PaymentList(true,ct);
+    [ProducesResponseType(typeof(PagedResult<PaymentListItem>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Pending([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)=>await PaymentList(true,page,pageSize,ct);
     [HttpGet("~/api/tenant/payments/{id:guid}"),Authorize(Policy="CoachOnly")]
+    [ProducesResponseType(typeof(PaymentListItem), StatusCodes.Status200OK)]
     public async Task<IActionResult> TenantPayment(Guid id,CancellationToken ct)
     {
-        if(!Identity(out var tenant,out var user,out var role))return Unauthorized();var q=db.Payments.AsNoTracking().Include(x=>x.Subscription).ThenInclude(x=>x.Client).Where(x=>x.Id==id&&x.TenantId==tenant);if(role==UserRole.Staff)q=q.Where(x=>x.Subscription.Client.CoachId==user);var p=await q.Select(x=>PaymentDto(x)).FirstOrDefaultAsync(ct);return p is null?NotFound():Ok(p);
+        if(!Identity(out var tenant,out var user,out var role))return Unauthorized();var q=db.Payments.AsNoTracking().Include(x=>x.Subscription).ThenInclude(x=>x.Client).Where(x=>x.Id==id&&x.TenantId==tenant);if(role==UserRole.CoachStaff)q=q.Where(x=>x.Subscription.Client.CoachId==user);var p=await q.Select(x=>PaymentDto(x)).FirstOrDefaultAsync(ct);return p is null?NotFound():Ok(p);
     }
     [HttpPut("instapay/{id:guid}/confirm"),Authorize(Policy="OwnerOnly")]
     public async Task<IActionResult> Confirm(Guid id,CancellationToken ct)
@@ -162,7 +183,7 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
         if(db.Database.IsNpgsql())await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({id.ToString()}, 0))",ct);
         var afterLock=await Replay(key,tenant,owner,endpoint,req,ct);if(afterLock is not null)return afterLock;
         var p=await db.Payments.Include(x=>x.Subscription).ThenInclude(x=>x.Plan).Include(x=>x.Subscription).ThenInclude(x=>x.Client).FirstOrDefaultAsync(x=>x.Id==id&&x.TenantId==tenant,ct);if(p is null)return NotFound();var refunded=await db.PaymentRefunds.Where(x=>x.PaymentId==id&&x.TenantId==tenant).SumAsync(x=>(decimal?)x.Amount,ct)??0m;var remaining=p.Amount-refunded;if(req.Amount<=0||req.Amount>remaining)return UnprocessableEntity("Refund exceeds the refundable balance.");
-        string? gateway=null;if(p.Method==PaymentMethod.Card){if(string.IsNullOrWhiteSpace(p.GatewayTransactionId))return Conflict("Gateway transaction reference is unavailable until Paymob confirms payment.");try{gateway=await paymob.RefundAsync(p.GatewayTransactionId,req.Amount,ct);}catch(HttpRequestException){return StatusCode(502,"Paymob refund failed.");}}
+        string? gateway=null;if(p.Method==PaymentMethod.Paymob){if(string.IsNullOrWhiteSpace(p.GatewayTransactionId))return Conflict("Gateway transaction reference is unavailable until Paymob confirms payment.");try{gateway=await paymob.RefundAsync(p.GatewayTransactionId,req.Amount,ct);}catch(HttpRequestException){return StatusCode(502,"Paymob refund failed.");}}
         var r=new PaymentRefund{Id=Guid.NewGuid(),TenantId=tenant,PaymentId=id,Amount=req.Amount,Currency=p.Currency,GatewayReference=gateway,CreatedByUserId=owner,CreatedAt=DateTime.UtcNow};db.PaymentRefunds.Add(r);var total=refunded+req.Amount;p.Status=total==p.Amount?PaymentStatus.Refunded:PaymentStatus.PartiallyRefunded;p.Version=Guid.NewGuid().ToByteArray();
         if(total==p.Amount&&p.Subscription.Status is SubscriptionStatus.Pending or SubscriptionStatus.Active or SubscriptionStatus.Paused){try{states.Transition(p.Subscription,SubscriptionStatus.Cancelled,"Full refund: subscription cancelled immediately.");}catch(InvalidOperationException ex){return Conflict(ex.Message);}}
         Audit(owner,tenant,"payment.refunded",$"payment={id};amount={req.Amount};total={total}");var response=new{r.Id,paymentId=id,r.Amount,p.Currency,p.Status};SaveKey(key,tenant,owner,endpoint,req,201,response);try{await db.SaveChangesAsync(ct);}catch(DbUpdateConcurrencyException){if(tx is not null)await tx.RollbackAsync(ct);return Conflict("Payment changed while refunding; retry with the same Idempotency-Key.");}catch(DbUpdateException){if(tx is not null)await tx.RollbackAsync(ct);return Conflict("Refund or Idempotency-Key was already processed.");}if(tx is not null)await tx.CommitAsync(ct);await Notify(p.Subscription.Client.UserId,tenant,"PaymentStatusChanged","حالة الدفع","تم تحديث حالة دفعتك.",new{paymentId=p.Id,status=p.Status,subscriptionId=p.SubscriptionId},ct);if(total==p.Amount)await Notify(p.Subscription.Client.UserId,tenant,"SubscriptionStatusChanged","حالة الاشتراك","تم تحديث حالة اشتراكك.",new{subscriptionId=p.SubscriptionId,status=p.Subscription.Status},ct);return StatusCode(201,response);
@@ -173,12 +194,12 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
     [HttpGet("~/api/tenant/payments/export"),Authorize(Policy="OwnerOnly")]
     public async Task<IActionResult> Export([FromQuery] DateTime? from,[FromQuery] DateTime? to,CancellationToken ct){if(!Identity(out var tenant,out _,out _))return Unauthorized();var q=db.Payments.AsNoTracking().Where(x=>x.TenantId==tenant);if(from.HasValue)q=q.Where(x=>x.CreatedAt>=from);if(to.HasValue)q=q.Where(x=>x.CreatedAt<to);var rows=await q.Select(x=>new{x.Id,x.CreatedAt,x.Amount,x.Currency,x.Method,x.Status,x.ReferenceNumber}).ToListAsync(ct);var sb=new StringBuilder("Id,CreatedAt,Amount,Currency,Method,Status,ReferenceNumber\r\n");foreach(var p in rows)sb.AppendLine(string.Join(',',new[]{p.Id.ToString(),p.CreatedAt.ToString("O"),p.Amount.ToString(CultureInfo.InvariantCulture),p.Currency,p.Method.ToString(),p.Status.ToString(),p.ReferenceNumber??""}.Select(Csv)));return File(Encoding.UTF8.GetBytes(sb.ToString()),"text/csv","payments.csv");}
 
-    private async Task<IActionResult> PaymentList(bool pending,CancellationToken ct){if(!Identity(out var tenant,out var user,out var role))return Unauthorized();var q=db.Payments.AsNoTracking().Include(x=>x.Subscription).ThenInclude(x=>x.Client).Where(x=>x.TenantId==tenant);if(pending)q=q.Where(x=>x.Status==PaymentStatus.PendingVerification);if(role==UserRole.Staff)q=q.Where(x=>x.Subscription.Client.CoachId==user);return Ok(await q.OrderByDescending(x=>x.CreatedAt).Select(x=>PaymentDto(x)).ToListAsync(ct));}
-    private async Task<IActionResult?> Replay(string key,Guid tenant,Guid user,string endpoint,object request,CancellationToken ct){var expired=await db.IdempotencyKeys.Where(x=>x.TenantId==tenant&&x.UserId==user&&x.Endpoint==endpoint&&x.Key==key&&x.CreatedAt<DateTime.UtcNow.AddHours(-24)).ToListAsync(ct);if(expired.Count>0){db.IdempotencyKeys.RemoveRange(expired);await db.SaveChangesAsync(ct);}var hash=Hash(JsonSerializer.Serialize(request,JsonSerializerOptions.Web));var old=await db.IdempotencyKeys.FirstOrDefaultAsync(x=>x.TenantId==tenant&&x.UserId==user&&x.Endpoint==endpoint&&x.Key==key&&x.CreatedAt>=DateTime.UtcNow.AddHours(-24),ct);if(old is null)return null;if(old.RequestHash!=hash)return UnprocessableEntity("Idempotency-Key was used with a different body.");var s=JsonSerializer.Deserialize<Snapshot>(old.ResponseSnapshot,JsonSerializerOptions.Web)!;return new ContentResult{StatusCode=s.Status,ContentType="application/json",Content=s.Body};}
-    private void SaveKey(string key,Guid tenant,Guid user,string endpoint,object request,int status,object body)=>db.IdempotencyKeys.Add(new(){Id=Guid.NewGuid(),TenantId=tenant,Key=key,UserId=user,Endpoint=endpoint,RequestHash=Hash(JsonSerializer.Serialize(request,JsonSerializerOptions.Web)),ResponseSnapshot=JsonSerializer.Serialize(new Snapshot(status,JsonSerializer.Serialize(body,JsonSerializerOptions.Web)),JsonSerializerOptions.Web),CreatedAt=DateTime.UtcNow});
+    private async Task<IActionResult> PaymentList(bool pending,int page,int pageSize,CancellationToken ct){if(page<1||pageSize is <1 or >100)return UnprocessableEntity("page must be at least 1 and pageSize must be between 1 and 100.");if(!Identity(out var tenant,out var user,out var role))return Unauthorized();var q=db.Payments.AsNoTracking().Where(x=>x.TenantId==tenant);if(pending)q=q.Where(x=>x.Status==PaymentStatus.PendingVerification);if(role==UserRole.CoachStaff)q=q.Where(x=>x.Subscription.Client.CoachId==user);var totalCount=await q.CountAsync(ct);var items=await q.OrderByDescending(x=>x.CreatedAt).Skip((page-1)*pageSize).Take(pageSize).Select(x=>PaymentDto(x)).ToListAsync(ct);return Ok(PagedResult<object>.Create(items,page,pageSize,totalCount));}
+    private async Task<IActionResult?> Replay(string key,Guid tenant,Guid user,string endpoint,object request,CancellationToken ct){var expired=await db.IdempotencyKeys.Where(x=>x.TenantId==tenant&&x.UserId==user&&x.Endpoint==endpoint&&x.Key==key&&x.CreatedAt<DateTime.UtcNow.AddHours(-24)).ToListAsync(ct);if(expired.Count>0){db.IdempotencyKeys.RemoveRange(expired);await db.SaveChangesAsync(ct);}var hash=Hash(JsonSerializer.Serialize(request,JsonSerializerOptions.Web));var old=await db.IdempotencyKeys.FirstOrDefaultAsync(x=>x.TenantId==tenant&&x.UserId==user&&x.Endpoint==endpoint&&x.Key==key&&x.CreatedAt>=DateTime.UtcNow.AddHours(-24),ct);if(old is null)return null;if(old.RequestHash!=hash)return UnprocessableEntity("Idempotency-Key was used with a different body.");if(!old.ResponseSnapshot.StartsWith("dp1:",StringComparison.Ordinal)){db.IdempotencyKeys.Remove(old);await db.SaveChangesAsync(ct);return Conflict("The stored idempotency response predates protected snapshots. Retry with a new Idempotency-Key.");}try{var protectedJson=old.ResponseSnapshot[4..];var s=JsonSerializer.Deserialize<Snapshot>(_snapshotProtector.Unprotect(protectedJson),JsonSerializerOptions.Web)!;return new ContentResult{StatusCode=s.Status,ContentType="application/json",Content=s.Body};}catch(CryptographicException){return Conflict("The protected idempotency response is unavailable. Retry with a new Idempotency-Key.");}}
+    private void SaveKey(string key,Guid tenant,Guid user,string endpoint,object request,int status,object body){var snapshot=JsonSerializer.Serialize(new Snapshot(status,JsonSerializer.Serialize(body,JsonSerializerOptions.Web)),JsonSerializerOptions.Web);db.IdempotencyKeys.Add(new(){Id=Guid.NewGuid(),TenantId=tenant,Key=key,UserId=user,Endpoint=endpoint,RequestHash=Hash(JsonSerializer.Serialize(request,JsonSerializerOptions.Web)),ResponseSnapshot="dp1:"+_snapshotProtector.Protect(snapshot),CreatedAt=DateTime.UtcNow});}
     private static string Hash(string s)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(s)));
     private static string Csv(string s)=>"\""+(s.Length>0&&s[0] is '=' or '+' or '-' or '@'?"'":"")+s.Replace("\"","\"\"")+"\"";
-    private static object PaymentDto(Payment x)=>new{x.Id,x.SubscriptionId,x.Amount,x.Currency,x.Method,x.Status,x.ReferenceNumber,x.CreatedAt,x.RejectionReason};
+    private static PaymentListItem PaymentDto(Payment x)=>new(x.Id,x.SubscriptionId,x.Amount,x.Currency,x.Method,x.Status,x.ReferenceNumber,x.CreatedAt,x.RejectionReason,x.ReceiptFileId);
     private bool Identity(out Guid tenant,out Guid user,out UserRole role){tenant=Guid.Empty;user=Guid.Empty;role=default;return Guid.TryParse(User.FindFirst("tenantId")?.Value,out tenant)&&Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out user)&&Enum.TryParse(User.FindFirst(ClaimTypes.Role)?.Value,out role);}
     private void Audit(Guid user,Guid tenant,string type,string id)=>db.SecurityAuditLogs.Add(new(){Id=Guid.NewGuid(),UserId=user,TenantId=tenant,EventType=type,Identifier=id,CreatedAt=DateTime.UtcNow});
     private Task Notify(Guid user,Guid tenant,string type,string title,string body,object data,CancellationToken ct)=>notificationService is null ? hub.Clients.User(user.ToString()).SendAsync(type,data,ct) : notificationService.NotifyAsync(user,tenant,type,title,body,JsonSerializer.Serialize(data),ct);

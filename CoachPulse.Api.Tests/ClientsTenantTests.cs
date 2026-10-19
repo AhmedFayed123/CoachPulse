@@ -24,7 +24,7 @@ public sealed class ClientsTenantTests
     {
         await using var f = await Fixture.Create();
         var client = f.AddClient(coachId: Guid.NewGuid()); await f.Db.SaveChangesAsync();
-        f.SetIdentity(Guid.NewGuid(), f.TenantId, UserRole.Staff);
+        f.SetIdentity(Guid.NewGuid(), f.TenantId, UserRole.CoachStaff);
         Assert.IsType<NotFoundResult>(await f.Clients.Get(client.Id));
     }
 
@@ -32,7 +32,7 @@ public sealed class ClientsTenantTests
     public async Task StaffCannotAssignCoach()
     {
         await using var f = await Fixture.Create(); var client = f.AddClient(f.UserId); await f.Db.SaveChangesAsync();
-        f.SetIdentity(f.UserId, f.TenantId, UserRole.Staff);
+        f.SetIdentity(f.UserId, f.TenantId, UserRole.CoachStaff);
         Assert.IsType<ForbidResult>(await f.Clients.AssignCoach(client.Id, new AssignCoachRequest { CoachId = Guid.NewGuid() }));
     }
 
@@ -40,7 +40,7 @@ public sealed class ClientsTenantTests
     public async Task HealthInfoRead_IsAudited()
     {
         await using var f = await Fixture.Create(); var client = f.AddClient(f.UserId); client.HealthInfo = "private"; await f.Db.SaveChangesAsync();
-        f.SetIdentity(f.UserId, f.TenantId, UserRole.Staff);
+        f.SetIdentity(f.UserId, f.TenantId, UserRole.CoachStaff);
         var response = Assert.IsType<OkObjectResult>(await f.Clients.HealthInfo(client.Id));
         Assert.Contains(await f.Db.SecurityAuditLogs.ToListAsync(), log => log.EventType == "client.health-info.read" && log.Identifier == $"client={client.Id}" && log.UserId == f.UserId);
     }
@@ -59,7 +59,7 @@ public sealed class ClientsTenantTests
     {
         await using var f = await Fixture.Create();
         var invite = new ClientInvitation { Id = Guid.NewGuid(), TenantId = f.TenantId, CoachId = f.UserId, Email = "client@example.test", TokenHash = Hash("old"), ExpiresAt = DateTime.UtcNow.AddHours(1) };
-        f.Db.ClientInvitations.Add(invite); await f.Db.SaveChangesAsync(); f.SetIdentity(f.UserId, f.TenantId, UserRole.Staff);
+        f.Db.ClientInvitations.Add(invite); await f.Db.SaveChangesAsync(); f.SetIdentity(f.UserId, f.TenantId, UserRole.CoachStaff);
         var result = Assert.IsType<OkObjectResult>(await f.Clients.ResendInvitation(invite.Id));
         var raw = (string)result.Value!.GetType().GetProperty("InvitationToken")!.GetValue(result.Value)!;
         Assert.NotEqual(Hash("old"), invite.TokenHash); Assert.Equal(Hash(raw), invite.TokenHash);
@@ -70,7 +70,7 @@ public sealed class ClientsTenantTests
     {
         await using var f = await Fixture.Create();
         f.Db.Subscriptions.Add(new Subscription { Id = Guid.NewGuid(), TenantId = f.TenantId, ClientId = Guid.NewGuid(), PlanId = Guid.NewGuid(), Status = SubscriptionStatus.Active, StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(30) });
-        await f.Db.SaveChangesAsync(); f.SetIdentity(f.UserId, f.TenantId, UserRole.Owner);
+        await f.Db.SaveChangesAsync(); f.SetIdentity(f.UserId, f.TenantId, UserRole.TenantOwner);
         Assert.IsType<ConflictObjectResult>(await f.Tenant.UpdateSettings(new UpdateTenantSettingsRequest { Currency = "USD", TimeZone = "Africa/Cairo", ReminderDays = 7, DefaultLanguage = "ar" }));
     }
 
@@ -78,14 +78,14 @@ public sealed class ClientsTenantTests
     public async Task ClientReadFromDifferentTenant_Returns404()
     {
         await using var f = await Fixture.Create(); var client = f.AddClient(f.UserId); await f.Db.SaveChangesAsync();
-        f.SetIdentity(f.UserId, Guid.NewGuid(), UserRole.Owner);
+        f.SetIdentity(f.UserId, Guid.NewGuid(), UserRole.TenantOwner);
         Assert.IsType<NotFoundResult>(await f.Clients.Get(client.Id));
     }
 
     [Fact]
     public async Task TenantEndpointUsesClaimedTenantScope()
     {
-        await using var f = await Fixture.Create(); f.SetIdentity(f.UserId, Guid.NewGuid(), UserRole.Owner);
+        await using var f = await Fixture.Create(); f.SetIdentity(f.UserId, Guid.NewGuid(), UserRole.TenantOwner);
         Assert.IsType<NotFoundResult>(await f.Tenant.GetTenant());
     }
 
@@ -101,10 +101,10 @@ public sealed class ClientsTenantTests
             var state = new TenantState(); var tenantId = Guid.NewGuid(); var userId = Guid.NewGuid(); state.SetTenant(tenantId);
             var db = new CoachPulseDbContext(new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, state); await db.Database.EnsureCreatedAsync();
             db.Tenants.Add(new CoachPulse.Domain.Entities.Tenant { Id = tenantId, Name = "Tenant", Slug = tenantId.ToString("N"), Status = "Active" });
-            db.Users.Add(new User { Id = userId, TenantId = tenantId, Email = "coach@example.test", Role = UserRole.Owner, PasswordHash = "pw" }); await db.SaveChangesAsync();
+            db.Users.Add(new User { Id = userId, TenantId = tenantId, Email = "coach@example.test", Role = UserRole.TenantOwner, PasswordHash = "pw" }); await db.SaveChangesAsync();
             var clients = new ClientsController(db, new ClientAccessService(db), new TestEnvironment(), new TestEmail()) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
-            var tenant = new TenantController(db, new TestPasswordHasher()) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
-            var fixture = new Fixture(db, state, clients, tenant, tenantId, userId); fixture.SetIdentity(userId, tenantId, UserRole.Owner); return fixture;
+            var tenant = new TenantController(db, new TestPasswordHasher(), new ClientAccessService(db)) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+            var fixture = new Fixture(db, state, clients, tenant, tenantId, userId); fixture.SetIdentity(userId, tenantId, UserRole.TenantOwner); return fixture;
         }
         public Client AddClient(Guid? coachId) { var user = new User { Id = Guid.NewGuid(), TenantId = TenantId, Email = $"{Guid.NewGuid():N}@example.test", Role = UserRole.Client }; Db.Users.Add(user); var client = new Client { Id = Guid.NewGuid(), TenantId = TenantId, UserId = user.Id, CoachId = coachId, HealthInfo = "private" }; Db.Clients.Add(client); return client; }
         public void SetIdentity(Guid userId, Guid tenantId, UserRole role)

@@ -26,7 +26,7 @@ public sealed class AiController(CoachPulseDbContext db, IAiClient ai, IClientAc
     private Guid Tenant => Guid.TryParse(User.FindFirstValue("tenantId"), out var x) ? x : Guid.Empty;
     private Guid UserId => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var x) ? x : Guid.Empty;
     private UserRole Role => Enum.TryParse<UserRole>(User.FindFirstValue(ClaimTypes.Role), out var r) ? r : UserRole.Client;
-    private bool StaffOwns(Client c) => Role == UserRole.Owner || (Role == UserRole.Staff && c.CoachId == UserId);
+    private bool StaffOwns(Client c) => Role == UserRole.TenantOwner || (Role == UserRole.CoachStaff && c.CoachId == UserId);
     private IQueryable<Client> VisibleClients() => access.VisibleClients(Tenant, UserId, Role);
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private IActionResult PythonUnavailable() => StatusCode(503, new ProblemDetails { Status = 503, Title = "AI service unavailable", Detail = "The internal AI service is temporarily unavailable. Please retry shortly." });
@@ -125,13 +125,13 @@ public sealed class AiController(CoachPulseDbContext db, IAiClient ai, IClientAc
     public async Task<IActionResult> List([FromQuery] Guid? clientId, CancellationToken ct)
     {
         var q = db.AIGeneratedPrograms.AsNoTracking().Where(x => x.TenantId == Tenant);
-        if (Role == UserRole.Staff) q = q.Where(x => VisibleClients().Any(c => c.Id == x.ClientId));
+        if (Role == UserRole.CoachStaff) q = q.Where(x => VisibleClients().Any(c => c.Id == x.ClientId));
         if (clientId.HasValue) q = q.Where(x => x.ClientId == clientId);
         return Ok(await q.OrderByDescending(x => x.Id).Select(x => new { x.Id, x.ClientId, x.Status, x.PromptVersion, x.ModelVersion, x.RequestedByUserId, x.ParentGeneratedProgramId }).ToListAsync(ct));
     }
     [HttpGet("generated-programs/{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) => await Accessible(id, ct) is { } item ? Ok(item) : NotFound();
-    private Task<AIGeneratedProgram?> Accessible(Guid id, CancellationToken ct) => db.AIGeneratedPrograms.FirstOrDefaultAsync(x => x.Id == id && x.TenantId == Tenant && (Role != UserRole.Staff || VisibleClients().Any(c => c.Id == x.ClientId)), ct);
+    private Task<AIGeneratedProgram?> Accessible(Guid id, CancellationToken ct) => db.AIGeneratedPrograms.FirstOrDefaultAsync(x => x.Id == id && x.TenantId == Tenant && (Role != UserRole.CoachStaff || VisibleClients().Any(c => c.Id == x.ClientId)), ct);
 
     [HttpPut("generated-programs/{id:guid}")]
     public async Task<IActionResult> Edit(Guid id, AiGeneratedProgramEdit edit, CancellationToken ct)

@@ -79,6 +79,46 @@ public sealed class FilesControllerTests
     }
 
     [Fact]
+    public async Task Upload_AttachmentMp4_AllowsVideoContent()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var video = new byte[] { 0x00, 0x00, 0x00, 0x10, (byte)'f', (byte)'t', (byte)'y', (byte)'p', (byte)'i', (byte)'s', (byte)'o', (byte)'m', 0x00, 0x00, 0x00, 0x00 };
+        var result = await fixture.Controller.Upload(new UploadFileRequest
+        {
+            File = Form(video, "clip.mp4", "application/octet-stream"),
+            Purpose = "attachment"
+        }, default);
+
+        Assert.IsType<CreatedResult>(result);
+        Assert.Equal("video/mp4", (await fixture.Db.StoredFiles.SingleAsync()).ContentType);
+    }
+
+    [Fact]
+    public async Task Get_AttachmentInCurrentConversation_AllowsOtherParticipant()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var coachId = Guid.NewGuid();
+        var storedPath = await fixture.Storage.SaveAsync(new MemoryStream(PngSignature), fixture.TenantId.ToString("N"), ".png");
+        var message = new Message
+        {
+            Id = Guid.NewGuid(), TenantId = fixture.TenantId, SenderId = coachId,
+            ReceiverId = fixture.UserId, Content = "See this", Timestamp = DateTime.UtcNow
+        };
+        fixture.Db.Clients.Add(new Client { Id = Guid.NewGuid(), TenantId = fixture.TenantId, UserId = fixture.UserId, CoachId = coachId });
+        fixture.Db.Messages.Add(message);
+        var file = fixture.File("attachment", coachId);
+        file.StoragePath = storedPath;
+        file.LinkedEntityType = "Message";
+        file.LinkedEntityId = message.Id;
+        fixture.Db.StoredFiles.Add(file);
+        await fixture.Db.SaveChangesAsync();
+
+        var result = await fixture.Controller.Get(file.Id, default);
+
+        Assert.IsType<FileStreamResult>(result);
+    }
+
+    [Fact]
     public async Task Get_OtherClientsCheckInPhoto_Returns404()
     {
         await using var fixture = await Fixture.CreateAsync();

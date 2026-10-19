@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CoachPulse.Application.Interfaces
 {
-    public sealed record PaymobIntentionResult(string ClientSecret, string OrderId);
+    public sealed record PaymobIntentionResult(string CheckoutUrl, string OrderId);
     public interface IPaymobClient
     {
         Task<PaymobIntentionResult> CreatePaymentIntentionAsync(

@@ -1,52 +1,215 @@
+name: coachpulse
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-api-build: &api-build
+  context: .
+  dockerfile: CoachPulse.Api/Dockerfile
+
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_URLS: http://+:8080
+  ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+  Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+  Jwt__Issuer: CoachPulse.Api
+  Jwt__Audience: CoachPulse.Client
+  Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN in .env}
+  ReverseProxy__KnownProxies__0: 172.30.0.2
+  SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL in .env}
+  SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD in .env}
+  Ai__InternalApiKey: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+  Ai__BaseUrl: http://coachpulse-ai:8000/
+  PythonAi__BaseUrl: http://coachpulse-ai:8000/
+  Readiness__RequirePythonService: "true"
+  DataProtection__KeysPath: /app/App_Data/data-protection
+  Paymob__PublicKey: ${PAYMOB_PUBLIC_KEY:-}
+  Paymob__SecretKey: ${PAYMOB_SECRET_KEY:-}
+  Paymob__ApiKey: ${PAYMOB_API_KEY:-}
+  Paymob__IntegrationId: ${PAYMOB_INTEGRATION_ID:-}
+  Paymob__BaseUrl: ${PAYMOB_BASE_URL:-https://accept.paymob.com/}
+  Paymob__ReturnUrl: ${PAYMOB_RETURN_URL:-}
+  Paymob__NotificationUrl: ${PAYMOB_NOTIFICATION_URL:-}
+  Paymob__HmacSecret: ${PAYMOB_HMAC_SECRET:-}
+  Email__Provider: ${EMAIL_PROVIDER:-Dev}
+  Email__Smtp__Host: ${EMAIL_SMTP_HOST:-}
+  Email__Smtp__Port: ${EMAIL_SMTP_PORT:-587}
+  Email__Smtp__UseSsl: ${EMAIL_SMTP_USE_SSL:-false}
+  Email__Smtp__Username: ${EMAIL_SMTP_USERNAME:-}
+  Email__Smtp__Password: ${EMAIL_SMTP_PASSWORD:-}
+  Email__Smtp__FromAddress: ${EMAIL_SMTP_FROM_ADDRESS:-}
+  Email__Smtp__FromName: ${EMAIL_SMTP_FROM_NAME:-CoachPulse}
+  Uploads__MaxRequestBodyBytes: 105906176
+
 services:
   postgres:
-    image: pgvector/pgvector:pg16
-    container_name: coachpulse_postgres
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: CoachPulseDb
-      POSTGRES_USER: postgres
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-    ports:
-      - "127.0.0.1:5433:5432"
     volumes:
-      - coachpulse_postgres_data:/var/lib/postgresql/data
-    networks: [app]
-
-  api:
-    build:
-      context: .
-      dockerfile: CoachPulse.Api/Dockerfile
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
-      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN in .env}
-      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL in .env}
-      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD in .env}
-      Paymob__SecretKey: ${PAYMOB_SECRET_KEY:-}
-      Paymob__IntegrationId: ${PAYMOB_INTEGRATION_ID:-}
-      Paymob__HmacSecret: ${PAYMOB_HMAC_SECRET:-}
-      Ai__BaseUrl: http://coachpulse-ai:8000/
-      Ai__InternalApiKey: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
-      PythonAi__BaseUrl: http://coachpulse-ai:8000/
-      Readiness__RequirePythonService: "true"
-    depends_on: [postgres, coachpulse-ai]
-    ports: ["8080:8080"]
-    networks: [app, ai-private]
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [private]
+    ports: ["127.0.0.1:5433:5432"]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
 
   coachpulse-ai:
-    build: ./CoachPulse.AI
+    build:
+      context: ./CoachPulse.AI
+      dockerfile: Dockerfile
     environment:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      OPENAI_API_KEY: ${LLM_API_KEY:-}
       CHURN_MODEL_PATH: /srv/coachpulse-ai/models/churn.joblib
     expose: ["8000"]
-    networks: [ai-private]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks: [private]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  migrator:
+    build: *api-build
+    # Dockerfile ENTRYPOINT already runs `dotnet CoachPulse.Api.dll`.
+    command: ["--migrate"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [private]
+    restart: "no"
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  api:
+    build: *api-build
+    environment: *api-environment
+    volumes:
+      - uploads:/app/App_Data/uploads
+      - data_protection:/app/App_Data/data-protection
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      coachpulse-ai:
+        condition: service_healthy
+    expose: ["8080"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 45s
+    networks:
+      public:
+        ipv4_address: 172.30.0.3
+      private: {}
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+
+  web:
+    build:
+      context: ./CoachPulse.Frontend
+      dockerfile: Dockerfile
+    expose: ["8081"]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8081/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      public:
+        ipv4_address: 172.30.0.4
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  proxy:
+    image: caddy:2.10-alpine
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.dev", "--adapter", "caddyfile"]
+    ports: ["127.0.0.1:${PROXY_HTTP_PORT:-8080}:80"]
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile.dev:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    networks:
+      public:
+        ipv4_address: 172.30.0.2
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  exercise-seed:
+    profiles: ["tools"]
+    build: *api-build
+    command: ["dotnet", "CoachPulse.Api.dll", "--seed-exercises", "/seed/exercises.csv"]
+    environment: *api-environment
+    volumes:
+      - ./seed:/seed:ro
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    networks: [private]
+    restart: "no"
 
 volumes:
-  coachpulse_postgres_data:
+  postgres_data:
+  uploads:
+  data_protection:
 
 networks:
-  app:
-  ai-private:
+  public:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  private:
     internal: true
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24

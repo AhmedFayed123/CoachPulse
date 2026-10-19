@@ -4,6 +4,7 @@ using CoachPulse.Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace CoachPulse.Infrastructure.Payments;
 
@@ -11,11 +12,13 @@ public class PaymobClient : IPaymobClient
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<PaymobClient> _logger;
 
-    public PaymobClient(HttpClient httpClient, IConfiguration configuration)
+    public PaymobClient(HttpClient httpClient, IConfiguration configuration, ILogger<PaymobClient> logger)
     {
         _httpClient = httpClient;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<PaymobIntentionResult> CreatePaymentIntentionAsync(
@@ -30,13 +33,18 @@ public class PaymobClient : IPaymobClient
     {
         var secretKey = _configuration["Paymob:SecretKey"]
             ?? throw new InvalidOperationException("Paymob SecretKey is missing.");
+        var publicKey = _configuration["Paymob:PublicKey"]
+            ?? throw new InvalidOperationException("Paymob PublicKey is missing.");
 
         var integrationId = _configuration["Paymob:IntegrationId"]
             ?? throw new InvalidOperationException("Paymob IntegrationId is missing.");
+        var baseUrl = GetPaymobBaseUrl(_configuration["Paymob:BaseUrl"]);
 
         // تحويل المبلغ إلى قروش (Cents) حسب متطلبات Paymob
         var amountCents = (int)(amount * 100);
 
+        var returnUrl = _configuration["Paymob:ReturnUrl"];
+        var notificationUrl = _configuration["Paymob:NotificationUrl"];
         var requestBody = new
         {
             amount = amountCents,
@@ -59,14 +67,16 @@ public class PaymobClient : IPaymobClient
                 country = "EG",
                 state = "NA"
             },
-            special_reference = orderId
+            special_reference = orderId,
+            redirection_url = string.IsNullOrWhiteSpace(returnUrl) ? null : returnUrl,
+            notification_url = string.IsNullOrWhiteSpace(notificationUrl) ? null : notificationUrl
         };
 
         // إعداد الـ Authorization Header بالـ Secret Key
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", secretKey);
 
-        var response = await _httpClient.PostAsJsonAsync(
-            "https://accept.paymob.com/v1/intention",
+        using var response = await _httpClient.PostAsJsonAsync(
+            new Uri(baseUrl, "v1/intention/").ToString(),
             requestBody,
             cancellationToken);
 
@@ -75,7 +85,26 @@ public class PaymobClient : IPaymobClient
         var result = await response.Content.ReadFromJsonAsync<PaymobIntentionResponse>(cancellationToken: cancellationToken);
         if (result is null || string.IsNullOrWhiteSpace(result.ClientSecret) || result.IntentionOrderId.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
             throw new InvalidOperationException("Paymob response did not include intention order id/client secret.");
-        return new PaymobIntentionResult(result.ClientSecret, result.IntentionOrderId.ToString());
+        var checkoutUrl = BuildUnifiedCheckoutUrl(baseUrl, publicKey, result.ClientSecret);
+        _logger.LogInformation("Created Paymob intention for order {OrderId}.", orderId);
+        return new PaymobIntentionResult(checkoutUrl, result.IntentionOrderId.ToString());
+    }
+
+    internal static Uri GetPaymobBaseUrl(string? configuredBaseUrl)
+    {
+        var candidate = string.IsNullOrWhiteSpace(configuredBaseUrl) ? "https://accept.paymob.com/" : configuredBaseUrl.Trim();
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var baseUrl) || baseUrl.Scheme != Uri.UriSchemeHttps ||
+            baseUrl.UserInfo.Length > 0 || baseUrl.Query.Length > 0 || baseUrl.Fragment.Length > 0 ||
+            baseUrl.AbsolutePath != "/" || baseUrl.Host is not ("accept.paymob.com" or "oman.paymob.com" or "ksa.paymob.com" or "uae.paymob.com"))
+            throw new InvalidOperationException("Paymob:BaseUrl must be an HTTPS Paymob regional host (accept, oman, ksa, or uae). ");
+        return baseUrl;
+    }
+
+    internal static string BuildUnifiedCheckoutUrl(Uri baseUrl, string publicKey, string clientSecret)
+    {
+        if (string.IsNullOrWhiteSpace(publicKey) || string.IsNullOrWhiteSpace(clientSecret))
+            throw new InvalidOperationException("Paymob public key and intention client secret are required to build checkout URL.");
+        return $"{baseUrl.GetLeftPart(UriPartial.Authority)}/unifiedcheckout/?publicKey={Uri.EscapeDataString(publicKey)}&clientSecret={Uri.EscapeDataString(clientSecret)}";
     }
 
     public async Task<string> RefundAsync(string transactionId, decimal amount, CancellationToken cancellationToken)

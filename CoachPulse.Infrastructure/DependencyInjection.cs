@@ -29,7 +29,13 @@ namespace CoachPulse.Infrastructure
             services.AddScoped<IClientAccessService, ClientAccessService>();
             services.AddScoped<ISubscriptionActivationService, SubscriptionActivationService>();
             services.AddScoped<ISubscriptionStateMachine>(sp => (ISubscriptionStateMachine)sp.GetRequiredService<ISubscriptionActivationService>());
-            services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
+            var emailProvider = configuration["Email:Provider"] ?? "Dev";
+            services.AddSingleton<IEmailDeliveryTransport>(provider => emailProvider.ToLowerInvariant() switch
+            {
+                "dev" => new DevelopmentEmailSender(provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<DevelopmentEmailSender>>(), provider.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>()),
+                "smtp" => new SmtpEmailSender(configuration, provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SmtpEmailSender>>()),
+                _ => throw new InvalidOperationException("Email:Provider must be either Dev or Smtp.")
+            });
             services.AddScoped<IFileStorage, LocalFileStorage>();
             services.AddHttpClient<IPaymobClient, PaymobClient>();
             services.Configure<JwtSettings>(configuration.GetSection("Jwt"));

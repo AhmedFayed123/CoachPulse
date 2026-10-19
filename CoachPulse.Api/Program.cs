@@ -12,9 +12,14 @@ using CoachPulse.Infrastructure.Persistence;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
+using Swashbuckle.AspNetCore.Swagger;
 using Serilog;
 using System.Text;
 using System.Security.Claims;
@@ -35,11 +40,17 @@ namespace CoachPulse.Api
 
             builder.Host.UseSerilog();
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options => options.Filters.Add<CoachPulse.Api.Infrastructure.ProblemDetailsResultFilter>())
+                .AddJsonOptions(options => ApiJsonSerialization.AddStringEnums(options.JsonSerializerOptions));
             builder.Services.AddMemoryCache();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 64 * 1024);
+            builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 64 * 1024)
+                .AddJsonProtocol(options => ApiJsonSerialization.AddStringEnums(options.PayloadSerializerOptions));
             var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+            if (!builder.Environment.IsDevelopment() && allowedOrigins.Any(origin => origin == "*" || origin.Contains('*')))
+                throw new InvalidOperationException("Production CORS origins must be explicit origins; wildcard origins are not allowed.");
+            if (!builder.Environment.IsDevelopment() && allowedOrigins.Any(origin => !Uri.TryCreate(origin, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")))
+                throw new InvalidOperationException("Each configured production CORS origin must be an absolute HTTP or HTTPS origin.");
             builder.Services.AddCors(options => options.AddPolicy("ConfiguredOrigins", policy =>
             {
                 if (allowedOrigins.Length > 0) policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
@@ -93,6 +104,7 @@ namespace CoachPulse.Api
 
             builder.Services.AddSwaggerGen(options =>
             {
+                options.SupportNonNullableReferenceTypes();
                 options.SwaggerDoc("v1", new OpenApiInfo { Title = "CoachPulse API", Version = "v1" });
 
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -122,9 +134,31 @@ namespace CoachPulse.Api
             });
 
             builder.Services.AddInfrastructure(builder.Configuration);
+            var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+            if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+            {
+                Directory.CreateDirectory(dataProtectionKeysPath);
+                builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+            }
+            builder.Services.AddSingleton<DatabaseStartupState>();
+            builder.Services.AddSingleton<DatabaseStartupInitializer>();
+            builder.Services.AddScoped<IEmailSender, QueuedEmailSender>();
             builder.Services.AddScoped<CoachPulse.Api.Services.ChatMessageService>();
             builder.Services.AddScoped<ChurnScoringService>();
             builder.Services.AddScoped<IChurnFeatureBuilder, ChurnFeatureBuilder>();
+
+            var emailProvider = builder.Configuration["Email:Provider"] ?? "Dev";
+            if (string.Equals(emailProvider, "Smtp", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(builder.Configuration["Email:Smtp:Host"]) ||
+                    !int.TryParse(builder.Configuration["Email:Smtp:Port"], out var smtpPort) || smtpPort is < 1 or > 65535 ||
+                    string.IsNullOrWhiteSpace(builder.Configuration["Email:Smtp:FromAddress"]))
+                    throw new InvalidOperationException("Email:Provider=Smtp requires Email__Smtp__Host, Email__Smtp__Port, and Email__Smtp__FromAddress.");
+                if (!string.IsNullOrWhiteSpace(builder.Configuration["Email:Smtp:Username"]) && string.IsNullOrWhiteSpace(builder.Configuration["Email:Smtp:Password"]))
+                    throw new InvalidOperationException("SMTP authentication requires Email__Smtp__Password when Email__Smtp__Username is set.");
+            }
+            else if (!string.Equals(emailProvider, "Dev", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Email:Provider must be either Dev or Smtp.");
 
             var jwtKey = builder.Configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException("JWT Key is missing.");
@@ -139,6 +173,17 @@ namespace CoachPulse.Api
 
             var jwtAudience = builder.Configuration["Jwt:Audience"]
                 ?? throw new InvalidOperationException("JWT Audience is missing.");
+
+            if (!builder.Environment.IsDevelopment())
+            {
+                var internalApiKey = builder.Configuration["Ai:InternalApiKey"] ?? builder.Configuration["PythonAi:InternalApiKey"];
+                if (string.IsNullOrWhiteSpace(internalApiKey) || Encoding.UTF8.GetByteCount(internalApiKey) < 32)
+                    throw new InvalidOperationException("Production requires Ai__InternalApiKey with at least 32 UTF-8 bytes.");
+                var superAdminEmail = builder.Configuration["SUPERADMIN_EMAIL"] ?? builder.Configuration["SuperAdmin:Email"];
+                var superAdminPassword = builder.Configuration["SUPERADMIN_PASSWORD"] ?? builder.Configuration["SuperAdmin:Password"];
+                if (string.IsNullOrWhiteSpace(superAdminEmail) || string.IsNullOrWhiteSpace(superAdminPassword))
+                    throw new InvalidOperationException("Production requires SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD from the environment or a secret store.");
+            }
 
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -186,7 +231,10 @@ namespace CoachPulse.Api
                 .UseRecommendedSerializerSettings()
                 .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-            builder.Services.AddHangfireServer();
+            // Hangfire's server must not hold local liveness hostage when PostgreSQL is stopped.
+            // Enable it in development explicitly once PostgreSQL is available; production runs it by default.
+            var runHangfireServer = !builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Hangfire:RunServer");
+            if (runHangfireServer) builder.Services.AddHangfireServer();
 
             builder.Services.AddAuthorization(options =>
             {
@@ -197,12 +245,12 @@ namespace CoachPulse.Api
 
                 options.AddPolicy("OwnerOnly", policy =>
                 {
-                    policy.RequireRole("Owner");
+                    policy.RequireRole("TenantOwner");
                 });
 
                 options.AddPolicy("CoachOnly", policy =>
                 {
-                    policy.RequireRole("Owner", "Staff");
+                    policy.RequireRole("TenantOwner", "CoachStaff");
                 });
 
                 options.AddPolicy("ClientOnly", policy =>
@@ -213,35 +261,37 @@ namespace CoachPulse.Api
 
             var app = builder.Build();
 
-            // إعداد Seeding والـ Recurring Jobs بعد بناء التطبيق
-            using (var scope = app.Services.CreateScope())
+            if (args.Length == 1 && string.Equals(args[0], "--migrate", StringComparison.OrdinalIgnoreCase))
             {
-                var services = scope.ServiceProvider;
-
-                var context = services.GetRequiredService<CoachPulseDbContext>();
-                var passwordHasher = services.GetRequiredService<IPasswordHasher>();
-
-                await DbSeeder.SeedAsync(context, passwordHasher, app.Configuration);
-
-                // جدولة المهمة الخلفية عبر Hangfire
-                var recurringJobManager = services.GetRequiredService<IRecurringJobManager>();
-                recurringJobManager.AddOrUpdate<ExpireSubscriptionsJob>("expire-subscriptions-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-                recurringJobManager.AddOrUpdate<SubscriptionExpiryReminderJob>("subscription-expiry-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-                recurringJobManager.AddOrUpdate<PendingPaymentReminderJob>("pending-payment-reminders-six-hourly", job => job.RunAsync(CancellationToken.None), Cron.HourInterval(6));
-                recurringJobManager.AddOrUpdate<PaymobReconciliationJob>("paymob-reconciliation-hourly", job => job.RunAsync(CancellationToken.None), Cron.Hourly);
-                recurringJobManager.AddOrUpdate<CleanupOrphanFilesJob>(
-                    "cleanup-orphan-files-weekly",
-                    job => job.CleanupAsync(CancellationToken.None),
-                    Cron.Weekly);
-                recurringJobManager.AddOrUpdate<CleanupExpiredInvitationsJob>(
-                    "cleanup-expired-invitations-daily",
-                    job => job.CleanupAsync(CancellationToken.None),
-                    Cron.Daily);
-                recurringJobManager.AddOrUpdate<ChurnScoringJob>("churn-scoring-nightly", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-                recurringJobManager.AddOrUpdate<CheckInReminderJob>("check-in-reminders-daily", job => job.RunAsync(CancellationToken.None), Cron.Daily);
-                recurringJobManager.AddOrUpdate<CleanupReadNotificationsJob>("cleanup-read-notifications-weekly", job => job.CleanupAsync(CancellationToken.None), Cron.Weekly);
-                recurringJobManager.AddOrUpdate<GenerateUserDataExportJob>("cleanup-data-exports-daily", job => job.CleanupAsync(CancellationToken.None), Cron.Daily);
+                await using var migrationScope = app.Services.CreateAsyncScope();
+                var migrationDb = migrationScope.ServiceProvider.GetRequiredService<CoachPulseDbContext>();
+                await migrationDb.Database.MigrateAsync();
+                await app.DisposeAsync();
+                return;
             }
+
+            if (args.Length == 2 && string.Equals(args[0], "--export-swagger", StringComparison.OrdinalIgnoreCase))
+            {
+                var document = app.Services.GetRequiredService<ISwaggerProvider>().GetSwagger("v1");
+                var outputPath = Path.GetFullPath(args[1]);
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+                await using var output = File.CreateText(outputPath);
+                document.SerializeAsV3(new OpenApiJsonWriter(output));
+                await app.DisposeAsync();
+                return;
+            }
+
+            if (args.Length >= 2 && string.Equals(args[0], "--seed-exercises", StringComparison.OrdinalIgnoreCase))
+            {
+                using var seedScope = app.Services.CreateScope();
+                var seedDb = seedScope.ServiceProvider.GetRequiredService<CoachPulseDbContext>();
+                var added = await PublicExerciseSeeder.SeedCsvAsync(seedDb, args[1]);
+                Console.WriteLine($"Public exercise seed complete. Added {added} new exercises.");
+                await app.DisposeAsync();
+                return;
+            }
+
+            // إعداد Seeding والـ Recurring Jobs بعد بناء التطبيق
 
             if (app.Environment.IsDevelopment())
             {
@@ -250,16 +300,33 @@ namespace CoachPulse.Api
             }
 
             // تفعيل Hangfire Dashboard
-            if (app.Environment.IsProduction())
+            app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
             {
-                app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/problem+json";
+                await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails
                 {
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    context.Response.ContentType = "application/problem+json";
-                    await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails { Status = 500, Title = "An unexpected error occurred." });
-                }));
-                app.UseHsts();
-            }
+                    Status = 500,
+                    Title = "An unexpected error occurred.",
+                    Extensions = { ["traceId"] = context.TraceIdentifier }
+                });
+            }));
+            app.UseStatusCodePages(async statusContext =>
+            {
+                var context = statusContext.HttpContext;
+                context.Response.ContentType = "application/problem+json";
+                await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails
+                {
+                    Status = context.Response.StatusCode,
+                    Title = Microsoft.AspNetCore.WebUtilities.ReasonPhrases.GetReasonPhrase(context.Response.StatusCode),
+                    Extensions = { ["traceId"] = context.TraceIdentifier }
+                });
+            });
+            var forwardedHeaders = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost };
+            foreach (var proxy in app.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? [])
+                if (System.Net.IPAddress.TryParse(proxy, out var proxyAddress)) forwardedHeaders.KnownProxies.Add(proxyAddress);
+            app.UseForwardedHeaders(forwardedHeaders);
+            if (app.Environment.IsProduction()) app.UseHsts();
             app.UseHttpsRedirection();
             app.Use(async (context, next) =>
             {
@@ -278,6 +345,8 @@ namespace CoachPulse.Api
 
             app.UseAuthentication();
 
+            app.UseMiddleware<FirstLoginPasswordChangeMiddleware>();
+
             app.UseMiddleware<LoginRateLimitKeyMiddleware>();
 
             app.UseRateLimiter();
@@ -286,21 +355,24 @@ namespace CoachPulse.Api
 
             app.UseAuthorization();
 
-            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            if (!app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Hangfire:EnableDashboard"))
             {
-                Authorization = [new SuperAdminHangfireAuthorizationFilter()]
-            });
+                app.UseHangfireDashboard("/hangfire", new DashboardOptions
+                {
+                    Authorization = [new SuperAdminHangfireAuthorizationFilter()]
+                });
+            }
 
             app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
                 .AllowAnonymous();
 
             app.MapGet("/readyz", async (
-                CoachPulseDbContext db,
+                DatabaseStartupState startupState,
                 IHttpClientFactory httpClientFactory,
                 IConfiguration configuration,
                 CancellationToken cancellationToken) =>
             {
-                var databaseReady = await db.Database.CanConnectAsync(cancellationToken);
+                var databaseReady = startupState.DatabaseReachable;
                 var pythonReady = false;
                 var pythonBaseUrl = configuration["PythonAi:BaseUrl"];
                 if (Uri.TryCreate(pythonBaseUrl, UriKind.Absolute, out var baseUri))
@@ -318,11 +390,11 @@ namespace CoachPulse.Api
                 }
 
                 var requirePython = configuration.GetValue<bool>("Readiness:RequirePythonService");
-                var ready = databaseReady && (!requirePython || pythonReady);
+                var ready = databaseReady && startupState.IsInitialized && (!requirePython || pythonReady);
                 return Results.Json(new
                 {
                     status = ready ? "ready" : "not_ready",
-                    checks = new { database = databaseReady, pythonAi = requirePython ? pythonReady : (bool?)null }
+                    checks = new { database = databaseReady, startup = startupState.IsInitialized, startupState.Failure, pythonAi = requirePython ? pythonReady : (bool?)null }
                 }, statusCode: ready ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
             }).AllowAnonymous();
 
@@ -331,6 +403,10 @@ namespace CoachPulse.Api
             app.MapHub<NotificationsHub>("/hubs/notifications").RequireAuthorization();
 
             app.MapControllers();
+
+            var databaseInitializer = app.Services.GetRequiredService<DatabaseStartupInitializer>();
+            app.Lifetime.ApplicationStarted.Register(databaseInitializer.Start);
+            app.Lifetime.ApplicationStopping.Register(databaseInitializer.Stop);
 
             await app.RunAsync();
         }

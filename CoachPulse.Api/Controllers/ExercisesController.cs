@@ -55,7 +55,7 @@ public sealed class ExercisesController(CoachPulseDbContext db) : ControllerBase
         var ex = await db.Exercises.FirstOrDefaultAsync(x => x.Id == id);
         if (ex is null) return NotFound();
         if (ex.TenantId is null && Role != "SuperAdmin") return StatusCode(403);
-        if (ex.TenantId is not null && (TenantId != ex.TenantId || Role is not ("Owner" or "Staff"))) return NotFound();
+        if (ex.TenantId is not null && (TenantId != ex.TenantId || Role is not ("TenantOwner" or "CoachStaff"))) return NotFound();
         if (req.VideoFileId is not null && !await ValidExerciseVideo(req.VideoFileId.Value)) return UnprocessableEntity("videoFileId must identify an exercise-video file in this tenant.");
         ex.Name = req.Name.Trim(); ex.MuscleGroup = req.MuscleGroup.Trim(); ex.Equipment = req.Equipment?.Trim(); ex.VideoUrl = req.VideoUrl; ex.VideoFileId = req.VideoFileId;
         await db.SaveChangesAsync();
@@ -68,7 +68,7 @@ public sealed class ExercisesController(CoachPulseDbContext db) : ControllerBase
         var ex = await db.Exercises.FirstOrDefaultAsync(x => x.Id == id);
         if (ex is null) return NotFound();
         if (ex.TenantId is null && Role != "SuperAdmin") return StatusCode(403);
-        if (ex.TenantId is not null && (TenantId != ex.TenantId || Role != "Owner")) return NotFound();
+        if (ex.TenantId is not null && (TenantId != ex.TenantId || Role != "TenantOwner")) return NotFound();
         if (await db.ProgramExercises.AnyAsync(x => x.ExerciseId == id)) return Conflict(new ProblemDetails { Status = 409, Title = "Exercise is in use", Detail = "Remove it from every program before deletion." });
         ex.IsDeleted = true; await db.SaveChangesAsync(); return NoContent();
     }

@@ -1298,7 +1298,7 @@ namespace CoachPulse.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("ar");
+                        .HasDefaultValue("en");
 
                     b.Property<DateTime?>("DeletionScheduledAt")
                         .HasColumnType("timestamp with time zone");
@@ -1394,6 +1394,9 @@ namespace CoachPulse.Infrastructure.Migrations
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");

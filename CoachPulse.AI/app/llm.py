@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from abc import ABC, abstractmethod
 from urllib.request import Request, urlopen
@@ -63,4 +64,5 @@ class OpenAILLMClient(LLMClient):
 def make_llm_client() -> LLMClient:
     if os.getenv("LLM_PROVIDER", "mock").lower() == "openai":
         return OpenAILLMClient()
+    logging.getLogger(__name__).warning("LLM_PROVIDER is not configured as a live provider; using FakeLLMClient. Generated content is for development/demo only.")
     return FakeLLMClient()

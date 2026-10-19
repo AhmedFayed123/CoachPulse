@@ -16,6 +16,11 @@
 !.env.example
 !CoachPulse.AI/.env.example
 
+# Generated Python and TypeScript build artifacts
+__pycache__/
+*.tsbuildinfo
+/.verification/
+
 # Development configuration
 appsettings.Development.json
 

@@ -60,7 +60,7 @@ public sealed class CheckInControllerTests
     [Fact]
     public async Task StaffCannotReviewUnassignedClientCheckIn()
     {
-        var tenant=Guid.NewGuid();var staff=Guid.NewGuid();var assignedCoach=Guid.NewGuid();var client=new Client{Id=Guid.NewGuid(),TenantId=tenant,UserId=Guid.NewGuid(),CoachId=assignedCoach};var (db,api)=Create(tenant,staff,"Staff");
+        var tenant=Guid.NewGuid();var staff=Guid.NewGuid();var assignedCoach=Guid.NewGuid();var client=new Client{Id=Guid.NewGuid(),TenantId=tenant,UserId=Guid.NewGuid(),CoachId=assignedCoach};var (db,api)=Create(tenant,staff,"CoachStaff");
         db.Clients.Add(client);db.CheckIns.Add(new CheckIn{Id=Guid.NewGuid(),TenantId=tenant,ClientId=client.Id,Client=client,Date=DateTime.UtcNow,Weight=80});await db.SaveChangesAsync();
         var checkin=await db.CheckIns.IgnoreQueryFilters().Select(c=>c.Id).SingleAsync();
         var result=await api.Feedback(client.Id,checkin,new CheckInFeedbackRequest("Good progress"),null!,default);

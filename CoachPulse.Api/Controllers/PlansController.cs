@@ -17,7 +17,7 @@ public sealed class PlansController(CoachPulseDbContext db) : ControllerBase
         if (!Identity(out var tenant, out var role)) return Unauthorized();
         if (role == UserRole.SuperAdmin) return Forbid();
         var q = db.Plans.AsNoTracking().Where(x => x.TenantId == tenant);
-        if (role is UserRole.Client or UserRole.Staff) q = q.Where(x => x.IsActive);
+        if (role is UserRole.Client or UserRole.CoachStaff) q = q.Where(x => x.IsActive);
         return Ok(await q.OrderBy(x => x.Price).Select(x => new { x.Id, x.Name, x.Price, x.DurationDays, x.IsActive }).ToListAsync(ct));
     }
 
@@ -27,7 +27,7 @@ public sealed class PlansController(CoachPulseDbContext db) : ControllerBase
         if (!Identity(out var tenant, out var role)) return Unauthorized();
         if (role == UserRole.SuperAdmin) return Forbid();
         var q = db.Plans.AsNoTracking().Where(x => x.Id == id && x.TenantId == tenant);
-        if (role is UserRole.Client or UserRole.Staff) q=q.Where(x=>x.IsActive);
+        if (role is UserRole.Client or UserRole.CoachStaff) q=q.Where(x=>x.IsActive);
         var plan = await q.Select(x => new { x.Id, x.Name, x.Price, x.DurationDays, x.IsActive }).FirstOrDefaultAsync(ct);
         return plan is null ? NotFound() : Ok(plan);
     }

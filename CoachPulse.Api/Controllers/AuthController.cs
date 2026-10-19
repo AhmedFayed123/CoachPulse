@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using CoachPulse.Application.DTOs.Auth;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Application.Interfaces;
 using CoachPulse.Application.Services;
 using CoachPulse.Domain.Entities;
@@ -37,6 +38,7 @@ public sealed class AuthController(
 
     [AllowAnonymous, HttpPost("register-tenant")]
     [EnableRateLimiting("auth-register")]
+    [ProducesResponseType(typeof(TenantRegistrationAcceptedResponse), StatusCodes.Status202Accepted)]
     public async Task<IActionResult> Register(RegisterTenantRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.TenantName) || string.IsNullOrWhiteSpace(request.TenantSlug)) return BadRequest("Email, tenant name, and tenant slug are required.");
@@ -46,14 +48,17 @@ public sealed class AuthController(
         var email = request.Email.Trim().ToLowerInvariant();
         if (await db.Users.IgnoreQueryFilters().AnyAsync(x => !x.IsDeleted && x.Email == email)) return BadRequest("Email already exists.");
         if (await db.Tenants.IgnoreQueryFilters().AnyAsync(x => x.Slug == normalizedSlug)) return BadRequest("Tenant slug already exists.");
-        var tenant = new Tenant { Id = Guid.NewGuid(), Name = request.TenantName.Trim(), Slug = normalizedSlug, Status = "Active" };
-        var user = new User { Id = Guid.NewGuid(), TenantId = tenant.Id, Email = email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Owner };
+        var tenant = new Tenant { Id = Guid.NewGuid(), Name = request.TenantName.Trim(), Slug = normalizedSlug, Status = "PendingApproval", DefaultLanguage = "en" };
+        var user = new User { Id = Guid.NewGuid(), TenantId = tenant.Id, Email = email, Name = request.Name?.Trim(), PasswordHash = passwords.Hash(request.Password), Role = UserRole.TenantOwner };
         db.Tenants.Add(tenant); db.Users.Add(user); await db.SaveChangesAsync();
-        return Ok(new { Message = "Registration successful.", UserId = user.Id, TenantId = tenant.Id, Email = user.Email, Role = user.Role.ToString() });
+        Audit("tenant.registration.requested", user.Id, tenant.Id, tenant.Slug);
+        await db.SaveChangesAsync();
+        return Accepted(new TenantRegistrationAcceptedResponse(tenant.Id, "PendingApproval"));
     }
 
     [AllowAnonymous, HttpPost("register-client")]
     [EnableRateLimiting("auth-register")]
+    [ProducesResponseType(typeof(AuthSessionResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> RegisterClient(RegisterClientRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email)) return BadRequest("Email is required.");
@@ -73,12 +78,14 @@ public sealed class AuthController(
         if (!string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase)) return BadRequest("Tenant is not active.");
         if (await db.Users.IgnoreQueryFilters().AnyAsync(x => !x.IsDeleted && x.TenantId == tenantId && x.Email == email)) return BadRequest("Email already exists in this tenant.");
         var coachId = invite?.CoachId ?? request.CoachId;
-        if (coachId.HasValue && !await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == coachId && x.TenantId == tenantId && !x.IsDeleted && x.IsActive && (x.Role == UserRole.Owner || x.Role == UserRole.Staff))) return BadRequest("Invalid coach for this tenant.");
-        var user = new User { Id = Guid.NewGuid(), TenantId = tenantId, Email = email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Client };
+        if (coachId.HasValue && !await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == coachId && x.TenantId == tenantId && !x.IsDeleted && x.IsActive && (x.Role == UserRole.TenantOwner || x.Role == UserRole.CoachStaff))) return BadRequest("Invalid coach for this tenant.");
+        var user = new User { Id = Guid.NewGuid(), TenantId = tenantId, Email = email, Name = request.Name?.Trim() ?? invite?.InvitedName, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Client };
         var client = new Client { Id = Guid.NewGuid(), TenantId = tenantId, UserId = user.Id, CoachId = coachId, Goals = request.Goals?.Trim(), HealthInfo = request.HealthInfo?.Trim() };
         db.Users.Add(user); db.Clients.Add(client); if (invite is not null) invite.AcceptedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
-        return Ok(new { Message = invite is null ? "Client registration successful." : "Invitation accepted successfully.", UserId = user.Id, ClientId = client.Id, TenantId = tenant.Id, Email = user.Email, Role = user.Role.ToString() });
+        var response = await CreateAuthResponseAsync(user);
+        await db.SaveChangesAsync();
+        return Ok(response);
     }
 
     [AllowAnonymous, Obsolete("Use register-client with inviteToken.")]
@@ -107,13 +114,16 @@ public sealed class AuthController(
         var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Id == invite.TenantId && x.Status == "Active");
         if (tenant is null) return BadRequest("Tenant is not active.");
         if (await db.Users.IgnoreQueryFilters().AnyAsync(x => !x.IsDeleted && x.TenantId == invite.TenantId && x.Email == invite.Email)) return BadRequest("An account already exists for this email.");
-        var user = new User { Id = Guid.NewGuid(), TenantId = invite.TenantId, Email = invite.Email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.Staff };
+        var user = new User { Id = Guid.NewGuid(), TenantId = invite.TenantId, Email = invite.Email, PasswordHash = passwords.Hash(request.Password), Role = UserRole.CoachStaff };
         invite.AcceptedAt = DateTime.UtcNow; db.Users.Add(user); await db.SaveChangesAsync();
-        return Ok(new { Message = "Invitation accepted successfully.", UserId = user.Id, TenantId = invite.TenantId, Email = user.Email, Role = user.Role.ToString() });
+        var response = await CreateAuthResponseAsync(user);
+        await db.SaveChangesAsync();
+        return Ok(response);
     }
 
     [AllowAnonymous, HttpPost("login")]
     [EnableRateLimiting("auth-login")]
+    [ProducesResponseType(typeof(AuthSessionResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password)) return BadRequest("Email and password are required.");
@@ -124,6 +134,12 @@ public sealed class AuthController(
             var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Slug == request.TenantSlug.Trim().ToLowerInvariant());
             if (tenant is null) { Audit("login.failed", identifier: email); await db.SaveChangesAsync(); return Unauthorized("Invalid email or password."); }
             query = query.Where(x => x.TenantId == tenant.Id);
+        }
+        else
+        {
+            // A missing tenant slug is reserved for explicitly selected platform administrators.
+            // Never search tenant accounts across the whole database on an ambiguous login.
+            query = query.Where(x => x.TenantId == null && x.Role == UserRole.SuperAdmin);
         }
         var matches = await query.ToListAsync();
         var validUsers = matches.Where(x => passwords.Verify(request.Password, x.PasswordHash)).Take(2).ToList();
@@ -138,15 +154,14 @@ public sealed class AuthController(
                 return Unauthorized("Tenant is not active.");
             }
         }
-        var raw = refreshTokens.GenerateToken();
-        var accessTokenMinutes = configuration?.GetValue("Jwt:AccessTokenMinutes", 15) ?? 15;
-        var refreshTokenDays = configuration?.GetValue("Jwt:RefreshTokenDays", 7) ?? 7;
-        var token = new RefreshToken { Id = Guid.NewGuid(), UserId = user.Id, TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays) };
-        db.RefreshTokens.Add(token); Audit("login.succeeded", user.Id, user.TenantId); await db.SaveChangesAsync();
-        return Ok(new { AccessToken = jwt.GenerateAccessToken(user), RefreshToken = raw, TokenType = "Bearer", ExpiresInMinutes = accessTokenMinutes, RefreshTokenExpiresAt = token.ExpiresAt, User = new { user.Id, user.Email, user.TenantId, user.Role } });
+        Audit("login.succeeded", user.Id, user.TenantId);
+        var response = await CreateAuthResponseAsync(user);
+        await db.SaveChangesAsync();
+        return Ok(response);
     }
 
     [AllowAnonymous, HttpPost("refresh-token")]
+    [ProducesResponseType(typeof(AuthSessionResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> RefreshToken(RefreshTokenRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.RefreshToken)) return BadRequest("Refresh token is required.");
@@ -166,9 +181,27 @@ public sealed class AuthController(
             if (tenant is null || tenant.IsDeleted || !string.Equals(tenant.Status, "Active", StringComparison.OrdinalIgnoreCase)) return Unauthorized("Tenant is not active.");
         }
         token.RevokedAt = DateTime.UtcNow;
-        var raw = refreshTokens.GenerateToken(); var replacement = new RefreshToken { Id = Guid.NewGuid(), UserId = token.UserId, TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddDays(7) };
-        db.RefreshTokens.Add(replacement); await db.SaveChangesAsync();
-        return Ok(new { AccessToken = jwt.GenerateAccessToken(token.User), RefreshToken = raw, TokenType = "Bearer", ExpiresInMinutes = 60, RefreshTokenExpiresAt = replacement.ExpiresAt });
+        var response = await CreateAuthResponseAsync(token.User);
+        await db.SaveChangesAsync();
+        return Ok(response);
+    }
+
+    private async Task<AuthSessionResponse> CreateAuthResponseAsync(User user)
+    {
+        var accessTokenMinutes = configuration?.GetValue("Jwt:AccessTokenMinutes", 15) ?? 15;
+        var refreshTokenDays = configuration?.GetValue("Jwt:RefreshTokenDays", 7) ?? 7;
+        var rawRefreshToken = refreshTokens.GenerateToken();
+        db.RefreshTokens.Add(new RefreshToken
+        {
+            Id = Guid.NewGuid(), UserId = user.Id, TokenHash = Hash(rawRefreshToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays)
+        });
+        var tenant = user.TenantId is Guid tenantId
+            ? await db.Tenants.IgnoreQueryFilters().Where(x => x.Id == tenantId)
+                .Select(x => new AuthSessionTenant(x.Id, x.Slug, x.Name)).FirstOrDefaultAsync()
+            : null;
+        return new AuthSessionResponse(jwt.GenerateAccessToken(user), rawRefreshToken, accessTokenMinutes * 60,
+            new AuthSessionUser(user.Id, user.Name, user.Role), tenant);
     }
 
     [Authorize, HttpPost("logout")]
@@ -203,7 +236,8 @@ public sealed class AuthController(
             {
                 var raw = refreshTokens.GenerateToken();
                 db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = tenant.Id, Purpose = "password-reset", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
-                await emails.SendAsync(user.Email, "Password reset", raw, HttpContext.RequestAborted);
+                await emails.SendTemplateAsync(user.Email, EmailTemplateType.PasswordReset, user.Language,
+                    new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty }, HttpContext.RequestAborted);
                 Audit("password-reset.requested", user.Id, tenant.Id);
             }
         }
@@ -243,7 +277,8 @@ public sealed class AuthController(
             if (user is not null)
             {
                 var raw = refreshTokens.GenerateToken(); db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = tenant.Id, Purpose = "email-confirmation", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
-                await emails.SendAsync(user.Email, "Confirm email", raw, HttpContext.RequestAborted);
+                await emails.SendTemplateAsync(user.Email, EmailTemplateType.EmailConfirmation, user.Language,
+                    new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty }, HttpContext.RequestAborted);
             }
         }
         await db.SaveChangesAsync(); return Ok(new { Message = UniformResponse });

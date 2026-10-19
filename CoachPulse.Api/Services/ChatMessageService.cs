@@ -12,17 +12,17 @@ public sealed class ChatMessageService(CoachPulseDbContext db)
 
     public async Task<Message?> SendAsync(Guid senderId, Guid tenantId, string role, Guid clientUserId, string? content, IReadOnlyCollection<Guid>? fileIds, CancellationToken ct)
     {
-        var client = await db.Clients.FirstOrDefaultAsync(c => c.UserId == clientUserId && c.TenantId == tenantId && c.CoachId != null, ct);
-        if (client is null || (role == "Client" && client.UserId != senderId) || (role is "Owner" or "Staff" && client.CoachId != senderId)) return null;
+        var client = await db.Clients.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.UserId == clientUserId && c.TenantId == tenantId && c.CoachId != null, ct);
+        if (client is null || (role == "Client" && client.UserId != senderId) || (role is "TenantOwner" or "CoachStaff" && client.CoachId != senderId)) return null;
         var receiverId = role == "Client" ? client.CoachId!.Value : client.UserId;
-        if (role == "Owner" && client.CoachId != senderId) return null;
+        if (role == "TenantOwner" && client.CoachId != senderId) return null;
         var body = content?.Trim() ?? "";
         var attachments = fileIds?.Distinct().ToArray() ?? [];
         if (body.Length == 0 && attachments.Length == 0 || body.Length > 2000 || attachments.Length > 10) throw new ArgumentException("Message must contain text or attachments and be within limits.");
         var now = DateTime.UtcNow;
         var window = Windows.AddOrUpdate(senderId, (now, 1), (_, w) => now - w.Start >= TimeSpan.FromMinutes(1) ? (now, 1) : (w.Start, w.Count + 1));
         if (window.Count > 30) throw new InvalidOperationException("Message rate limit exceeded.");
-        var files = attachments.Length == 0 ? new List<StoredFile>() : await db.StoredFiles.Where(f => attachments.Contains(f.Id) && f.TenantId == tenantId && f.OwnerUserId == senderId && f.Purpose == "attachment" && !f.IsDeleted && f.LinkedEntityId == null).ToListAsync(ct);
+        var files = attachments.Length == 0 ? new List<StoredFile>() : await db.StoredFiles.IgnoreQueryFilters().Where(f => attachments.Contains(f.Id) && f.TenantId == tenantId && f.OwnerUserId == senderId && f.Purpose == "attachment" && !f.IsDeleted && f.LinkedEntityId == null).ToListAsync(ct);
         if (files.Count != attachments.Length) throw new KeyNotFoundException("Attachment not found.");
         var message = new Message { Id = Guid.NewGuid(), TenantId = tenantId, SenderId = senderId, ReceiverId = receiverId, Content = body, Timestamp = now };
         db.Messages.Add(message);

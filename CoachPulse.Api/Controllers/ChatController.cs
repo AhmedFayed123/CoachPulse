@@ -1,5 +1,6 @@
-﻿
+
 using System.Security.Claims;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Infrastructure.Persistence;
 using CoachPulse.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -20,13 +21,13 @@ public class ChatController : ControllerBase
         _context = context;
     }
 
-    // GET /api/chat/conversations/{otherUserId}/messages?page=1&pageSize=50
+    // GET /api/chat/conversations/{otherUserId}/messages?page=1&pageSize=20
     [HttpGet("conversations/{otherUserId:guid}/messages")]
     [Obsolete("Use GET /api/messages/{clientId}.")]
     public async Task<IActionResult> GetMessages(
         Guid otherUserId,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50,
+        [FromQuery] int pageSize = 20,
         [FromQuery] Guid? before = null,
         [FromQuery] int? limit = null)
     {
@@ -35,7 +36,7 @@ public class ChatController : ControllerBase
     }
 
     [HttpGet("~/api/messages/{clientId:guid}")]
-    public Task<IActionResult> GetMessagesCanonical(Guid clientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] Guid? before = null, [FromQuery] int? limit = null) => GetMessagesCore(clientId, page, pageSize, before, limit);
+    public Task<IActionResult> GetMessagesCanonical(Guid clientId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] Guid? before = null, [FromQuery] int? limit = null) => GetMessagesCore(clientId, page, pageSize, before, limit);
 
     private async Task<IActionResult> GetMessagesCore(Guid otherUserId, int page, int pageSize, Guid? before = null, int? limit = null)
     {
@@ -90,11 +91,11 @@ public class ChatController : ControllerBase
                     c.CoachId == otherUserId &&
                     c.TenantId == tenantId);
         }
-        else if (role == "Owner")
+        else if (role == "TenantOwner")
         {
             canChat = await _context.Clients.AsNoTracking().AnyAsync(c => c.UserId == otherUserId && c.TenantId == tenantId);
         }
-        else if (role == "Staff")
+        else if (role == "CoachStaff")
         {
             canChat = await _context.Clients
                 .AsNoTracking()
@@ -115,7 +116,7 @@ public class ChatController : ControllerBase
 
         var firstParticipant = userId;
         var secondParticipant = otherUserId;
-        if (role == "Owner")
+        if (role == "TenantOwner")
         {
             var assignedCoach = await _context.Clients.Where(c => c.TenantId == tenantId && c.UserId == otherUserId).Select(c => c.CoachId).FirstOrDefaultAsync();
             if (assignedCoach is null) return NotFound();
@@ -134,7 +135,7 @@ public class ChatController : ControllerBase
                      m.ReceiverId == firstParticipant)
                 ));
 
-        if (role == "Owner") { _context.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = "chat.conversation.read", Identifier = $"client={otherUserId}", CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(); }
+        if (role == "TenantOwner") { _context.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = userId, TenantId = tenantId, EventType = "chat.conversation.read", Identifier = $"client={otherUserId}", CreatedAt = DateTime.UtcNow }); await _context.SaveChangesAsync(); }
         if (before.HasValue) { var cursor = await _context.Messages.Where(m => m.Id == before && m.TenantId == tenantId && ((m.SenderId == firstParticipant && m.ReceiverId == secondParticipant) || (m.SenderId == secondParticipant && m.ReceiverId == firstParticipant))).Select(m => (DateTime?)m.Timestamp).FirstOrDefaultAsync(); if (cursor is null) return UnprocessableEntity("before must belong to this conversation."); query = query.Where(m => m.Timestamp < cursor); }
         var totalCount = await query.CountAsync();
 
@@ -158,15 +159,6 @@ public class ChatController : ControllerBase
         // Return messages in chronological order.
         messages.Reverse();
 
-        return Ok(new
-        {
-            otherUserId,
-            page,
-            pageSize,
-            totalCount,
-            totalPages = (int)Math.Ceiling(
-                totalCount / (double)pageSize),
-            messages
-        });
+        return Ok(PagedResult<object>.Create(messages.Cast<object>().ToArray(), page, pageSize, totalCount));
     }
 }

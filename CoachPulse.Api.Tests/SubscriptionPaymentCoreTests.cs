@@ -8,6 +8,7 @@ using CoachPulse.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -72,7 +73,7 @@ public sealed class SubscriptionPaymentCoreTests
     [Fact]
     public async Task InstaPayConfirmationTwice_ConflictsAndActivatesOnce()
     {
-        await using var f=await PaymentFixture.Create(UserRole.Owner);
+        await using var f=await PaymentFixture.Create(UserRole.TenantOwner);
         var controller=f.Controller();
         Assert.IsType<OkObjectResult>(await controller.Confirm(f.Payment.Id,CancellationToken.None));
         Assert.IsType<ConflictObjectResult>(await controller.Confirm(f.Payment.Id,CancellationToken.None));
@@ -97,6 +98,31 @@ public sealed class SubscriptionPaymentCoreTests
     }
 
     [Fact]
+    public async Task PaymobIntention_ReturnsUnifiedCheckoutAndNeverPersistsTheClientSecretAsPlaintext()
+    {
+        await using var f=await PaymentFixture.Create(UserRole.Client);
+        f.Db.Tenants.Single().PaymobEnabled=true;
+        await f.Db.SaveChangesAsync();
+        f.Http.Request.Headers["Idempotency-Key"]="paymob-once";
+        var request=new CreatePaymentRequest(f.Plan.Id);
+        var initialPaymentCount=await f.Db.Payments.CountAsync();
+        var first=Assert.IsType<OkObjectResult>(await f.Controller().CreatePaymobIntention(request,CancellationToken.None));
+        var response=Assert.IsType<CoachPulse.Application.DTOs.Payments.PaymobCheckoutResponse>(first.Value);
+        Assert.Contains("publicKey=egy_pk_test_public",response.CheckoutUrl,StringComparison.Ordinal);
+        Assert.Contains("clientSecret=csk_test_private",response.CheckoutUrl,StringComparison.Ordinal);
+        Assert.DoesNotContain("sk_test_api",response.CheckoutUrl,StringComparison.Ordinal);
+        using var responseJson=System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(response));
+        Assert.False(responseJson.RootElement.TryGetProperty("clientSecret",out _));
+        var snapshot=await f.Db.IdempotencyKeys.SingleAsync(x=>x.Key=="paymob-once");
+        Assert.StartsWith("dp1:",snapshot.ResponseSnapshot,StringComparison.Ordinal);
+        Assert.DoesNotContain("csk_test_private",snapshot.ResponseSnapshot,StringComparison.Ordinal);
+        var replay=Assert.IsType<ContentResult>(await f.Controller().CreatePaymobIntention(request,CancellationToken.None));
+        Assert.Equal(200,replay.StatusCode);
+        Assert.Contains("csk_test_private",replay.Content,StringComparison.Ordinal);
+        Assert.Equal(initialPaymentCount+1,await f.Db.Payments.CountAsync());
+    }
+
+    [Fact]
     public async Task ClientCannotPollAnotherClientsPayment()
     {
         await using var f=await PaymentFixture.Create(UserRole.Client);
@@ -108,7 +134,7 @@ public sealed class SubscriptionPaymentCoreTests
     [Fact]
     public async Task ManualCashPayment_RequiresIdempotencyAndActivatesOnce()
     {
-        await using var f=await PaymentFixture.Create(UserRole.Owner);var controller=f.Controller();f.Http.Request.Headers["Idempotency-Key"]="cash-once";
+        await using var f=await PaymentFixture.Create(UserRole.TenantOwner);var controller=f.Controller();f.Http.Request.Headers["Idempotency-Key"]="cash-once";
         var request=new ManualPaymentRequest(f.Subscription.Id,125m);
         var first=Assert.IsType<ObjectResult>(await controller.RegisterManualPayment(request,CancellationToken.None));Assert.Equal(201,first.StatusCode);
         var replay=Assert.IsType<ContentResult>(await controller.RegisterManualPayment(request,CancellationToken.None));Assert.Equal(201,replay.StatusCode);
@@ -139,6 +165,7 @@ public sealed class SubscriptionPaymentCoreTests
     private sealed class PaymentFixture : IAsyncDisposable
     {
         private readonly Guid _userId=Guid.NewGuid();
+        private readonly IDataProtectionProvider _dataProtectionProvider = new EphemeralDataProtectionProvider();
         private PaymentFixture(CoachPulseDbContext db,TenantState tenant,Guid tenantId,Payment payment,Subscription subscription,StoredFile receipt,User user,Client client,Plan plan,Microsoft.AspNetCore.Http.DefaultHttpContext http)
         {Db=db;Tenant=tenant;TenantId=tenantId;Payment=payment;Subscription=subscription;Receipt=receipt;User=user;Client=client;Plan=plan;Http=http;}
         public CoachPulseDbContext Db{get;} public TenantState Tenant{get;} public Guid TenantId{get;} public Payment Payment{get;} public Subscription Subscription{get;} public StoredFile Receipt{get;} public User User{get;} public Client Client{get;} public Plan Plan{get;} public DefaultHttpContext Http{get;}
@@ -151,14 +178,14 @@ public sealed class SubscriptionPaymentCoreTests
         public PaymentsController Controller()
         {
             Http.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.NameIdentifier,User.Id.ToString()),new Claim("tenantId",TenantId.ToString()),new Claim(ClaimTypes.Role,User.Role.ToString())},"test"));
-            return new PaymentsController(Db,new FakePaymob(),new SubscriptionActivationService(),new SubscriptionActivationService(),new FakeHubContext()){ControllerContext=new ControllerContext{HttpContext=Http}};
+        return new PaymentsController(Db,new FakePaymob(),new SubscriptionActivationService(),new SubscriptionActivationService(),new FakeHubContext(),_dataProtectionProvider){ControllerContext=new ControllerContext{HttpContext=Http}};
         }
         public async ValueTask DisposeAsync()=>await Db.DisposeAsync();
     }
 
     private sealed class FakePaymob : IPaymobClient
     {
-        public Task<PaymobIntentionResult> CreatePaymentIntentionAsync(decimal amount,string currency,string orderId,string billingEmail,string billingFirstName,string billingLastName,string billingPhone,CancellationToken cancellationToken)=>Task.FromResult(new PaymobIntentionResult("client-secret",orderId));
+        public Task<PaymobIntentionResult> CreatePaymentIntentionAsync(decimal amount,string currency,string orderId,string billingEmail,string billingFirstName,string billingLastName,string billingPhone,CancellationToken cancellationToken)=>Task.FromResult(new PaymobIntentionResult("https://accept.paymob.com/unifiedcheckout/?publicKey=egy_pk_test_public&clientSecret=csk_test_private",orderId));
         public Task<string> RefundAsync(string transactionId,decimal amount,CancellationToken cancellationToken)=>Task.FromResult("ok");
     }
     private sealed class FakeHubContext : IHubContext<NotificationsHub>

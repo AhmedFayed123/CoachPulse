@@ -34,7 +34,7 @@ public sealed class ClientExperienceTests
     [Fact]
     public async Task AdherenceWithoutActiveProgramReturnsNullRate()
     {
-        await using var f=await Fixture.Create(UserRole.Owner);var c=f.AddClient(f.UserId);await f.Db.SaveChangesAsync();
+        await using var f=await Fixture.Create(UserRole.TenantOwner);var c=f.AddClient(f.UserId);await f.Db.SaveChangesAsync();
         var result=Assert.IsType<OkObjectResult>(await f.Workouts.Adherence(c.Id,"week",null,default));
         Assert.Null(result.Value!.GetType().GetProperty("rate")!.GetValue(result.Value));
     }
@@ -42,7 +42,7 @@ public sealed class ClientExperienceTests
     [Fact]
     public async Task MealPlanRowVersionConflictReturns409()
     {
-        await using var f=await Fixture.Create(UserRole.Owner);var plan=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,Title="Draft",Meals="[]",RowVersion=[1,2,3]};f.Db.MealPlans.Add(plan);await f.Db.SaveChangesAsync();
+        await using var f=await Fixture.Create(UserRole.TenantOwner);var plan=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,Title="Draft",Meals="[]",RowVersion=[1,2,3]};f.Db.MealPlans.Add(plan);await f.Db.SaveChangesAsync();
         var result=await f.Meals.Update(plan.Id,new MealPlanUpdate("Changed",[3,2,1]),default);
         Assert.IsType<ConflictObjectResult>(result);
     }
@@ -50,7 +50,7 @@ public sealed class ClientExperienceTests
     [Fact]
     public async Task AssignedCoachCannotAccessAnotherClientsWorkoutLogs()
     {
-        await using var f=await Fixture.Create(UserRole.Staff);var c=f.AddClient(Guid.NewGuid());await f.Db.SaveChangesAsync();
+        await using var f=await Fixture.Create(UserRole.CoachStaff);var c=f.AddClient(Guid.NewGuid());await f.Db.SaveChangesAsync();
         Assert.IsType<NotFoundResult>(await f.Workouts.ClientLogs(c.Id,null,null,1,50,default));
     }
 
@@ -66,7 +66,7 @@ public sealed class ClientExperienceTests
     [Fact]
     public async Task MealPlanAssignArchivesPreviousActivePlan()
     {
-        await using var f=await Fixture.Create(UserRole.Owner);var client=f.AddClient(f.UserId);
+        await using var f=await Fixture.Create(UserRole.TenantOwner);var client=f.AddClient(f.UserId);
         var old=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,ClientId=client.Id,Title="Old",Meals="[]",Status="Active"};
         var next=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,Title="New",Meals="[]",Status="Draft"};f.Db.MealPlans.AddRange(old,next);await f.Db.SaveChangesAsync();
         var result=await f.Meals.Assign(next.Id,new MealPlanAssign(client.Id),default);
@@ -76,7 +76,7 @@ public sealed class ClientExperienceTests
     [Fact]
     public async Task MealTemplateCannotBeAssigned()
     {
-        await using var f=await Fixture.Create(UserRole.Owner);var client=f.AddClient(f.UserId);var template=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,Title="Template",Meals="[]",IsTemplate=true,Status="Template"};f.Db.MealPlans.Add(template);await f.Db.SaveChangesAsync();
+        await using var f=await Fixture.Create(UserRole.TenantOwner);var client=f.AddClient(f.UserId);var template=new MealPlan{Id=Guid.NewGuid(),TenantId=f.TenantId,Title="Template",Meals="[]",IsTemplate=true,Status="Template"};f.Db.MealPlans.Add(template);await f.Db.SaveChangesAsync();
         Assert.IsType<ConflictObjectResult>(await f.Meals.Assign(template.Id,new MealPlanAssign(client.Id),default));
     }
 

@@ -13,5 +13,6 @@ namespace CoachPulse.Application.DTOs.Auth
         public string Password { get; set; } = string.Empty;
         public string TenantName { get; set; } = string.Empty;
         public string TenantSlug { get; set; } = string.Empty;
+        public string? Name { get; set; }
     }
 }

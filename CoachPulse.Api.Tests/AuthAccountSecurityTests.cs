@@ -20,17 +20,58 @@ public sealed class AuthAccountSecurityTests
     public async Task Refresh_RotatesHashedToken_AndReuseRevokesAll()
     {
         await using var f = await Fixture.Create();
-        var user = f.User(); f.Db.Users.Add(user); await f.Db.SaveChangesAsync();
-        var login = Assert.IsType<OkObjectResult>(await f.Auth.Login(new LoginRequest { Email = user.Email, Password = "pw" }));
+        var tenant = f.Tenant(); var user = f.User(tenant.Id, UserRole.TenantOwner); user.Name = "Coach Name";
+        f.Db.Tenants.Add(tenant); f.Db.Users.Add(user); await f.Db.SaveChangesAsync();
+        var login = Assert.IsType<OkObjectResult>(await f.Auth.Login(new LoginRequest { Email = user.Email, Password = "pw", TenantSlug = tenant.Slug }));
+        AssertAuthContract(login.Value!, user, tenant);
         var raw = (string)login.Value!.GetType().GetProperty("RefreshToken")!.GetValue(login.Value)!;
         var saved = await f.Db.RefreshTokens.SingleAsync();
         Assert.Equal(Fixture.Hash(raw), saved.TokenHash); Assert.NotEqual(raw, saved.TokenHash);
         var rotated = Assert.IsType<OkObjectResult>(await f.Auth.RefreshToken(new RefreshTokenRequest { RefreshToken = raw }));
+        AssertAuthContract(rotated.Value!, user, tenant);
         var replacement = (string)rotated.Value!.GetType().GetProperty("RefreshToken")!.GetValue(rotated.Value)!;
         Assert.NotEqual(raw, replacement); Assert.NotNull(saved.RevokedAt);
         Assert.IsType<UnauthorizedObjectResult>(await f.Auth.RefreshToken(new RefreshTokenRequest { RefreshToken = raw }));
         Assert.All(await f.Db.RefreshTokens.ToListAsync(), t => Assert.NotNull(t.RevokedAt));
         Assert.Contains(await f.Db.SecurityAuditLogs.ToListAsync(), x => x.EventType == "refresh-token.reuse-detected");
+    }
+
+    [Fact]
+    public async Task RegisterTenantCreatesPendingRequestWithoutIssuingSession()
+    {
+        await using var f = await Fixture.Create();
+        var result = Assert.IsType<AcceptedResult>(await f.Auth.Register(new RegisterTenantRequest
+        {
+            Email = "owner@example.test", Password = "Strong@Pass123", Name = "Owner Name",
+            TenantName = "Test Studio", TenantSlug = "test-studio"
+        }));
+        var value = result.Value!;
+        Assert.Equal("PendingApproval", value.GetType().GetProperty("Status")!.GetValue(value));
+        Assert.NotNull(value.GetType().GetProperty("RequestId")!.GetValue(value));
+        var user = await f.Db.Users.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("Owner Name", user.Name);
+        Assert.Equal(UserRole.TenantOwner, user.Role);
+        var tenant = await f.Db.Tenants.IgnoreQueryFilters().SingleAsync();
+        Assert.Equal("PendingApproval", tenant.Status);
+        Assert.Empty(await f.Db.RefreshTokens.ToListAsync());
+    }
+
+    [Fact]
+    public async Task RegisterClient_ReturnsTheSameAuthContractAndPersistsRotationToken()
+    {
+        await using var f = await Fixture.Create();
+        var tenant = f.Tenant();
+        f.Db.Tenants.Add(tenant);
+        f.TenantState.Set(tenant.Id);
+        await f.Db.SaveChangesAsync();
+
+        var result = Assert.IsType<OkObjectResult>(await f.Auth.RegisterClient(new RegisterClientRequest
+        {
+            Email = "client@example.test", Password = "Strong@Pass123", Name = "Client Name", TenantId = tenant.Id
+        }));
+        var user = await f.Db.Users.IgnoreQueryFilters().SingleAsync();
+        AssertAuthContract(result.Value!, user, tenant);
+        Assert.Single(await f.Db.RefreshTokens.ToListAsync());
     }
 
     [Fact]
@@ -77,16 +118,32 @@ public sealed class AuthAccountSecurityTests
         await f.Db.SaveChangesAsync();
         Assert.IsType<BadRequestObjectResult>(await f.Auth.AcceptStaffInvite(new AcceptStaffInviteRequest { Token = "expired", Password = "Strong@Pass1" }));
         Assert.IsType<OkObjectResult>(await f.Auth.AcceptStaffInvite(new AcceptStaffInviteRequest { Token = "valid", Password = "Strong@Pass1" }));
-        var created = await f.Db.Users.IgnoreQueryFilters().SingleAsync(); Assert.Equal(UserRole.Staff, created.Role); Assert.Equal(tenant.Id, created.TenantId);
+        var created = await f.Db.Users.IgnoreQueryFilters().SingleAsync(); Assert.Equal(UserRole.CoachStaff, created.Role); Assert.Equal(tenant.Id, created.TenantId);
     }
 
     [Fact]
     public async Task DeleteActiveTenantOwnerWithClients_ReturnsConflict()
     {
-        await using var f = await Fixture.Create(); var tenant = f.Tenant(); var owner = f.User(tenant.Id, UserRole.Owner); var clientUser = f.User(tenant.Id, UserRole.Client);
+        await using var f = await Fixture.Create(); var tenant = f.Tenant(); var owner = f.User(tenant.Id, UserRole.TenantOwner); var clientUser = f.User(tenant.Id, UserRole.Client);
         f.Db.Tenants.Add(tenant); f.TenantState.Set(tenant.Id); f.Db.Users.AddRange(owner, clientUser); f.Db.Clients.Add(new Client { Id = Guid.NewGuid(), TenantId = tenant.Id, UserId = clientUser.Id }); await f.Db.SaveChangesAsync();
         f.SetUser(owner.Id); var account = new AccountController(f.Db, f.Passwords) { ControllerContext = f.Auth.ControllerContext };
         Assert.IsType<ConflictObjectResult>(await account.DeleteMe());
+    }
+
+    private static void AssertAuthContract(object value, User expectedUser, Tenant expectedTenant)
+    {
+        var type = value.GetType();
+        Assert.NotNull(type.GetProperty("AccessToken"));
+        Assert.False(string.IsNullOrWhiteSpace((string?)type.GetProperty("RefreshToken")?.GetValue(value)));
+        Assert.Equal(900, type.GetProperty("ExpiresIn")?.GetValue(value));
+        var responseUser = type.GetProperty("User")!.GetValue(value)!;
+        Assert.Equal(expectedUser.Id, responseUser.GetType().GetProperty("Id")?.GetValue(responseUser));
+        Assert.Equal(expectedUser.Name, responseUser.GetType().GetProperty("Name")?.GetValue(responseUser));
+        Assert.Equal(expectedUser.Role, responseUser.GetType().GetProperty("Role")?.GetValue(responseUser));
+        var responseTenant = type.GetProperty("Tenant")!.GetValue(value)!;
+        Assert.Equal(expectedTenant.Id, responseTenant.GetType().GetProperty("Id")?.GetValue(responseTenant));
+        Assert.Equal(expectedTenant.Slug, responseTenant.GetType().GetProperty("Slug")?.GetValue(responseTenant));
+        Assert.Equal(expectedTenant.Name, responseTenant.GetType().GetProperty("Name")?.GetValue(responseTenant));
     }
 
     private sealed class Fixture : IAsyncDisposable

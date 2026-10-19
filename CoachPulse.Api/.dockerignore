@@ -1,0 +1,6 @@
+bin/
+obj/
+.verification/
+App_Data/
+*.user
+*.suo

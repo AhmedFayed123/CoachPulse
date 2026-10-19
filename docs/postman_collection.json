@@ -1,0 +1,19 @@
+{
+  "info": {
+    "name": "CoachPulse API",
+    "description": "Core authentication, tenant, payment, and readiness requests. Generate/import the complete request set from docs/swagger.json for other routes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5006" },
+    { "key": "accessToken", "value": "" },
+    { "key": "tenantSlug", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/healthz" } },
+    { "name": "Readiness", "request": { "method": "GET", "url": "{{baseUrl}}/readyz" } },
+    { "name": "Login", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"coach@example.test\",\n  \"password\": \"<local-password>\",\n  \"tenantSlug\": \"{{tenantSlug}}\"\n}" }, "url": "{{baseUrl}}/api/auth/login" } },
+    { "name": "Payment polling status", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/payments/{{paymentId}}/status" } }
+  ]
+}

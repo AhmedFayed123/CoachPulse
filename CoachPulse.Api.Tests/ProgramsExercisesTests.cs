@@ -17,9 +17,9 @@ public sealed class ProgramsExercisesTests
     [Fact]
     public async Task ProgramUpdate_WithStaleRowVersion_Returns409() { await using var f = await Fixture.Create(); var p = f.AddProgram(); await f.Db.SaveChangesAsync(); Assert.IsType<ConflictObjectResult>(await f.Programs.Update(p.Id, new ProgramUpdateRequest { Title = "updated", DurationDays = 7, RowVersion = new byte[8] })); }
     [Fact]
-    public async Task StaffCannotReadProgramOfUnassignedClient_Returns404() { await using var f = await Fixture.Create(UserRole.Staff); var p = f.AddProgram(client: f.AddClient(Guid.NewGuid())); await f.Db.SaveChangesAsync(); Assert.IsType<NotFoundResult>(await f.Programs.Get(p.Id)); }
+    public async Task StaffCannotReadProgramOfUnassignedClient_Returns404() { await using var f = await Fixture.Create(UserRole.CoachStaff); var p = f.AddProgram(client: f.AddClient(Guid.NewGuid())); await f.Db.SaveChangesAsync(); Assert.IsType<NotFoundResult>(await f.Programs.Get(p.Id)); }
     [Fact]
-    public async Task StaffCannotModifyGeneralExercise_Returns403() { await using var f = await Fixture.Create(UserRole.Staff); var e = new Exercise { Id = Guid.NewGuid(), Name = "Squat", MuscleGroup = "Legs" }; f.Db.Exercises.Add(e); await f.Db.SaveChangesAsync(); Assert.IsType<StatusCodeResult>(await f.Exercises.Update(e.Id, new ExerciseRequest { Name = "Squat 2", MuscleGroup = "Legs" })); }
+    public async Task StaffCannotModifyGeneralExercise_Returns403() { await using var f = await Fixture.Create(UserRole.CoachStaff); var e = new Exercise { Id = Guid.NewGuid(), Name = "Squat", MuscleGroup = "Legs" }; f.Db.Exercises.Add(e); await f.Db.SaveChangesAsync(); Assert.IsType<StatusCodeResult>(await f.Exercises.Update(e.Id, new ExerciseRequest { Name = "Squat 2", MuscleGroup = "Legs" })); }
     [Fact]
     public async Task PrivateExerciseFromAnotherTenant_IsHidden() { await using var f = await Fixture.Create(); var e = new Exercise { Id = Guid.NewGuid(), TenantId = Guid.NewGuid(), Name = "Other", MuscleGroup = "Back" }; f.Db.Exercises.Add(e); await f.Db.SaveChangesAsync(); Assert.IsType<NotFoundResult>(await f.Exercises.Get(e.Id)); }
     [Fact]
@@ -39,7 +39,7 @@ public sealed class ProgramsExercisesTests
     {
         private Fixture(CoachPulseDbContext db, TenantState tenant, Guid tenantId, Guid userId, ProgramsController programs, ExercisesController exercises, MyProgramController my) { Db = db; Tenant = tenant; TenantId = tenantId; UserId = userId; Programs = programs; Exercises = exercises; My = my; }
         public CoachPulseDbContext Db { get; } public TenantState Tenant { get; } public Guid TenantId { get; } public Guid UserId { get; } public ProgramsController Programs { get; } public ExercisesController Exercises { get; } public MyProgramController My { get; }
-        public static async Task<Fixture> Create(UserRole role = UserRole.Owner)
+        public static async Task<Fixture> Create(UserRole role = UserRole.TenantOwner)
         {
             var ts = new TenantState(); var tid = Guid.NewGuid(); var uid = Guid.NewGuid(); ts.SetTenant(tid);
             var db = new CoachPulseDbContext(new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, ts); await db.Database.EnsureCreatedAsync();

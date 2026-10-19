@@ -1,0 +1,29 @@
+services:
+  migrator:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+  postgres:
+    ports: !reset []
+
+  proxy:
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.prod", "--adapter", "caddyfile"]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile.prod:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

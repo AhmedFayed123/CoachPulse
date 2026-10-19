@@ -74,10 +74,10 @@ public sealed class AiGatewayTests
             var db = new CoachPulseDbContext(new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, state); await db.Database.EnsureCreatedAsync();
             db.Tenants.Add(new Tenant { Id = tenant, Name = "T", Slug = "t", Status = "Active" });
             var clientUser = Guid.NewGuid();
-            db.Users.AddRange(new User { Id = user, TenantId = tenant, Email = "coach@test.invalid", Role = UserRole.Owner }, new User { Id = clientUser, TenantId = tenant, Email = "client@test.invalid", Role = UserRole.Client });
+            db.Users.AddRange(new User { Id = user, TenantId = tenant, Email = "coach@test.invalid", Role = UserRole.TenantOwner }, new User { Id = clientUser, TenantId = tenant, Email = "client@test.invalid", Role = UserRole.Client });
             db.Clients.Add(new Client { Id = clientId, TenantId = tenant, UserId = clientUser, CoachId = user });
             db.Exercises.Add(new Exercise { Id = exerciseId, TenantId = tenant, Name = "Squat", MuscleGroup = "Legs", Equipment = "None" }); await db.SaveChangesAsync();
-            var http = new DefaultHttpContext(); http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, user.ToString()), new Claim("tenantId", tenant.ToString()), new Claim(ClaimTypes.Role, "Owner")], "test"));
+            var http = new DefaultHttpContext(); http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, user.ToString()), new Claim("tenantId", tenant.ToString()), new Claim(ClaimTypes.Role, "TenantOwner")], "test"));
             var service = new FakeAiClient(failing, exerciseId);
             var churn = new ChurnScoringService(db, service, new ChurnFeatureBuilder(db), new NullHub(), NullLogger<ChurnScoringService>.Instance);
             var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Ai:DailyGenerationLimit"] = limit.ToString(), ["Ai:InternalApiKey"] = "test" }).Build();

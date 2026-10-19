@@ -12,8 +12,8 @@ public sealed class ClientAccessService(CoachPulseDbContext db) : IClientAccessS
         var query = db.Clients.Where(x => x.TenantId == tenantId);
         return role switch
         {
-            UserRole.Owner => query,
-            UserRole.Staff => query.Where(x => x.CoachId == userId && db.Users.Any(u => u.Id == userId && u.TenantId == tenantId && u.IsActive && !u.IsDeleted)),
+            UserRole.TenantOwner => query,
+            UserRole.CoachStaff => query.Where(x => x.CoachId == userId && db.Users.Any(u => u.Id == userId && u.TenantId == tenantId && u.IsActive && !u.IsDeleted)),
             _ => query.Where(_ => false)
         };
     }

@@ -1,4 +1,5 @@
 using CoachPulse.Application.Interfaces;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Infrastructure.Persistence;
 using Microsoft.AspNetCore.SignalR;
@@ -34,8 +35,20 @@ public sealed class NotificationService(CoachPulseDbContext db, IHubContext<Noti
 
         if ((preference?.EmailEnabled ?? true) || critical)
         {
-            var email = await db.Users.IgnoreQueryFilters().Where(x => x.Id == userId && x.TenantId == tenantId && !x.IsDeleted).Select(x => x.Email).FirstOrDefaultAsync(cancellationToken);
-            if (!string.IsNullOrWhiteSpace(email)) await emailSender.SendAsync(email, title, body, cancellationToken);
+            var user = await db.Users.IgnoreQueryFilters().Where(x => x.Id == userId && x.TenantId == tenantId && !x.IsDeleted).Select(x => new { x.Email, x.Language }).FirstOrDefaultAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(user?.Email))
+            {
+                var template = type switch
+                {
+                    "SubscriptionExpiryReminder" => EmailTemplateType.SubscriptionExpiryReminder,
+                    "CheckInReminder" => EmailTemplateType.CheckInReminder,
+                    _ => (EmailTemplateType?)null
+                };
+                if (template.HasValue)
+                    await emailSender.SendTemplateAsync(user.Email, template.Value, user.Language, new Dictionary<string, string> { ["detail"] = body }, cancellationToken);
+                else
+                    await emailSender.SendAsync(user.Email, title, body, cancellationToken);
+            }
         }
     }
 }

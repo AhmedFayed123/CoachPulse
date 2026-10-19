@@ -60,7 +60,7 @@ public sealed class FilesController : ControllerBase
         {
             "avatar" or "logo" or "checkin-photo" => (5 * Megabyte, ImageTypes),
             "receipt" => (5 * Megabyte, new HashSet<string>(ImageTypes, StringComparer.Ordinal) { "application/pdf" }),
-            "attachment" => (10 * Megabyte, new HashSet<string>(ImageTypes, StringComparer.Ordinal) { "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }),
+            "attachment" => (10 * Megabyte, new HashSet<string>(ImageTypes, StringComparer.Ordinal) { "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "video/mp4", "video/webm" }),
             "exercise-video" => (100 * Megabyte, new HashSet<string>(StringComparer.Ordinal) { "video/mp4", "video/webm" }),
             _ => (0L, null)
         };
@@ -68,7 +68,7 @@ public sealed class FilesController : ControllerBase
         if (allowedTypes is null)
             return BadRequest(new { message = "purpose must be avatar, logo, checkin-photo, receipt, attachment or exercise-video." });
 
-        if (file.Length > maximumSize)
+        if (file.Length > maximumSize && normalizedPurpose != "attachment")
             return StatusCode(StatusCodes.Status413PayloadTooLarge, new { message = $"File exceeds the {maximumSize / Megabyte} MB limit for this purpose." });
 
         DetectedFileContent? detected;
@@ -77,6 +77,12 @@ public sealed class FilesController : ControllerBase
 
         if (detected is null || !allowedTypes.Contains(detected.ContentType))
             return BadRequest(new { message = "The file content does not match an allowed file type for this purpose." });
+
+        var effectiveMaximumSize = normalizedPurpose == "attachment" && detected.ContentType is ("video/mp4" or "video/webm")
+            ? 100 * Megabyte
+            : maximumSize;
+        if (file.Length > effectiveMaximumSize)
+            return StatusCode(StatusCodes.Status413PayloadTooLarge, new { message = $"File exceeds the {effectiveMaximumSize / Megabyte} MB limit for this purpose." });
 
         var originalName = GetSafeOriginalName(file.FileName);
         if (originalName.Length > 255)
@@ -159,7 +165,7 @@ public sealed class FilesController : ControllerBase
             return NotFound();
 
         var isOwner = storedFile.OwnerUserId == userId;
-        var isTenantOwner = User.IsInRole(UserRole.Owner.ToString());
+        var isTenantOwner = User.IsInRole(UserRole.TenantOwner.ToString());
         if (!isOwner && !isTenantOwner)
             return NotFound();
 
@@ -185,13 +191,24 @@ public sealed class FilesController : ControllerBase
         if (file.Purpose is "avatar" or "logo")
             return true;
 
-        if (file.OwnerUserId == userId || User.IsInRole(UserRole.Owner.ToString()))
+        if (file.OwnerUserId == userId || User.IsInRole(UserRole.TenantOwner.ToString()))
             return true;
+
+        if (file.Purpose == "attachment" && file.LinkedEntityType == "Message" && file.LinkedEntityId is Guid messageId)
+        {
+            return await _db.Messages.IgnoreQueryFilters().AsNoTracking().AnyAsync(m =>
+                m.Id == messageId && m.TenantId == tenantId && !m.IsDeleted &&
+                (m.SenderId == userId || m.ReceiverId == userId) &&
+                _db.Clients.IgnoreQueryFilters().Any(c => c.TenantId == tenantId &&
+                    ((c.UserId == m.SenderId && c.CoachId == m.ReceiverId) ||
+                     (c.UserId == m.ReceiverId && c.CoachId == m.SenderId)) &&
+                    (c.UserId == userId || c.CoachId == userId)), cancellationToken);
+        }
 
         if (file.Purpose is not ("checkin-photo" or "receipt"))
             return false;
 
-        if (!User.IsInRole(UserRole.Staff.ToString()))
+        if (!User.IsInRole(UserRole.CoachStaff.ToString()))
             return false;
 
         return await _db.Clients.IgnoreQueryFilters().AsNoTracking().AnyAsync(c =>

@@ -10,7 +10,7 @@ namespace CoachPulse.Api.Controllers;
 public sealed class TenantAuditController(CoachPulseDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] string? action, [FromQuery] Guid? actorId, [FromQuery] string? entityType, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
+    public async Task<IActionResult> List([FromQuery] string? action, [FromQuery] Guid? actorId, [FromQuery] string? entityType, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         if (!Guid.TryParse(User.FindFirst("tenantId")?.Value, out var tenant)) return Unauthorized();
         if (page < 1 || pageSize is < 1 or > 100 || from.HasValue && to.HasValue && (to < from || (to.Value - from.Value).TotalDays > 366)) return BadRequest("Invalid pagination or date range (maximum 366 days).");

@@ -18,7 +18,7 @@ public sealed class ProgramsController(CoachPulseDbContext db, IClientAccessServ
     private Guid? TenantId => Guid.TryParse(User.FindFirstValue("tenantId"), out var id) ? id : null;
     private Guid? UserId => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     private string? Role => User.FindFirstValue(ClaimTypes.Role);
-    private bool IsOwner => Role == "Owner";
+    private bool IsOwner => Role == "TenantOwner";
 
     [HttpGet("/api/programs/{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
@@ -104,7 +104,7 @@ public sealed class ProgramsController(CoachPulseDbContext db, IClientAccessServ
         if (p.Status == "Archived") return Conflict("Archived programs cannot be assigned.");
         if (req.ClientId == Guid.Empty || req.StartDate == default) return UnprocessableEntity("clientId and startDate are required.");
         IQueryable<Client> clientQ = db.Clients.Where(c => c.Id == req.ClientId && c.TenantId == TenantId);
-        if (Role == "Staff") clientQ = clientQ.Where(c => c.CoachId == UserId);
+        if (Role == "CoachStaff") clientQ = clientQ.Where(c => c.CoachId == UserId);
         var client = await clientQ.FirstOrDefaultAsync(); if (client is null) return NotFound();
         var tenant = await db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == TenantId);
         TimeZoneInfo zone;
@@ -155,7 +155,7 @@ public sealed class ProgramsController(CoachPulseDbContext db, IClientAccessServ
     private IQueryable<CoachProgram> AccessiblePrograms()
     {
         var q = db.Programs.Where(x => x.TenantId == TenantId && !x.IsDeleted);
-        if (Role == "Staff") q = q.Where(p => p.IsTemplate || (p.ClientId == null && p.CoachId == UserId) || (p.ClientId != null && db.Clients.Any(c => c.Id == p.ClientId && c.CoachId == UserId)));
+        if (Role == "CoachStaff") q = q.Where(p => p.IsTemplate || (p.ClientId == null && p.CoachId == UserId) || (p.ClientId != null && db.Clients.Any(c => c.Id == p.ClientId && c.CoachId == UserId)));
         return q;
     }
     private async Task<object> ProgramView(CoachProgram p) => new { p.Id, p.Title, p.ClientId, p.CoachId, p.IsTemplate, p.Status, p.StartDate, p.DurationDays, p.RowVersion,

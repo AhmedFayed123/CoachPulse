@@ -7,3 +7,13 @@
 !**/.env.example
 **/appsettings.Development.json
 **/*.log
+**/node_modules
+**/dist
+**/.pytest_cache
+**/__pycache__
+**/.venv
+/.verification
+/CoachPulse.Frontend/node_modules
+/CoachPulse.Frontend/dist
+/CoachPulse.Frontend/test-results
+/CoachPulse.Frontend/playwright-report

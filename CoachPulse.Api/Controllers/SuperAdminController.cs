@@ -1,4 +1,4 @@
-﻿using CoachPulse.Infrastructure.Persistence;
+using CoachPulse.Infrastructure.Persistence;
 using CoachPulse.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,14 +21,26 @@ public class SuperAdminController : ControllerBase
 
     public sealed record TenantStatusRequest(string Reason);
     public sealed record DeleteTenantRequest(string Slug);
-    public sealed record ExerciseRequest(string Name, string MuscleGroup, string? Equipment, string? VideoUrl, Guid? VideoFileId);
+    public sealed record AdminExerciseRequest(string Name, string MuscleGroup, string? Equipment, string? VideoUrl, Guid? VideoFileId);
+
+    // تعريف DTO لملف الـ CSV الخاص بالتمارين لحل مشكلة قراءة الـ IFormFile في Swagger
+    public sealed record ImportExercisesRequest(IFormFile File);
+
     private SecurityAuditLog Audit(Guid tenantId, string action, string? oldValue, string newValue) => new()
     {
-        Id = Guid.NewGuid(), TenantId = tenantId, UserId = Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var actor) ? actor : null,
+        Id = Guid.NewGuid(),
+        TenantId = tenantId,
+        UserId = Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var actor) ? actor : null,
         ActorUserId = Guid.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var actorId) ? actorId : null,
-        ActorRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value, EventType = action, Action = action,
-        EntityType = "Tenant", EntityId = tenantId.ToString(), OldValue = oldValue, NewValue = newValue,
-        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(), CreatedAt = DateTime.UtcNow
+        ActorRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value,
+        EventType = action,
+        Action = action,
+        EntityType = "Tenant",
+        EntityId = tenantId.ToString(),
+        OldValue = oldValue,
+        NewValue = newValue,
+        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+        CreatedAt = DateTime.UtcNow
     };
 
     [HttpGet("tenants/{id:guid}")]
@@ -64,6 +76,38 @@ public class SuperAdminController : ControllerBase
         await _context.SaveChangesAsync(ct); return Ok(new { tenant.Id, tenant.Status });
     }
 
+    [HttpGet("tenants/pending-approval")]
+    public async Task<IActionResult> PendingTenantApprovals(CancellationToken ct)
+    {
+        var tenants = await _context.Tenants.AsNoTracking()
+            .Where(x => !x.IsDeleted && x.Status == "PendingApproval")
+            .OrderBy(x => x.CreatedAt)
+            .Select(x => new
+            {
+                id = x.Id,
+                name = x.Name,
+                slug = x.Slug,
+                createdAt = x.CreatedAt,
+                owner = _context.Users.IgnoreQueryFilters().Where(u => u.TenantId == x.Id && u.Role == CoachPulse.Domain.Enums.UserRole.TenantOwner && !u.IsDeleted)
+                    .Select(u => new { u.Name, u.Email }).FirstOrDefault()
+            })
+            .ToListAsync(ct);
+        return Ok(tenants);
+    }
+
+    [HttpPut("tenants/{id:guid}/approve")]
+    public async Task<IActionResult> ApproveTenant(Guid id, [FromBody] TenantStatusRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Reason) || request.Reason.Length > 500)
+            return UnprocessableEntity("An approval reason is required.");
+        var tenant = await _context.Tenants.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted && x.Status == "PendingApproval", ct);
+        if (tenant is null) return NotFound();
+        tenant.Status = "Active";
+        _context.SecurityAuditLogs.Add(Audit(id, "tenant.approved", "PendingApproval", request.Reason.Trim()));
+        await _context.SaveChangesAsync(ct);
+        return Ok(new { tenant.Id, tenant.Status });
+    }
+
     [HttpDelete("tenants/{id:guid}")]
     public async Task<IActionResult> ScheduleTenantDelete(Guid id, [FromBody] DeleteTenantRequest request, CancellationToken ct)
     {
@@ -91,7 +135,7 @@ public class SuperAdminController : ControllerBase
     }
 
     [HttpGet("audit-logs")]
-    public async Task<IActionResult> AuditLogs([FromQuery] Guid? tenantId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
+    public async Task<IActionResult> AuditLogs([FromQuery] Guid? tenantId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         if (page < 1 || pageSize is < 1 or > 100 || from.HasValue && to.HasValue && (to < from || (to.Value - from.Value).TotalDays > 366)) return BadRequest();
         var q = _context.SecurityAuditLogs.IgnoreQueryFilters().AsNoTracking().AsQueryable();
@@ -104,7 +148,7 @@ public class SuperAdminController : ControllerBase
     }
 
     [HttpGet("webhook-events")]
-    public async Task<IActionResult> WebhookEvents([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
+    public async Task<IActionResult> WebhookEvents([FromQuery] string? status, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         if (page < 1 || pageSize is < 1 or > 100 || from.HasValue && to.HasValue && (to < from || (to.Value - from.Value).TotalDays > 366)) return BadRequest();
         var q = _context.WebhookEvents.AsNoTracking().AsQueryable();
@@ -115,8 +159,22 @@ public class SuperAdminController : ControllerBase
         return Ok(new { page, pageSize, total, items = rows });
     }
 
+    [HttpGet("exercises")]
+    public async Task<IActionResult> ListPublicExercises([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    {
+        if (page < 1 || pageSize < 1 || pageSize > 100) return BadRequest();
+        var query = _context.Exercises.IgnoreQueryFilters().AsNoTracking()
+            .Where(x => x.TenantId == null && !x.IsDeleted);
+        var totalCount = await query.CountAsync(ct);
+        var items = await query.OrderBy(x => x.Name)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(x => new { x.Id, x.Name, x.MuscleGroup, x.Equipment, x.VideoUrl, x.VideoFileId })
+            .ToListAsync(ct);
+        return Ok(new { items, page, pageSize, totalCount });
+    }
+
     [HttpPost("exercises")]
-    public async Task<IActionResult> CreateExercise(ExerciseRequest request, CancellationToken ct)
+    public async Task<IActionResult> CreateExercise(AdminExerciseRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200 || string.IsNullOrWhiteSpace(request.MuscleGroup) || request.MuscleGroup.Length > 100 || request.Equipment?.Length > 100) return UnprocessableEntity();
         if (request.VideoUrl is not null && (!Uri.TryCreate(request.VideoUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) return UnprocessableEntity();
@@ -126,7 +184,7 @@ public class SuperAdminController : ControllerBase
     }
 
     [HttpPut("exercises/{id:guid}")]
-    public async Task<IActionResult> UpdateExercise(Guid id, ExerciseRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateExercise(Guid id, AdminExerciseRequest request, CancellationToken ct)
     {
         var e = await _context.Exercises.FirstOrDefaultAsync(x => x.Id == id && x.TenantId == null && !x.IsDeleted, ct); if (e is null) return NotFound();
         if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 200 || string.IsNullOrWhiteSpace(request.MuscleGroup) || request.MuscleGroup.Length > 100 || request.Equipment?.Length > 100 || request.VideoUrl is not null && (!Uri.TryCreate(request.VideoUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))) return UnprocessableEntity();
@@ -142,8 +200,9 @@ public class SuperAdminController : ControllerBase
     }
 
     [HttpPost("exercises/import"), RequestSizeLimit(2_097_152)]
-    public async Task<IActionResult> ImportExercises([FromForm] IFormFile file, CancellationToken ct)
+    public async Task<IActionResult> ImportExercises([FromForm] ImportExercisesRequest request, CancellationToken ct)
     {
+        var file = request?.File;
         if (file is null || file.Length is <= 0 or > 2_097_152) return UnprocessableEntity("CSV must be between 1 byte and 2 MB.");
         var rejected = new List<object>(); var exercises = new List<CoachPulse.Domain.Entities.Exercise>();
         using var reader = new StreamReader(file.OpenReadStream());

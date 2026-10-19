@@ -32,6 +32,9 @@ namespace CoachPulse.Infrastructure.Services
             new(ClaimTypes.Role, user.Role.ToString())
         };
 
+            if (user.MustChangePassword)
+                claims.Add(new Claim("mustChangePassword", "true"));
+
             if (user.TenantId.HasValue)
             {
                 claims.Add(

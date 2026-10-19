@@ -59,7 +59,7 @@ public sealed class PendingPaymentReminderJob(CoachPulseDbContext db, INotificat
         {
           try {
             var payments=await db.Payments.IgnoreQueryFilters().Include(p=>p.Subscription).ThenInclude(s=>s.Client).Where(p=>p.TenantId==tenant&&p.Method==PaymentMethod.InstaPay&&p.Status==PaymentStatus.PendingVerification&&p.CreatedAt<=now.AddHours(-24)).ToListAsync(ct);
-            var owners=await db.Users.IgnoreQueryFilters().Where(u=>u.TenantId==tenant&&u.Role==UserRole.Owner&&!u.IsDeleted).Select(u=>u.Id).ToListAsync(ct);
+            var owners=await db.Users.IgnoreQueryFilters().Where(u=>u.TenantId==tenant&&u.Role==UserRole.TenantOwner&&!u.IsDeleted).Select(u=>u.Id).ToListAsync(ct);
             foreach(var p in payments)
             {
                 var bucket=(int)((now-p.CreatedAt).TotalHours/6);var marker=$"payment={p.Id};bucket={bucket}";

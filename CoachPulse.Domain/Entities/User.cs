@@ -27,6 +27,7 @@ namespace CoachPulse.Domain.Entities
         public bool IsActive { get; set; } = true;
         public DateTime? DeletedAt { get; set; }
         public bool EmailConfirmed { get; set; }
+        public bool MustChangePassword { get; set; }
 
         public Tenant? Tenant { get; set; }
     }

@@ -75,7 +75,7 @@ def test_churn_single_and_batch(tmp_path, monkeypatch):
 
 def test_progress_summary_auth_validation_and_success(monkeypatch):
     monkeypatch.setenv("INTERNAL_API_KEY", KEY)
-    client = TestClient(create_app())
+    client = TestClient(create_app(llm_client=FakeLLMClient()))
     payload = {"clientId": str(uuid4()), "language": "en", "metrics": [{"name": "weightKg", "current": 80, "previous": 82, "unit": "kg"}]}
     assert client.post("/progress-summary", json=payload).status_code == 401
     response = client.post("/progress-summary", json=payload, headers={"X-Internal-Api-Key": KEY})

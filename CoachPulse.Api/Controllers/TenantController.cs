@@ -1,5 +1,6 @@
-﻿using CoachPulse.Application.DTOs.Tenant;
+using CoachPulse.Application.DTOs.Tenant;
 using CoachPulse.Application.Interfaces;
+using CoachPulse.Application.DTOs;
 using CoachPulse.Domain.Entities;
 using CoachPulse.Domain.Enums;
 using CoachPulse.Infrastructure.Persistence;
@@ -32,9 +33,6 @@ public class TenantController : ControllerBase
         _memoryCache = memoryCache;
     }
 
-    public TenantController(CoachPulseDbContext context, IPasswordHasher passwordHasher)
-        : this(context, passwordHasher, new CoachPulse.Infrastructure.Services.ClientAccessService(context), null) { }
-
     public sealed record UpdateCoachRequest(string? Name, string? Email);
 
     [HttpGet("coaches/{id:guid}")]
@@ -42,7 +40,7 @@ public class TenantController : ControllerBase
     public async Task<IActionResult> GetCoach(Guid id, CancellationToken ct)
     {
         if (!TenantUser(out var tenantId)) return Unauthorized();
-        var user = await _context.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.Staff && !x.IsDeleted, ct);
+        var user = await _context.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.CoachStaff && !x.IsDeleted, ct);
         return user is null ? NotFound() : Ok(new { user.Id, user.Email, user.Name, user.IsActive, user.TenantId });
     }
 
@@ -52,7 +50,7 @@ public class TenantController : ControllerBase
     {
         if (!TenantUser(out var tenantId)) return Unauthorized();
         if (request.Name?.Length > 150 || request.Email?.Length > 255 || request.Email is not null && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(request.Email)) return UnprocessableEntity();
-        var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.Staff && !x.IsDeleted, ct);
+        var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.CoachStaff && !x.IsDeleted, ct);
         if (user is null) return NotFound();
         if (request.Email is not null)
         {
@@ -75,7 +73,7 @@ public class TenantController : ControllerBase
     private async Task<IActionResult> SetCoachActive(Guid id, bool active, CancellationToken ct)
     {
         if (!TenantUser(out var tenantId)) return Unauthorized();
-        var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.Staff && !x.IsDeleted, ct);
+        var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.CoachStaff && !x.IsDeleted, ct);
         if (user is null) return NotFound();
         user.IsActive = active;
         if (!active)
@@ -92,7 +90,7 @@ public class TenantController : ControllerBase
     public async Task<IActionResult> CoachClients(Guid id, CancellationToken ct)
     {
         if (!TenantUser(out var tenantId)) return Unauthorized();
-        if (!await _context.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.Staff && !x.IsDeleted, ct)) return NotFound();
+        if (!await _context.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == id && x.TenantId == tenantId && x.Role == UserRole.CoachStaff && !x.IsDeleted, ct)) return NotFound();
         return Ok(await _context.Clients.AsNoTracking().Where(x => x.TenantId == tenantId && x.CoachId == id).Select(x => new { x.Id, x.UserId, x.Status }).ToListAsync(ct));
     }
 
@@ -238,16 +236,16 @@ public class TenantController : ControllerBase
         var coaches = await _context.Users
             .Where(x =>
                 x.TenantId == tenantId &&
-                (x.Role == UserRole.Owner ||
-                 x.Role == UserRole.Staff))
+                x.IsActive && !x.IsDeleted &&
+                (x.Role == UserRole.TenantOwner ||
+                 x.Role == UserRole.CoachStaff))
             .AsNoTracking()
             .OrderBy(x => x.Email)
             .Select(x => new
             {
                 x.Id,
-                x.Email,
+                x.Name,
                 Role = x.Role.ToString(),
-                x.TenantId
             })
             .ToListAsync();
 
@@ -306,7 +304,7 @@ public class TenantController : ControllerBase
             TenantId = tenantId,
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = UserRole.Staff
+            Role = UserRole.CoachStaff
         };
 
         _context.Users.Add(coach);
@@ -338,7 +336,9 @@ public class TenantController : ControllerBase
         }
 
         var plans = await _context.Plans
+            .IgnoreQueryFilters()
             .AsNoTracking()
+            .Where(x => x.TenantId == tenantId)
             .OrderBy(x => x.Price)
             .Select(x => new
             {
@@ -414,8 +414,9 @@ public class TenantController : ControllerBase
         });
     }
     [HttpGet("dashboard-summary")]
-    [Authorize(Policy = "OwnerOnly")]
+    [Authorize(Policy = "CoachOnly")]
     [Obsolete("Use GET /api/tenant/dashboard/summary.")]
+    [ProducesResponseType(typeof(TenantDashboardSummary), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDashboardSummary()
     {
         if (Request.Path == "/api/tenant/dashboard-summary") RouteDeprecation.AddHeaders(Response, "/api/tenant/dashboard/summary");
@@ -423,57 +424,51 @@ public class TenantController : ControllerBase
     }
 
     [HttpGet("~/api/tenant/dashboard/summary")]
-    [Authorize(Policy = "OwnerOnly")]
+    [Authorize(Policy = "CoachOnly")]
+    [ProducesResponseType(typeof(TenantDashboardSummary), StatusCodes.Status200OK)]
     public Task<IActionResult> GetDashboardSummaryCanonical() => GetDashboardSummaryCore();
 
     private async Task<IActionResult> GetDashboardSummaryCore()
     {
-        var tenantIdClaim = User.FindFirst("tenantId");
+        if (!Guid.TryParse(User.FindFirst("tenantId")?.Value, out var tenantId) ||
+            !Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ||
+            !Enum.TryParse<UserRole>(User.FindFirstValue(ClaimTypes.Role), out var role))
+            return Unauthorized();
 
-        if (tenantIdClaim == null ||
-            !Guid.TryParse(tenantIdClaim.Value, out var tenantId))
+        var clients = _clientAccess.VisibleClients(tenantId, userId, role).AsNoTracking();
+        var activeClients = await clients.CountAsync(x => x.Status == ClientStatus.Active);
+        var now = DateTime.UtcNow;
+        var expiringCount = await _context.Subscriptions.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.Status == SubscriptionStatus.Active && x.EndDate >= now && x.EndDate < now.AddDays(7) && clients.Any(c => c.Id == x.ClientId))
+            .CountAsync();
+        var pendingCheckIns = await _context.CheckIns.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && !x.IsDeleted && x.ReviewedAt == null && clients.Any(c => c.Id == x.ClientId))
+            .CountAsync();
+        var pendingPayments = role == UserRole.TenantOwner
+            ? await _context.Payments.AsNoTracking().Where(x => x.TenantId == tenantId && x.Status == PaymentStatus.PendingVerification).CountAsync()
+            : (int?)null;
+        var clientUserIds = clients.Select(x => x.UserId);
+        var unreadMessages = await _context.Messages.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && !x.IsRead && !x.IsDeleted && x.ReceiverId == userId && clientUserIds.Contains(x.SenderId))
+            .CountAsync();
+
+        decimal? monthlyRevenue = null;
+        if (role == UserRole.TenantOwner)
         {
-            return Unauthorized("Tenant not found.");
+            var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var monthPayments = await _context.Payments.AsNoTracking()
+                .Where(x => x.TenantId == tenantId && x.CreatedAt >= monthStart && x.CreatedAt < monthStart.AddMonths(1) &&
+                            (x.Status == PaymentStatus.Confirmed || x.Status == PaymentStatus.PartiallyRefunded || x.Status == PaymentStatus.Refunded))
+                .Select(x => new { x.Id, x.Amount }).ToListAsync();
+            var paymentIds = monthPayments.Select(x => x.Id).ToArray();
+            var refunds = await _context.PaymentRefunds.AsNoTracking()
+                .Where(x => x.TenantId == tenantId && paymentIds.Contains(x.PaymentId))
+                .SumAsync(x => (decimal?)x.Amount) ?? 0m;
+            monthlyRevenue = monthPayments.Sum(x => x.Amount) - refunds;
         }
 
-        var totalClients = await _context.Clients
-            .CountAsync();
-
-        var totalCoaches = await _context.Users
-            .CountAsync(x =>
-                x.Role == UserRole.Owner ||
-                x.Role == UserRole.Staff);
-
-        var totalPrograms = await _context.Programs
-            .CountAsync();
-
-        var totalMealPlans = await _context.MealPlans
-            .CountAsync();
-
-        var totalCheckIns = await _context.CheckIns
-            .CountAsync();
-
-        var totalPlans = await _context.Plans
-            .CountAsync();
-
-        var totalSubscriptions = await _context.Subscriptions
-            .CountAsync();
-
-        var totalPayments = await _context.Payments
-            .CountAsync();
-
-        return Ok(new
-        {
-            TenantId = tenantId,
-            TotalClients = totalClients,
-            TotalCoaches = totalCoaches,
-            TotalPrograms = totalPrograms,
-            TotalMealPlans = totalMealPlans,
-            TotalCheckIns = totalCheckIns,
-            TotalPlans = totalPlans,
-            TotalSubscriptions = totalSubscriptions,
-            TotalPayments = totalPayments
-        });
+        return Ok(new TenantDashboardSummary(activeClients, monthlyRevenue, expiringCount,
+            new TenantDashboardAlerts(pendingCheckIns, pendingPayments, unreadMessages)));
     }
     [HttpGet("churn-risk")]
     [Authorize(Policy = "CoachOnly")]
@@ -529,9 +524,9 @@ public class TenantController : ControllerBase
         if (tenant is null) return NotFound();
         return Ok(new
         {
-            tenant.Id, tenant.Name, tenant.Slug, tenant.LogoUrl, tenant.Status,
+            tenant.Id, tenant.Name, tenant.Slug, tenant.LogoUrl, tenant.PrimaryColor, tenant.SecondaryColor, tenant.Status,
             tenant.Currency, tenant.TimeZone, tenant.ReminderDays, tenant.DefaultLanguage,
-            PaymentSettings = role == UserRole.Owner ? new { tenant.PaymobEnabled, tenant.InstaPayEnabled, tenant.InstaPayId, tenant.InstaPayAccountNumber } : null
+            PaymentSettings = role == UserRole.TenantOwner ? new { tenant.PaymobEnabled, tenant.InstaPayEnabled, tenant.InstaPayId, tenant.InstaPayAccountNumber } : null
         });
     }
 
@@ -632,7 +627,7 @@ public class TenantController : ControllerBase
         tenantId = userId = Guid.Empty; role = default;
         return Guid.TryParse(User.FindFirst("tenantId")?.Value, out tenantId) &&
             Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out userId) &&
-            Enum.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out role) && role is UserRole.Owner or UserRole.Staff;
+            Enum.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out role) && role is UserRole.TenantOwner or UserRole.CoachStaff;
     }
 
     private void AddAudit(Guid userId, Guid tenantId, string eventType, string identifier) => _context.SecurityAuditLogs.Add(new SecurityAuditLog
