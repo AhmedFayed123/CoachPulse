@@ -10,6 +10,10 @@ CoachPulse is a multi-tenant coaching platform for client onboarding, training a
 |---|---|---|
 | ![Coach workspace](docs/screenshots/coach-workspace.png) | ![Client workspace](docs/screenshots/client-workspace.png) | ![SuperAdmin dashboard](docs/screenshots/superadmin-dashboard.png) |
 
+| Sign in | Tenant Owner workspace |
+|---|---|
+| ![CoachPulse sign-in](docs/screenshots/auth-login.png) | ![Tenant Owner workspace](docs/screenshots/tenant-owner.png) |
+
 ## Features by role
 
 - **Client:** profile and onboarding, current program and meal plan, workout and check-in logs, subscription and payment history, invoices, chat, and notifications.
