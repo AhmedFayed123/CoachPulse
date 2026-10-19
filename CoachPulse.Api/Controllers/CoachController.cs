@@ -340,9 +340,15 @@ public class CoachController : ControllerBase
                 ClientEmail = x.Client != null
                 ? x.Client.User!.Email
                 : null,
+                ClientName = x.Client != null
+                ? x.Client.User!.Name
+                : null,
                 x.CoachId,
                 x.IsTemplate,
-                x.TenantId
+                x.TenantId,
+                x.Status,
+                x.DurationDays,
+                x.StartDate
             })
             .ToListAsync();
 

@@ -236,7 +236,7 @@ public class TenantController : ControllerBase
         var coaches = await _context.Users
             .Where(x =>
                 x.TenantId == tenantId &&
-                x.IsActive && !x.IsDeleted &&
+                !x.IsDeleted &&
                 (x.Role == UserRole.TenantOwner ||
                  x.Role == UserRole.CoachStaff))
             .AsNoTracking()
@@ -245,6 +245,8 @@ public class TenantController : ControllerBase
             {
                 x.Id,
                 x.Name,
+                x.Email,
+                x.IsActive,
                 Role = x.Role.ToString(),
             })
             .ToListAsync();
