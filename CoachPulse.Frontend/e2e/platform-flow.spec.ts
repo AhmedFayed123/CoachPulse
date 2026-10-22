@@ -6,13 +6,12 @@ const receipt = '%PDF-1.4\n%%EOF'
 
 test('Vite client renders the sign-in screen', async ({ page }) => {
   await page.goto('/login')
-  await expect(page.getByRole('heading', { name: 'تسجيل الدخول' })).toBeVisible()
-  await expect(page.getByLabel('رابط النادي')).toBeVisible()
-  await expect(page.getByLabel('البريد الإلكتروني')).toBeVisible()
-  await expect(page.getByLabel('كلمة المرور')).toBeVisible()
-  await expect(page.getByText('دخول SuperAdmin')).toBeVisible()
-  await expect(page.locator('.auth-links')).toHaveCSS('display', 'grid')
-  await expect(page.locator('.login-card small')).toHaveCount(0)
+  await expect(page.locator('.auth-layout')).toBeVisible()
+  await expect(page.locator('.login-tenant-field')).toBeVisible()
+  await expect(page.locator('input[type="email"]')).toBeVisible()
+  await expect(page.locator('input[autocomplete="current-password"]')).toBeVisible()
+  await expect(page.locator('.auth-paths')).toHaveCSS('display', 'grid')
+  await expect(page.locator('.auth-path-card')).toHaveCount(2)
 })
 
 test('bootstrap SuperAdmin is routed through the required password change', async ({ page }) => {
@@ -22,19 +21,23 @@ test('bootstrap SuperAdmin is routed through the required password change', asyn
     contentType: 'application/json',
     body: JSON.stringify({ accessToken: `header.${payload}.signature`, refreshToken: 'refresh', expiresIn: 900, user: { id: 'admin-id', name: 'Admin', role: 'SuperAdmin' }, tenant: null }),
   }))
+  await page.route('**/api/public/tenants', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }))
   await page.route('**/api/account/change-password', route => route.fulfill({ status: 204 }))
 
   await page.goto('/login')
+  await page.locator('.club-picker-trigger').click()
+  await page.getByRole('option', { name: /SuperAdmin/ }).click()
   await page.locator('input[autocomplete="username"]').fill('admin@example.test')
   await page.locator('input[autocomplete="current-password"]').fill('Bootstrap-Password1!')
-  await page.getByRole('button', { name: 'دخول' }).click()
+  await page.locator('.login-card button').filter({ hasText: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/first-login-password$/)
 
   await page.locator('input[autocomplete="current-password"]').fill('Bootstrap-Password1!')
   await page.locator('input[autocomplete="new-password"]').nth(0).fill('New-Admin-Password2!')
   await page.locator('input[autocomplete="new-password"]').nth(1).fill('New-Admin-Password2!')
-  await page.getByRole('button', { name: 'تحديث كلمة المرور' }).click()
-  await expect(page.getByRole('heading', { name: 'تم تحديث كلمة المرور' })).toBeVisible()
+  await page.locator('.login-card form button').first().click()
+  await expect(page.locator('.login-card h1')).toBeVisible()
+  await expect(page.locator('input[autocomplete="new-password"]')).toHaveCount(0)
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('coachpulse.accessToken'))).toBeNull()
 })
 
@@ -49,10 +52,12 @@ test('SuperAdmin dashboard renders summaries and tables without horizontal overf
   await page.route('**/api/superadmin/webhook-events**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], page: 1, pageSize: 20, total: 0 }) }))
 
   await page.goto('/admin/dashboard')
-  await expect(page.getByRole('heading', { name: 'لوحة SuperAdmin' })).toBeVisible()
+  await expect(page.locator('.admin-dashboard .page-header h1')).toBeVisible()
+  await page.getByRole('button', { name: 'Browse clubs' }).click()
   await expect(page.getByRole('cell', { name: 'Studio North' }).first()).toBeVisible()
-  await expect(page.getByText('إجمالي المساحات')).toBeVisible()
+  await expect(page.locator('.admin-metric-grid .admin-metric')).toHaveCount(5)
   await expect(page.locator('.admin-dashboard pre')).toHaveCount(0)
+  await page.locator('.admin-table .table-action').first().click()
   await expect(page.locator('.admin-tenant-manager select')).toBeVisible()
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
 })
@@ -102,6 +107,7 @@ test('coach and client complete onboarding, subscription, payment, check-in, fee
   const clientEmail = `client-${suffix}@example.test`
   const password = 'CoachPulse-e2e!2026'
   const coach = await browser.newPage()
+  await coach.addInitScript(() => localStorage.setItem('coachpulse.language.v5', 'ar'))
 
   await coach.goto('/register/tenant')
   await coach.getByLabel('الاسم').fill('E2E Coach')
@@ -138,6 +144,7 @@ test('coach and client complete onboarding, subscription, payment, check-in, fee
   const token = await coach.locator('code').innerText()
   expect(token.length).toBeGreaterThan(10)
   const clientPage = await browser.newPage()
+  await clientPage.addInitScript(() => localStorage.setItem('coachpulse.language.v5', 'ar'))
   await clientPage.goto(`/register/client?token=${encodeURIComponent(token)}`)
   await clientPage.getByLabel('الاسم').fill('E2E Client')
   await clientPage.getByLabel('البريد الإلكتروني').fill(clientEmail)
