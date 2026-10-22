@@ -64,3 +64,31 @@ test('captures each role dashboard responsively and checks shell overflow', asyn
     await page.close()
   }
 })
+
+test('keeps account, sign-out and notifications in the topbar outside the navigation drawer', async ({ page }) => {
+  await mockWorkspace(page, 'Client')
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto('/my/dashboard')
+  await page.locator('.workspace-user-menu summary').click()
+  await expect(page.locator('.workspace-user-popover a')).toHaveCount(1)
+  await expect(page.locator('.workspace-user-popover button')).toHaveCount(1)
+  await page.locator('.workspace-user-menu summary').click()
+  await page.getByRole('button', { name: 'Open navigation' }).click()
+  const drawer = page.locator('#workspace-navigation')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('.logout')).toHaveCount(0)
+  await expect(drawer.locator('a[href="/my/notifications"]')).toHaveCount(0)
+  await expect(page.locator('.workspace-notification-link')).toBeVisible()
+})
+
+test('client can expand an exercise and watch its demonstration video', async ({ page }) => {
+  await mockWorkspace(page, 'Client')
+  await page.route('**/api/my/program/today', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ dayNumber: 1, exercises: [{ id: 'program-exercise-1', exerciseId: 'exercise-1', exerciseName: 'Goblet squat', muscleGroup: 'Legs', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', sets: 3, reps: '10', restSeconds: 60 }] }) }))
+  await page.goto('/my/program')
+  const exerciseDetails = page.locator('.client-exercise-details')
+  await expect(exerciseDetails).toBeVisible()
+  await exerciseDetails.locator('summary').click()
+  await expect(exerciseDetails.locator('iframe')).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')
+  await expect(exerciseDetails.getByText('Legs')).toBeVisible()
+  await expect(exerciseDetails.getByText('60 seconds')).toBeVisible()
+})

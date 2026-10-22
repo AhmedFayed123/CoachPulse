@@ -701,6 +701,47 @@ option{background:#fff;color:#203448}
 @media(max-width:700px){.workspace-shell .page-sections>.panel{padding:16px}.workspace-shell .page-sections>.panel:hover{box-shadow:var(--cp-shadow)}.workspace-shell .page-sections .section-heading{gap:10px}}
 @media(prefers-reduced-motion:reduce){.workspace-shell .page-sections>.panel,.workspace-shell .page-sections :is(.program-list-card,.client-plan-option,.exercise-library-card),.admin-shell .admin-page-content :is(.panel,.admin-kpi){transition:none}}
 
+.workspace-shell .workspace-user-menu .account-avatar-preview{width:36px;height:36px;min-width:36px;margin:0;border:0;box-shadow:none;font-size:15px}
+.workspace-shell .workspace-user-menu .account-avatar-fallback{display:grid;place-items:center;background:color-mix(in srgb,var(--workspace-accent) 12%,white);color:var(--workspace-accent-dark)}
+.workspace-shell .workspace-user-menu summary{gap:10px}
+.workspace-shell .workspace-user-menu summary:hover .account-avatar-preview{box-shadow:0 0 0 3px color-mix(in srgb,var(--workspace-accent) 15%,transparent)}
+.workspace-shell .coach-team-card{border-color:var(--color-line);background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-card)}
+.workspace-shell .coach-team-card:hover,.workspace-shell .coach-team-card.selected{border-color:color-mix(in srgb,var(--workspace-accent) 42%,white);background:color-mix(in srgb,var(--workspace-accent) 5%,white);box-shadow:0 0 0 3px color-mix(in srgb,var(--workspace-accent) 10%,transparent),var(--shadow-card)}
+.workspace-shell .coach-team-card-copy strong{color:var(--color-ink);font-size:14px}
+.workspace-shell .coach-team-card-copy small{color:var(--color-muted)}
+.workspace-shell .coach-team-avatar{border:1px solid color-mix(in srgb,var(--workspace-accent) 15%,white);background:color-mix(in srgb,var(--workspace-accent) 10%,white);color:var(--workspace-accent-dark)}
+.workspace-shell .exercise-library-card,.workspace-shell .page-sections button.exercise-library-card{border-color:var(--color-line);background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-card)}
+.workspace-shell .exercise-library-card:hover,.workspace-shell .page-sections button.exercise-library-card:hover{border-color:color-mix(in srgb,var(--workspace-accent) 38%,white);background:color-mix(in srgb,var(--workspace-accent) 3%,white);color:var(--color-ink);box-shadow:0 12px 26px #19364a12}
+.workspace-shell .exercise-library-card.selected,.workspace-shell .page-sections button.exercise-library-card.selected{border-color:var(--workspace-accent);background:color-mix(in srgb,var(--workspace-accent) 7%,white);color:var(--color-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--workspace-accent) 13%,transparent)}
+.workspace-shell .exercise-card-icon{border-color:color-mix(in srgb,var(--workspace-accent) 16%,white);background:color-mix(in srgb,var(--workspace-accent) 10%,white);color:var(--workspace-accent-dark)}
+.workspace-shell .exercise-card-title{color:var(--color-ink)}
+.workspace-shell .exercise-card-tags>span{border-color:var(--color-line);background:var(--color-soft);color:var(--color-muted)}
+.workspace-shell .exercise-card-tags small{color:var(--color-muted)}
+.workspace-shell .exercise-card-tags b{color:var(--color-ink)}
+.workspace-shell .exercise-video-indicator{color:var(--workspace-accent-dark)}
+.workspace-shell .exercise-card-bottom{border-color:var(--color-line)}
+.workspace-shell .client-exercise-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 18px;padding:18px;border:1px solid var(--color-line);border-radius:var(--radius-md);background:linear-gradient(145deg,var(--color-surface),var(--color-soft));box-shadow:var(--shadow-card)}
+.workspace-shell .client-exercise-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.workspace-shell .client-exercise-heading>div{min-width:0}
+.workspace-shell .client-exercise-heading h3{overflow-wrap:anywhere}
+.workspace-shell .client-exercise-stats{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.workspace-shell .client-exercise-stats span{display:flex;align-items:baseline;gap:5px;padding:7px 10px;border:1px solid var(--color-line);border-radius:10px;background:var(--color-surface);color:var(--color-muted);font-size:12px}
+.workspace-shell .client-exercise-stats strong{color:var(--workspace-accent-dark);font-size:15px;font-variant-numeric:tabular-nums}
+.workspace-shell .client-exercise-details{grid-column:1/-1;border-top:1px solid var(--color-line);padding-top:12px}
+.workspace-shell .client-exercise-details summary{width:max-content;max-width:100%;color:var(--workspace-accent-dark);font-size:13px;font-weight:750;cursor:pointer}
+.workspace-shell .client-exercise-expanded{display:grid;gap:14px;margin-top:14px}
+.workspace-shell .client-exercise-expanded dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px;margin:0}
+.workspace-shell .client-exercise-expanded dl>div{padding:10px 12px;border:1px solid var(--color-line);border-radius:10px;background:var(--color-surface)}
+.workspace-shell .client-exercise-expanded dt{color:var(--color-muted);font-size:11px}
+.workspace-shell .client-exercise-expanded dd{margin:4px 0 0;color:var(--color-ink);font-size:13px;font-weight:700}
+.exercise-video-player,.exercise-video-frame{display:block;width:min(100%,760px);aspect-ratio:16/9;border:1px solid var(--color-line);border-radius:var(--radius-md);background:#101a22;overflow:hidden}
+.exercise-video-player{height:auto;max-height:440px}
+.exercise-video-frame iframe{width:100%;height:100%;border:0}
+.exercise-video-frame:has(.media-link){display:grid;place-items:center;background:var(--color-soft)}
+.exercise-video-frame .media-link{padding:12px 16px;border-radius:10px;background:var(--workspace-accent);color:var(--color-on-primary);font-weight:750}
+.exercise-video-unavailable{margin:0;padding:13px 15px;border:1px dashed var(--color-line);border-radius:12px;background:var(--color-soft);color:var(--color-muted);font-size:13px}
+@media(max-width:650px){.workspace-shell .client-exercise-card{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px}.workspace-shell .client-exercise-stats{justify-content:flex-start}.workspace-shell .client-exercise-details{grid-column:1}}
+
 /* Core product tokens and shared primitives used by all role workspaces. */
 :root{--focus-ring:0 0 0 3px color-mix(in srgb,var(--color-primary) 25%,transparent);--shadow-card:0 2px 8px #172b3a08,0 12px 28px #172b3a08;--shadow-popover:0 18px 50px #102a3820}
 html{font-family:Cairo,"IBM Plex Sans Arabic",system-ui,sans-serif;scrollbar-gutter:stable}
