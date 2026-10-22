@@ -5,12 +5,13 @@ import { ApiError, type AcceptStaffInviteRequest, type AuthResponse, type LoginR
 import { queryKeys, useChatConversation, useClients, useConversations, useDashboard, useMe, useMyDashboard, useMyMealPlan, useMyProgram, useNotifications, useNotificationsHub, usePayments, useSendClientMessage, useUpdateProfile } from './api/hooks'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
-import { Activity, ArrowUpLeft, Building2, Check, ChevronDown, ClipboardList, LayoutDashboard, Menu, RefreshCw, Search, ShieldCheck, Sparkles, Users, X } from 'lucide-react'
+import { Activity, ArrowUpLeft, BarChart3, Bell, Building2, Check, ChevronDown, ClipboardList, CreditCard, Dumbbell, LayoutDashboard, LogOut, Menu, MessageCircle, PanelLeftClose, PanelLeftOpen, RefreshCw, Salad, ScrollText, Search, Settings, ShieldCheck, Sparkles, UserRound, Users, X } from 'lucide-react'
 import { LanguageToggle, repairArabicUiText, toArabic, toEnglish, useLanguage } from './i18n'
 
 function Loading() { const { t } = useLanguage(); return <div className="state loading-state" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true" />{t('Loading data...')}</div> }
 function ErrorState({ error }: { error: unknown }) {
   const { t } = useLanguage()
+  const cache = useQueryClient()
   const apiError = error instanceof ApiError ? error : null
   const rawMessage = error instanceof Error ? error.message : ''
   const labels: Record<number, [string, string]> = {
@@ -30,7 +31,7 @@ function ErrorState({ error }: { error: unknown }) {
     ? ([401, 403, 404, 429, 502, 503].includes(apiError.status) || genericMessages.test(rawMessage) ? fallback : rawMessage || fallback)
     : networkError ? 'The server could not be reached. Check that it is running and try again.' : rawMessage || fallback
   const trace = apiError?.traceId
-  return <div className="state error" role="alert"><span className="state-icon" aria-hidden="true">!</span><div><strong>{t(heading)}</strong><p>{t(message)}</p>{trace && <small className="error-trace">{t('Reference')}: {trace}</small>}</div></div>
+  return <div className="state error" role="alert"><span className="state-icon" aria-hidden="true">!</span><div><strong>{t(heading)}</strong><p>{t(message)}</p>{trace && <small className="error-trace">{t('Reference')}: {trace}</small>}<button className="state-retry" type="button" onClick={() => void cache.refetchQueries({ type: 'active' })}>{t('Try again')}</button></div></div>
 }
 const fieldLabels: Record<string, string> = {
   id: "\u0627\u0644\u0645\u0639\u0631\u0651\u0641", name: "\u0627\u0644\u0627\u0633\u0645", title: "\u0627\u0644\u0639\u0646\u0648\u0627\u0646", email: "\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A", role: "\u0627\u0644\u062F\u0648\u0631", status: "\u0627\u0644\u062D\u0627\u0644\u0629",
@@ -356,17 +357,39 @@ function Shell() {
   const { t, language } = useLanguage()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const tenant = useQuery({ queryKey: ['tenant'], queryFn: () => apiFetch<unknown>('/tenant'), enabled: me.data?.role === 'TenantOwner' })
   const closeDrawer = () => setDrawerOpen(false)
   const logout = async () => {
     try { await apiFetch<void>(endpoints.logout, { method: 'POST', body: JSON.stringify({ refreshToken: sessionStorage.getItem('coachpulse.refreshToken') }) }) }
     finally { clearSession(); navigate('/login', { replace: true }) }
   }
-  return <div className={`shell workspace-shell${drawerOpen ? ' drawer-open' : ''}`}>
+  const tenantName = stringField(tenant.data, 'name')
+  const logoUrl = stringField(tenant.data, 'logoUrl')
+  const owner = me.data?.role === 'TenantOwner'
+  const navItems = [
+    { to: '/app/dashboard', label: t('Overview'), icon: LayoutDashboard },
+    { to: '/app/clients', label: t('Clients'), icon: Users },
+    ...(owner ? [{ to: '/app/coaches', label: t('Coaching team'), icon: Building2 }] : []),
+    { to: '/app/checkins-review', label: t('Check-in reviews'), icon: Activity },
+    { to: '/app/programs', label: t('Programs'), icon: ClipboardList },
+    { to: '/app/exercises', label: t('Exercises'), icon: Dumbbell },
+    { to: '/app/meal-plans', label: t('Meal plans'), icon: Salad },
+    ...(owner ? [{ to: '/app/plans', label: t('Plans'), icon: CreditCard }] : []),
+    { to: '/app/conversations', label: t('Conversations'), icon: MessageCircle },
+    { to: '/app/payments', label: t('Payments'), icon: CreditCard },
+    { to: '/app/subscriptions', label: t('Subscriptions'), icon: CreditCard },
+    { to: '/app/notifications', label: t('Notifications'), icon: Bell },
+    { to: '/app/ai', label: t('AI tools'), icon: Sparkles },
+    { to: '/app/ai-review', label: t('AI review'), icon: Check },
+    ...(owner ? [{ to: '/app/settings', label: t('Workspace settings'), icon: Settings }, { to: '/app/analytics', label: t('Analytics'), icon: BarChart3 }, { to: '/app/audit', label: t('Audit log'), icon: ScrollText }] : []),
+  ]
+  return <div className={`shell workspace-shell${drawerOpen ? ' drawer-open' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} style={tenantThemeStyle(tenant.data)}>
     <button className="workspace-scrim" aria-label="Close navigation" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} />
-    <aside id="workspace-navigation" className="workspace-drawer"><div className="brand">Coach<span>Pulse</span></div><div className="identity">{me.data?.name || 'Workspace'}<small>{me.data?.role}</small></div><nav onClick={closeDrawer}>
-      <NavLink to="/app/dashboard">{t('Overview')}</NavLink><NavLink to="/app/clients">{t('Clients')}</NavLink>{me.data?.role === 'TenantOwner' && <NavLink to="/app/coaches">{t('Coaching team')}</NavLink>}<NavLink to="/app/checkins-review">{t('Check-in reviews')}</NavLink><NavLink to="/app/programs">{t('Programs')}</NavLink><NavLink to="/app/exercises">{t('Exercises')}</NavLink><NavLink to="/app/meal-plans">{t('Meal plans')}</NavLink>{me.data?.role === 'TenantOwner' && <NavLink to="/app/plans">{t('Plans')}</NavLink>}<NavLink to="/app/conversations">{t('Conversations')}</NavLink><NavLink to="/app/payments">{t('Payments')}</NavLink><NavLink to="/app/subscriptions">{t('Subscriptions')}</NavLink><NavLink to="/app/notifications">{t('Notifications')}</NavLink><NavLink to="/app/ai">{t('AI tools')}</NavLink><NavLink to="/app/ai-review">{t('AI review')}</NavLink>{me.data?.role === 'TenantOwner' && <><NavLink to="/app/settings">{t('Workspace settings')}</NavLink><NavLink to="/app/analytics">{t('Analytics')}</NavLink><NavLink to="/app/audit">{t('Audit log')}</NavLink></>}<NavLink to="/app/account">{t('Account')}</NavLink>
-    </nav><button className="logout" onClick={() => void logout()}>Sign out</button></aside>
-    <main dir={language === 'ar' ? 'rtl' : 'ltr'}><div className="workspace-mobilebar"><button className="workspace-menu-toggle" aria-label={drawerOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={drawerOpen} aria-controls="workspace-navigation" onClick={() => setDrawerOpen(value => !value)}>{drawerOpen ? <X size={19} /> : <Menu size={19} />}<span>Menu</span></button><span className="workspace-mobile-brand">Coach<span>Pulse</span></span><span className="workspace-mobile-role">{me.data?.role}</span></div><Routes>
+    <aside id="workspace-navigation" className="workspace-drawer"><div className="workspace-sidebar-brand"><Link className="brand" to="/app/dashboard">Coach<span>Pulse</span></Link><button type="button" className="workspace-sidebar-collapse" aria-label={sidebarCollapsed ? t('Expand sidebar') : t('Collapse sidebar')} onClick={() => setSidebarCollapsed(value => !value)}>{sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button></div><div className="identity"><span className="identity-name">{tenantName || me.data?.name || 'Workspace'}</span><small>{me.data?.role}</small></div><nav onClick={closeDrawer} aria-label={t('Workspace navigation')}>
+      {navItems.map(({ to, label, icon: Icon }) => <NavLink to={to} key={to} title={label}><Icon size={18} aria-hidden="true" /><span>{label}</span></NavLink>)}
+    </nav><button className="logout" onClick={() => void logout()}><LogOut size={17} /><span>{t('Sign out')}</span></button></aside>
+    <main dir={language === 'ar' ? 'rtl' : 'ltr'}><WorkspaceTopbar name={me.data?.name || 'Workspace'} role={me.data?.role || 'CoachStaff'} tenantName={tenantName} logoUrl={logoUrl} accountPath="/app/account" onLogout={() => void logout()} onToggleDrawer={() => setDrawerOpen(value => !value)} onToggleSidebar={() => setSidebarCollapsed(value => !value)} drawerOpen={drawerOpen} collapsed={sidebarCollapsed} /><Routes>
       <Route path="dashboard" element={<Dashboard />} /><Route path="clients" element={<Clients />} /><Route path="coaches" element={<CoachTeamWorkspace />} /><Route path="team" element={me.data?.role === 'TenantOwner' ? <CoachTeamWorkspace /> : <Navigate to="dashboard" replace />} /><Route path="checkins-review" element={<PendingCheckInReviews />} /><Route path="programs" element={<CoachPrograms />} /><Route path="exercises" element={<ExerciseLibrary />} /><Route path="meal-plans" element={<MealPlanWorkspace />} /><Route path="plans" element={me.data?.role === 'TenantOwner' ? <TenantPlans /> : <Navigate to="dashboard" replace />} /><Route path="conversations" element={<Conversations />} /><Route path="payments" element={<><Payments /><TenantPaymentInsights /></>} /><Route path="subscriptions" element={<SubscriptionManagement />} /><Route path="notifications" element={<NotificationCenter />} /><Route path="ai" element={<AiWorkspace />} /><Route path="ai-review" element={<AiAdvancedWorkspace />} /><Route path="settings" element={<TenantSettings />} /><Route path="analytics" element={<TenantAnalytics />} /><Route path="audit" element={<TenantAudit />} /><Route path="account" element={<AccountPage />} /><Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes></main>
   </div>
@@ -375,6 +398,30 @@ function Shell() {
 function Page({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const { t } = useLanguage()
   return <div className="page-content"><header className="page-header"><div><span className="eyebrow">COACHPULSE / WORKSPACE</span><h1>{t(title)}</h1>{subtitle && <p>{t(subtitle)}</p>}</div></header><div className="page-sections">{children}</div></div>
+}
+
+function tenantThemeStyle(value: unknown): React.CSSProperties {
+  const primary = stringField(value, 'primaryColor')
+  if (!primary || !/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(primary)) return {}
+  const hex = primary.length === 4 ? `#${[...primary.slice(1)].map(character => character + character).join('')}` : primary
+  const channels = [1, 3, 5].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16))
+  const luminance = channels.map(channel => channel / 255).map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4).reduce((total, channel, index) => total + channel * [.2126, .7152, .0722][index], 0)
+  const contrast = (luminance: number, other: number) => (Math.max(luminance, other) + .05) / (Math.min(luminance, other) + .05)
+  const onPrimary = contrast(luminance, 1) >= 4.5 ? '#fff' : '#14212b'
+  const dark = `#${channels.map(channel => Math.round(channel * .76).toString(16).padStart(2, '0')).join('')}`
+  return { '--tenant-primary': hex, '--tenant-primary-dark': dark, '--tenant-on-primary': onPrimary } as React.CSSProperties
+}
+
+function WorkspaceTopbar({ name, role, tenantName, logoUrl, accountPath, onLogout, onToggleDrawer, onToggleSidebar, drawerOpen, collapsed }: { name: string; role: string; tenantName?: string; logoUrl?: string; accountPath: string; onLogout: () => void; onToggleDrawer: () => void; onToggleSidebar: () => void; drawerOpen: boolean; collapsed: boolean }) {
+  const { t } = useLanguage()
+  const notifications = useNotifications(1, 50, true)
+  const unreadData = notifications.data && typeof notifications.data === 'object' ? notifications.data as Record<string, unknown> : {}
+  const unreadCount = Number(unreadData.unreadCount ?? unreadData.unreadTotal ?? objectItems(notifications.data).length)
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toLocaleUpperCase()).join('') || 'CP'
+  return <header className="workspace-topbar">
+    <div className="workspace-topbar-context"><button className="workspace-menu-toggle" aria-label={drawerOpen ? t('Close navigation') : t('Open navigation')} aria-expanded={drawerOpen} aria-controls="workspace-navigation" onClick={onToggleDrawer}>{drawerOpen ? <X size={18} /> : <Menu size={18} />}<span>{t('Menu')}</span></button><div className="workspace-context-brand">{logoUrl ? <img src={logoUrl} alt="" /> : <span className="workspace-context-mark"><Building2 size={17} /></span>}<span><small>{tenantName || t('Coaching workspace')}</small><strong>{t(role)}</strong></span></div></div>
+    <div className="workspace-topbar-actions"><Link className="workspace-notification-link" to={accountPath.replace(/account|profile$/, 'notifications')} aria-label={`${t('Notifications')}${unreadCount ? `, ${unreadCount} ${t('unread')}` : ''}`}><Bell size={18} />{unreadCount > 0 && <span className="workspace-unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}</Link><details className="workspace-user-menu"><summary><span className="workspace-user-avatar">{initials}</span><span className="workspace-user-copy"><strong>{name}</strong><small>{tenantName || t(role)}</small></span><ChevronDown size={15} /></summary><div className="workspace-user-popover"><Link to={accountPath}><UserRound size={16} />{t('Account')}</Link><button type="button" onClick={onLogout}><LogOut size={16} />{t('Sign out')}</button></div></details><button type="button" className="workspace-collapse-toggle" aria-label={collapsed ? t('Expand sidebar') : t('Collapse sidebar')} title={collapsed ? t('Expand sidebar') : t('Collapse sidebar')} onClick={onToggleSidebar}>{collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button></div>
+  </header>
 }
 
 function DashboardHero({ title, subtitle, image }: { title: string; subtitle: string; image: string }) { const { t } = useLanguage(); return <section className="visual-hero"><img src={image} alt="" loading="lazy" /><div className="visual-hero-shade" /><div className="visual-hero-copy"><span className="eyebrow">COACHPULSE / TRAINING SPACE</span><h2>{t(title)}</h2><p>{t(subtitle)}</p></div><div className="visual-hero-mark" aria-hidden="true"><span>CP</span></div></section> }
@@ -1786,9 +1833,21 @@ function MyMealPlan() {
   return <Page title="My meal plan" subtitle="Your meals and nutrition"><section className="panel"><div className="section-heading"><div><span className="eyebrow">Your plan</span><h2>{String(plan.title ?? 'Nutrition plan')}</h2></div><span className="status-pill positive">{String(plan.status ?? 'Active')}</span></div><div className="meal-totals">{[['Calories',totals.calories,'kcal'],['Protein',totals.protein,'g'],['Carbohydrates',totals.carbs,'g'],['Fat',totals.fat,'g']].map(([label,value,unit])=><article key={String(label)}><span>{String(label)}</span><strong>{String(value ?? '?')}</strong><small>{String(unit)}</small></article>)}</div></section>{meals.length?<section className="meal-card-list">{meals.map((meal,index)=><article className="panel meal-card" key={String(meal.id ?? index)}><div className="meal-card-heading"><span className="meal-time">{String(meal.time ?? 'Meal')}</span><h2>{String(meal.name ?? 'Meal')}</h2></div><div className="meal-macros"><span>{String(meal.calories ?? 0)} kcal</span><span>Protein {String(meal.protein ?? 0)} g</span><span>Carbs {String(meal.carbs ?? 0)} g</span><span>Fat {String(meal.fat ?? 0)} g</span></div></article>)}</section>:<section className="panel"><p className="empty-state">No meals have been added to this plan yet.</p></section>}</Page>
 }
 function MyShell() {
-  const navigate = useNavigate(); const me = useMe(); const { t } = useLanguage(); const [drawerOpen, setDrawerOpen] = useState(false); const closeDrawer = () => setDrawerOpen(false)
+  const navigate = useNavigate(); const me = useMe(); const { t, language } = useLanguage(); const [drawerOpen, setDrawerOpen] = useState(false); const [sidebarCollapsed, setSidebarCollapsed] = useState(false); const closeDrawer = () => setDrawerOpen(false)
   const logout = async () => { try { await apiFetch<void>(endpoints.logout, { method: 'POST', body: JSON.stringify({ refreshToken: sessionStorage.getItem('coachpulse.refreshToken') }) }) } finally { clearSession(); navigate('/login', { replace: true }) } }
-  return <div className={`shell workspace-shell client-shell${drawerOpen ? ' drawer-open' : ''}`}><button className="workspace-scrim" aria-label="Close navigation" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} /><aside id="workspace-navigation" className="workspace-drawer"><div className="brand">Coach<span>Pulse</span></div><div className="identity">{me.data?.name || 'My workspace'}<small>Client</small></div><nav onClick={closeDrawer}><NavLink to="/my/dashboard">{t('Dashboard')}</NavLink><NavLink to="/my/onboarding">{t('Getting started')}</NavLink><NavLink to="/my/profile">{t('My health')}</NavLink><NavLink to="/my/progress">{t('Progress')}</NavLink><NavLink to="/my/program">{t('My program')}</NavLink><NavLink to="/my/workouts">{t('Workout log')}</NavLink><NavLink to="/my/meal-plan">{t('Meal plan')}</NavLink><NavLink to="/my/checkins">{t('Check-ins')}</NavLink><NavLink to="/my/payments">{t('Subscription &amp; payments')}</NavLink><NavLink to="/my/messages">{t('Messages')}</NavLink><NavLink to="/my/notifications">{t('Notifications')}</NavLink></nav><button className="logout" onClick={() => void logout()}>Sign out</button></aside><main><div className="workspace-mobilebar"><button className="workspace-menu-toggle" aria-label={drawerOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={drawerOpen} aria-controls="workspace-navigation" onClick={() => setDrawerOpen(value => !value)}>{drawerOpen ? <X size={19} /> : <Menu size={19} />}<span>Menu</span></button><span className="workspace-mobile-brand">Coach<span>Pulse</span></span><span className="workspace-mobile-role">Client</span></div><Routes><Route path="dashboard" element={<MyDashboard />} /><Route path="onboarding" element={<OnboardingPage />} /><Route path="profile" element={<ClientProfile />} /><Route path="progress" element={<MyProgress />} /><Route path="program" element={<MyProgram />} /><Route path="workouts" element={<WorkoutLogsPage />} /><Route path="meal-plan" element={<><MyMealPlan /><MealLogAction /></>} /><Route path="checkins" element={<><CheckInsPage /><CheckInManagement /></>} /><Route path="payments" element={<><ClientSubscriptionPage /><ClientSubscriptionLifecycle /><ClientPaymentDetails /></>} /><Route path="payment/return" element={<PaymobPaymentReturn />} /><Route path="messages" element={<ClientMessages />} /><Route path="notifications" element={<NotificationCenter />} /><Route path="*" element={<Navigate to="dashboard" replace />} /></Routes></main></div>
+  const navItems = [
+    { to: '/my/dashboard', label: t('Dashboard'), icon: LayoutDashboard },
+    { to: '/my/program', label: t('My program'), icon: ClipboardList },
+    { to: '/my/workouts', label: t('Workout log'), icon: Activity },
+    { to: '/my/meal-plan', label: t('Meal plan'), icon: Salad },
+    { to: '/my/progress', label: t('Progress'), icon: BarChart3 },
+    { to: '/my/checkins', label: t('Check-ins'), icon: Check },
+    { to: '/my/payments', label: t('Subscription & payments'), icon: CreditCard },
+    { to: '/my/messages', label: t('Messages'), icon: MessageCircle },
+    { to: '/my/notifications', label: t('Notifications'), icon: Bell },
+    { to: '/my/onboarding', label: t('Getting started'), icon: UserRound },
+  ]
+  return <div className={`shell workspace-shell client-shell${drawerOpen ? ' drawer-open' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}><button className="workspace-scrim" aria-label="Close navigation" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} /><aside id="workspace-navigation" className="workspace-drawer"><div className="workspace-sidebar-brand"><Link className="brand" to="/my/dashboard">Coach<span>Pulse</span></Link><button type="button" className="workspace-sidebar-collapse" aria-label={sidebarCollapsed ? t('Expand sidebar') : t('Collapse sidebar')} onClick={() => setSidebarCollapsed(value => !value)}>{sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button></div><div className="identity"><span className="identity-name">{me.data?.name || 'My workspace'}</span><small>{t('Client')}</small></div><nav onClick={closeDrawer} aria-label={t('Workspace navigation')}>{navItems.map(({ to, label, icon: Icon }) => <NavLink to={to} key={to} title={label}><Icon size={18} aria-hidden="true" /><span>{label}</span></NavLink>)}</nav><button className="logout" onClick={() => void logout()}><LogOut size={17} /><span>{t('Sign out')}</span></button></aside><main dir={language === 'ar' ? 'rtl' : 'ltr'}><WorkspaceTopbar name={me.data?.name || 'Client'} role="Client" accountPath="/my/profile" onLogout={() => void logout()} onToggleDrawer={() => setDrawerOpen(value => !value)} onToggleSidebar={() => setSidebarCollapsed(value => !value)} drawerOpen={drawerOpen} collapsed={sidebarCollapsed} /><Routes><Route path="dashboard" element={<MyDashboard />} /><Route path="onboarding" element={<OnboardingPage />} /><Route path="profile" element={<ClientProfile />} /><Route path="progress" element={<MyProgress />} /><Route path="program" element={<MyProgram />} /><Route path="workouts" element={<WorkoutLogsPage />} /><Route path="meal-plan" element={<><MyMealPlan /><MealLogAction /></>} /><Route path="checkins" element={<><CheckInsPage /><CheckInManagement /></>} /><Route path="payments" element={<><ClientSubscriptionPage /><ClientSubscriptionLifecycle /><ClientPaymentDetails /></>} /><Route path="payment/return" element={<PaymobPaymentReturn />} /><Route path="messages" element={<ClientMessages />} /><Route path="notifications" element={<NotificationCenter />} /><Route path="*" element={<Navigate to="dashboard" replace />} /></Routes></main></div>
 }
 function RouteScrollReset() { const { pathname } = useLocation(); useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); document.querySelector('.shell main')?.scrollTo({ top: 0, left: 0 }); }, [pathname]); return null }
 function Table({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) { return <section className="panel table-wrap"><table><thead><tr>{headers.map(header => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.length ? rows.map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>) : <tr><td colSpan={headers.length}>لا توجد بيايات</td></tr>}</tbody></table></section> }
