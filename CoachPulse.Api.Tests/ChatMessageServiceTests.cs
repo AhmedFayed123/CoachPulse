@@ -49,4 +49,21 @@ public sealed class ChatMessageServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => new ChatMessageService(db).SendAsync(clientId, tenant, "Client", clientId, "  ", null, default));
         Assert.Empty(await db.Messages.ToListAsync());
     }
+
+    [Fact]
+    public async Task TenantOwner_CanStartConversationWithAnyTenantClient()
+    {
+        var tenant = Guid.NewGuid(); var ownerId = Guid.NewGuid(); var clientId = Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var db = new CoachPulseDbContext(options, new CurrentTenant(tenant));
+        db.Users.AddRange(new User { Id = ownerId, TenantId = tenant, Email = "owner@local", Role = CoachPulse.Domain.Enums.UserRole.TenantOwner }, new User { Id = clientId, TenantId = tenant, Email = "client@local", Role = CoachPulse.Domain.Enums.UserRole.Client });
+        db.Clients.Add(new Client { Id = Guid.NewGuid(), TenantId = tenant, UserId = clientId });
+        await db.SaveChangesAsync();
+
+        var message = await new ChatMessageService(db).SendAsync(ownerId, tenant, "TenantOwner", clientId, "Welcome", null, default);
+
+        Assert.NotNull(message);
+        Assert.Equal(ownerId, message.SenderId);
+        Assert.Equal(clientId, message.ReceiverId);
+    }
 }

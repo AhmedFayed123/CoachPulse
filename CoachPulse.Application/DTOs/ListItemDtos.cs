@@ -5,7 +5,8 @@ namespace CoachPulse.Application.DTOs;
 public sealed record ClientListItem(Guid Id, Guid UserId, string? Name, string Email, Guid? CoachId, string? Goals, ClientStatus Status, string? RiskLevel);
 
 public sealed record PaymentListItem(Guid Id, Guid SubscriptionId, decimal Amount, string Currency, PaymentMethod Method,
-    PaymentStatus Status, string? ReferenceNumber, DateTime CreatedAt, string? RejectionReason, Guid? ReceiptFileId);
+    PaymentStatus Status, string? ReferenceNumber, DateTime CreatedAt, string? RejectionReason, Guid? ReceiptFileId,
+    string? ClientName = null, string? PlanName = null);
 
 public sealed record ConversationListItem(Guid ClientId, string Name, int UnreadCount, ConversationLastMessage? LastMessage);
 

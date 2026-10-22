@@ -20,7 +20,7 @@ public sealed class ChatHub(CoachPulseDbContext db, ChatMessageService messageSe
     {
         if (TryIdentity(out var user,out var tenant,out var role))
         {
-            var partners = role == "Client" ? await db.Clients.IgnoreQueryFilters().Where(c=>c.UserId==user&&c.TenantId==tenant&&c.CoachId!=null).Select(c=>c.CoachId!.Value).ToArrayAsync() : await db.Clients.IgnoreQueryFilters().Where(c=>c.CoachId==user&&c.TenantId==tenant).Select(c=>c.UserId).ToArrayAsync();
+            var partners = role == "Client" ? await db.Clients.IgnoreQueryFilters().Where(c=>c.UserId==user&&c.TenantId==tenant&&c.CoachId!=null).Select(c=>c.CoachId!.Value).ToArrayAsync() : role == "TenantOwner" ? await db.Clients.IgnoreQueryFilters().Where(c=>c.TenantId==tenant).Select(c=>c.UserId).ToArrayAsync() : await db.Clients.IgnoreQueryFilters().Where(c=>c.CoachId==user&&c.TenantId==tenant).Select(c=>c.UserId).ToArrayAsync();
             logger.LogInformation("Chat hub connected for role {Role}; partner count {PartnerCount}", role, partners.Length);
             ConnectionPartners[Context.ConnectionId]=partners;
             var count=Connections.AddOrUpdate(user,1,(_,n)=>n+1);
@@ -66,6 +66,6 @@ public sealed class ChatHub(CoachPulseDbContext db, ChatMessageService messageSe
     {
         if(!TryIdentity(out var user,out var tenant,out _)||!await CanChat(user,conversationId,tenant))throw new HubException("Conversation not allowed.");var key=$"{user:N}:{conversationId:N}";var now=DateTime.UtcNow;if(TypingWindows.TryGetValue(key,out var old)&&now-old.Last<TimeSpan.FromSeconds(2))return;TypingWindows[key]=(now,conversationId);await Clients.User(conversationId.ToString()).SendAsync("UserTyping",new{userId=user,conversationId});
     }
-    private async Task<bool> CanChat(Guid user,Guid other,Guid tenant){var role=Context.User?.FindFirst(ClaimTypes.Role)?.Value;return role=="Client"?await db.Clients.IgnoreQueryFilters().AnyAsync(c=>c.UserId==user&&c.CoachId==other&&c.TenantId==tenant):role is "TenantOwner" or "CoachStaff"&&await db.Clients.IgnoreQueryFilters().AnyAsync(c=>c.UserId==other&&c.CoachId==user&&c.TenantId==tenant);}
+    private async Task<bool> CanChat(Guid user,Guid other,Guid tenant){var role=Context.User?.FindFirst(ClaimTypes.Role)?.Value;return role=="Client"?await db.Clients.IgnoreQueryFilters().AnyAsync(c=>c.UserId==user&&c.CoachId==other&&c.TenantId==tenant):role=="TenantOwner"?await db.Clients.IgnoreQueryFilters().AnyAsync(c=>c.UserId==other&&c.TenantId==tenant):role=="CoachStaff"&&await db.Clients.IgnoreQueryFilters().AnyAsync(c=>c.UserId==other&&c.CoachId==user&&c.TenantId==tenant);}
     private bool TryIdentity(out Guid user,out Guid tenant,out string role){role=Context.User?.FindFirst(ClaimTypes.Role)?.Value??"";user=Guid.Empty;tenant=Guid.Empty;return Guid.TryParse(Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value,out user)&&Guid.TryParse(Context.User?.FindFirst("tenantId")?.Value,out tenant);}
 }

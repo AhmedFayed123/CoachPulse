@@ -26,13 +26,15 @@ public class CoachController : ControllerBase
     private readonly IWebHostEnvironment _environment;
     private readonly IClientAccessService _clientAccess;
     private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _configuration;
 
-    public CoachController(CoachPulseDbContext context, IWebHostEnvironment environment, IClientAccessService clientAccess, IEmailSender emailSender)
+    public CoachController(CoachPulseDbContext context, IWebHostEnvironment environment, IClientAccessService clientAccess, IEmailSender emailSender, IConfiguration configuration)
     {
         _context = context;
         _environment = environment;
         _clientAccess = clientAccess;
         _emailSender = emailSender;
+        _configuration = configuration;
     }
 
     [HttpPost("clients/invite")]
@@ -124,7 +126,7 @@ public class CoachController : ControllerBase
 
         await _context.SaveChangesAsync();
         await _emailSender.SendTemplateAsync(email, EmailTemplateType.ClientInvitation, tenant.DefaultLanguage,
-            new Dictionary<string, string> { ["token"] = rawToken, ["name"] = request.Name ?? string.Empty }, HttpContext.RequestAborted);
+            new Dictionary<string, string> { ["token"] = rawToken, ["name"] = request.Name ?? string.Empty, ["actionUrl"] = $"{(_configuration["Frontend:BaseUrl"] ?? "http://localhost:8088").TrimEnd('/')}/register/client?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(email)}&name={Uri.EscapeDataString(request.Name ?? string.Empty)}" }, HttpContext.RequestAborted);
 
         return Ok(new
         {

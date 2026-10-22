@@ -52,6 +52,23 @@ public sealed class EmailDeliveryTests
         Assert.Contains("Development email queued", logger.Output);
     }
 
+    [Theory]
+    [InlineData(EmailTemplateType.EmailConfirmation)]
+    [InlineData(EmailTemplateType.PasswordReset)]
+    [InlineData(EmailTemplateType.ClientInvitation)]
+    public void ActionTemplatesRenderSafeClickableLinksWithoutExposingTheCode(EmailTemplateType type)
+    {
+        var content = EmailTemplateRenderer.Render(type, "en", new Dictionary<string, string>
+        {
+            ["token"] = "secret-token",
+            ["actionUrl"] = "https://example.test/action?token=secret-token&email=user%40example.test"
+        });
+
+        Assert.Contains("href=\"https://example.test/action?token=secret-token&amp;email=user%40example.test\"", content.HtmlBody);
+        Assert.DoesNotContain("<code>secret-token</code>", content.HtmlBody);
+        Assert.Contains("https://example.test/action?token=secret-token&email=user%40example.test", content.TextBody);
+    }
+
     private sealed class FakeTransport : IEmailDeliveryTransport
     {
         public string ProviderName => "Fake SMTP";

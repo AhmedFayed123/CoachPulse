@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace CoachPulse.Api.Tests;
@@ -102,7 +103,7 @@ public sealed class ClientsTenantTests
             var db = new CoachPulseDbContext(new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options, state); await db.Database.EnsureCreatedAsync();
             db.Tenants.Add(new CoachPulse.Domain.Entities.Tenant { Id = tenantId, Name = "Tenant", Slug = tenantId.ToString("N"), Status = "Active" });
             db.Users.Add(new User { Id = userId, TenantId = tenantId, Email = "coach@example.test", Role = UserRole.TenantOwner, PasswordHash = "pw" }); await db.SaveChangesAsync();
-            var clients = new ClientsController(db, new ClientAccessService(db), new TestEnvironment(), new TestEmail()) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+            var clients = new ClientsController(db, new ClientAccessService(db), new TestEnvironment(), new TestEmail(), new ConfigurationBuilder().Build()) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
             var tenant = new TenantController(db, new TestPasswordHasher(), new ClientAccessService(db)) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
             var fixture = new Fixture(db, state, clients, tenant, tenantId, userId); fixture.SetIdentity(userId, tenantId, UserRole.TenantOwner); return fixture;
         }

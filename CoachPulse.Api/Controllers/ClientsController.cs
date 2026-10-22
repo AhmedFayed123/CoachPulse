@@ -18,7 +18,7 @@ namespace CoachPulse.Api.Controllers;
 [ApiController]
 [Route("api/clients")]
 [Authorize]
-public sealed class ClientsController(CoachPulseDbContext db, IClientAccessService access, IWebHostEnvironment environment, IEmailSender emailSender) : ControllerBase
+public sealed class ClientsController(CoachPulseDbContext db, IClientAccessService access, IWebHostEnvironment environment, IEmailSender emailSender, IConfiguration configuration) : ControllerBase
 {
     private bool TryScope(out Guid tenantId, out Guid userId, out UserRole role)
     {
@@ -178,7 +178,7 @@ public sealed class ClientsController(CoachPulseDbContext db, IClientAccessServi
         await db.SaveChangesAsync();
         var tenantLanguage = await db.Tenants.Where(x => x.Id == tenant).Select(x => x.DefaultLanguage).FirstOrDefaultAsync() ?? "en";
         await emailSender.SendTemplateAsync(invitation.Email, EmailTemplateType.ClientInvitation, tenantLanguage,
-            new Dictionary<string, string> { ["token"] = token, ["name"] = invitation.InvitedName ?? string.Empty }, HttpContext.RequestAborted);
+            new Dictionary<string, string> { ["token"] = token, ["name"] = invitation.InvitedName ?? string.Empty, ["actionUrl"] = $"{(configuration["Frontend:BaseUrl"] ?? "http://localhost:8088").TrimEnd('/')}/register/client?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(invitation.Email)}&name={Uri.EscapeDataString(invitation.InvitedName ?? string.Empty)}" }, HttpContext.RequestAborted);
         return Ok(new { invitation.Id, invitation.Email, invitation.ExpiresAt, InvitationToken = environment.IsDevelopment() ? token : null });
     }
 

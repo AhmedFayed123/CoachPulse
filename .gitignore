@@ -13,6 +13,8 @@
 # Environment
 .env
 .env.*
+.local-api-publish/
+CoachPulse.Api/publish/
 !.env.example
 !CoachPulse.AI/.env.example
 

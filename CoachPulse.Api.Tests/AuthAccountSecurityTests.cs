@@ -95,6 +95,21 @@ public sealed class AuthAccountSecurityTests
     }
 
     [Fact]
+    public async Task ForgotPassword_DoesNotRequireTheUserToKnowTheirClubSlug()
+    {
+        await using var f = await Fixture.Create();
+        var tenant = f.Tenant(); var user = f.User(tenant.Id);
+        f.Db.Tenants.Add(tenant); f.Db.Users.Add(user); await f.Db.SaveChangesAsync();
+
+        Assert.IsType<OkObjectResult>(await f.Auth.ForgotPassword(new TenantEmailRequest { Email = user.Email }));
+
+        var token = await f.Db.UserSecurityTokens.SingleAsync();
+        Assert.Equal(user.Id, token.UserId);
+        Assert.Equal(tenant.Id, token.TenantId);
+        Assert.Equal("password-reset", token.Purpose);
+    }
+
+    [Fact]
     public async Task ResetPassword_ExpiredOrUsedToken_IsRejected()
     {
         await using var f = await Fixture.Create(); var tenant = f.Tenant(); var user = f.User(tenant.Id); f.Db.Tenants.Add(tenant); f.Db.Users.Add(user);
@@ -104,7 +119,7 @@ public sealed class AuthAccountSecurityTests
         f.Db.UserSecurityTokens.AddRange(expired, used, valid); await f.Db.SaveChangesAsync();
         Assert.IsType<BadRequestObjectResult>(await f.Auth.ResetPassword(new ResetPasswordRequest { TenantSlug = tenant.Slug, Email = user.Email, Token = "expired", NewPassword = "New@Pass123" }));
         Assert.IsType<BadRequestObjectResult>(await f.Auth.ResetPassword(new ResetPasswordRequest { TenantSlug = tenant.Slug, Email = user.Email, Token = "used", NewPassword = "New@Pass123" }));
-        Assert.IsType<OkObjectResult>(await f.Auth.ResetPassword(new ResetPasswordRequest { TenantSlug = tenant.Slug, Email = user.Email, Token = "valid", NewPassword = "New@Pass123" }));
+        Assert.IsType<OkObjectResult>(await f.Auth.ResetPassword(new ResetPasswordRequest { Email = user.Email, Token = "valid", NewPassword = "New@Pass123" }));
         Assert.IsType<BadRequestObjectResult>(await f.Auth.ResetPassword(new ResetPasswordRequest { TenantSlug = tenant.Slug, Email = user.Email, Token = "valid", NewPassword = "New@Pass123" }));
     }
 

@@ -6,100 +6,100 @@ type LanguageContextValue = { language: Language; setLanguage: (language: Langua
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 const arabic: Record<string, string> = {
-  'Club': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Clubs': 'ط§ظ„ط£ظ†ط¯ظٹط©', 'Workspace': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Workspaces': 'ط§ظ„ط£ظ†ط¯ظٹط©', 'My club': 'ظ†ط§ط¯ظٹظٹ',
-  'Search by club name': 'ط§ط¨ط­ط« ط¨ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ', 'Available clubs': 'ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„ظ…طھط§ط­ط©',
-  ...{ Overview: 'ظ†ط¸ط±ط© ط¹ط§ظ…ط©', Clients: 'ط§ظ„ط¹ظ…ظ„ط§ط،', 'Coaching team': 'ظپط±ظٹظ‚ ط§ظ„طھط¯ط±ظٹط¨', 'Check-in reviews': 'ظ…ط±ط§ط¬ط¹ط© ط§ظ„ظ…طھط§ط¨ط¹ط§طھ', Programs: 'ط§ظ„ط¨ط±ط§ظ…ط¬', Exercises: 'ط§ظ„طھظ…ط§ط±ظٹظ†', 'Meal plans': 'ط®ط·ط· ط§ظ„ظˆط¬ط¨ط§طھ', Plans: 'ط§ظ„ط¨ط§ظ‚ط§طھ', Conversations: 'ط§ظ„ظ…ط­ط§ط¯ط«ط§طھ', Payments: 'ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ', Subscriptions: 'ط§ظ„ط§ط´طھط±ط§ظƒط§طھ', Notifications: 'ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ', 'AI tools': 'ط£ط¯ظˆط§طھ ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ', 'AI review': 'ظ…ط±ط§ط¬ط¹ط© ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ', 'Workspace settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', Analytics: 'ط§ظ„طھط­ظ„ظٹظ„ط§طھ', 'Audit log': 'ط³ط¬ظ„ ط§ظ„طھط¯ظ‚ظٹظ‚', Account: 'ط§ظ„ط­ط³ط§ط¨', 'Sign out': 'طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬', Menu: 'ط§ظ„ظ‚ط§ط¦ظ…ط©' },
-  ...{ 'Training programs': 'ط§ظ„ط¨ط±ط§ظ…ط¬ ط§ظ„طھط¯ط±ظٹط¨ظٹط©', 'Create a program, add its exercises, then assign it to a client.': 'ط£ظ†ط´ط¦ ط¨ط±ظ†ط§ظ…ط¬ط§ظ‹طŒ ط£ط¶ظپ ط§ظ„طھظ…ط§ط±ظٹظ†طŒ ط«ظ… ط§ط³ظ†ط¯ظ‡ ط¥ظ„ظ‰ ط¹ظ…ظٹظ„.', 'Meal plans': 'ط®ط·ط· ط§ظ„ظˆط¬ط¨ط§طھ', 'Create a meal plan, add nutrition details, and assign it to a client.': 'ط£ظ†ط´ط¦ ط®ط·ط© ظˆط¬ط¨ط§طھطŒ ط£ط¶ظپ طھظپط§طµظٹظ„ ط§ظ„طھط؛ط°ظٹط©طŒ ط«ظ… ط§ط³ظ†ط¯ظ‡ط§ ط¥ظ„ظ‰ ط¹ظ…ظٹظ„.', 'Workspace settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', 'Only the workspace owner can change these settings.': 'ظٹظ…ظƒظ† ظ„ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ ظپظ‚ط· طھط¹ط¯ظٹظ„ ظ‡ط°ظ‡ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ.', 'Manage workspace details, branding and payment methods.': 'ط£ط¯ط± ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ†ط§ط¯ظٹ ظˆظ‡ظˆظٹطھظ‡ ظˆط·ط±ظ‚ ط§ظ„ط¯ظپط¹.' },
-  ...{ 'The page': 'ط§ظ„طµظپط­ط©', 'Items per page': 'ط¹ط¯ط¯ ط§ظ„ط¹ظ†ط§طµط± ظپظٹ ط§ظ„طµظپط­ط©', Items: 'ط§ظ„ط¹ظ†ط§طµط±', 'Total count': 'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ†طھط§ط¦ط¬', 'No data available': 'ظ„ط§ طھظˆط¬ط¯ ط¨ظٹط§ظ†ط§طھ ظ…طھط§ط­ط©', 'No items found': 'ظ„ط§ طھظˆط¬ط¯ ط¹ظ†ط§طµط±', 'Loading data...': 'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ...', 'Select from list': 'ط§ط®طھط± ظ…ظ† ط§ظ„ظ‚ط§ط¦ظ…ط©', 'No items available': 'ظ„ط§ طھظˆط¬ط¯ ط¹ظ†ط§طµط± ظ…طھط§ط­ط©', 'No messages yet': 'ظ„ط§ طھظˆط¬ط¯ ط±ط³ط§ط¦ظ„ ط¨ط¹ط¯', 'Send message': 'ط¥ط±ط³ط§ظ„ ط±ط³ط§ظ„ط©', 'Search clients': 'ط§ط¨ط­ط« ط¹ظ† ط¹ظ…ظٹظ„', 'Unread only': 'ط؛ظٹط± ط§ظ„ظ…ظ‚ط±ظˆط،ط© ظپظ‚ط·', Inbox: 'طµظ†ط¯ظˆظ‚ ط§ظ„ظˆط§ط±ط¯', 'Select a conversation': 'ط§ط®طھط± ظ…ط­ط§ط¯ط«ط©', 'Back to conversations': 'ط§ظ„ط¹ظˆط¯ط© ظ„ظ„ظ…ط­ط§ط¯ط«ط§طھ' },
-  ...{ 'My dashboard': 'ظ„ظˆط­ط© ط§ظ„ط¹ظ…ظٹظ„', 'My program': 'ط¨ط±ظ†ط§ظ…ط¬ظٹ', 'My progress': 'طھظ‚ط¯ظ…ظٹ', 'My meal plan': 'ط®ط·ط© ظˆط¬ط¨ط§طھظٹ', 'My messages': 'ط±ط³ط§ط¦ظ„ظٹ', 'My check-ins': 'ظ…طھط§ط¨ط¹ط§طھظٹ', 'My payments': 'ظ…ط¯ظپظˆط¹ط§طھظٹ', 'My subscription': 'ط§ط´طھط±ط§ظƒظٹ', 'My profile': 'ظ…ظ„ظپظٹ ط§ظ„ط´ط®طµظٹ', 'My coach': 'ظ…ط¯ط±ط¨ظٹ', 'Workout logs': 'ط³ط¬ظ„ ط§ظ„طھظ…ط§ط±ظٹظ†', 'Client details': 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¹ظ…ظٹظ„', 'Tenant plans': 'ط¨ط§ظ‚ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', 'Payment settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¯ظپط¹' },
-  ...{ 'Start date': 'طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،', 'Program name': 'ط§ط³ظ… ط§ظ„ط¨ط±ظ†ط§ظ…ط¬', 'Duration in days': 'ط§ظ„ظ…ط¯ط© ط¨ط§ظ„ط£ظٹط§ظ…', 'Create draft': 'ط¥ظ†ط´ط§ط، ظ…ط³ظˆط¯ط©', 'Workspace programs': 'ط¨ط±ط§ظ…ط¬ ط§ظ„ظ†ط§ط¯ظٹ', 'Open a program to review or edit it. Status and assignment are shown below.': 'ط§ظپطھط­ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬ ظ„ظ…ط±ط§ط¬ط¹طھظ‡ ط£ظˆ طھط¹ط¯ظٹظ„ظ‡. طھط¸ظ‡ط± ط­ط§ظ„طھظ‡ ظˆط¥ط³ظ†ط§ط¯ظ‡ ط£ط¯ظ†ط§ظ‡.', 'No programs yet. Create your first draft above.': 'ظ„ط§ طھظˆط¬ط¯ ط¨ط±ط§ظ…ط¬ ط¨ط¹ط¯. ط£ظ†ط´ط¦ ط£ظˆظ„ ظ…ط³ظˆط¯ط© ط£ط¹ظ„ط§ظ‡.', 'Manage plan': 'ط¥ط¯ط§ط±ط© ط§ظ„ط®ط·ط©', 'Manage': 'ط¥ط¯ط§ط±ط©', 'Create a meal plan': 'ط¥ظ†ط´ط§ط، ط®ط·ط© ظˆط¬ط¨ط§طھ', 'Plan name': 'ط§ط³ظ… ط§ظ„ط®ط·ط©', 'Create meal draft': 'ط¥ظ†ط´ط§ط، ظ…ط³ظˆط¯ط©', 'Workspace meal plans': 'ط®ط·ط· ظˆط¬ط¨ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', 'Open a plan to manage meals or assign it.': 'ط§ظپطھط­ ط§ظ„ط®ط·ط© ظ„ط¥ط¯ط§ط±ط© ط§ظ„ظˆط¬ط¨ط§طھ ط£ظˆ ط¥ط³ظ†ط§ط¯ظ‡ط§.', 'No meal plans yet.': 'ظ„ط§ طھظˆط¬ط¯ ط®ط·ط· ظˆط¬ط¨ط§طھ ط¨ط¹ط¯.' },
-  ...{ 'Exercise library': 'ظ…ظƒطھط¨ط© ط§ظ„طھظ…ط§ط±ظٹظ†', 'AI progress review': 'ظ…ط±ط§ط¬ط¹ط© ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ ظˆط§ظ„طھظ‚ط¯ظ…', 'Tenant plans': 'ط§ظ„ط¨ط§ظ‚ط§طھ', 'Client details': 'طھظپط§طµظٹظ„ ط§ظ„ط¹ظ…ظٹظ„', 'Coach team': 'ظپط±ظٹظ‚ ط§ظ„طھط¯ط±ظٹط¨', 'Check-in review': 'ظ…ط±ط§ط¬ط¹ط© ط§ظ„ظ…طھط§ط¨ط¹ط§طھ', 'My workout log': 'ط³ط¬ظ„ طھظ…ط§ط±ظٹظ†ظٹ', 'Payment history': 'ط³ط¬ظ„ ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ', 'Notification center': 'ظ…ط±ظƒط² ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ', 'Account settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط­ط³ط§ط¨', 'Billing and subscriptions': 'ط§ظ„ظپظˆطھط±ط© ظˆط§ظ„ط§ط´طھط±ط§ظƒط§طھ', 'Platform dashboard': 'ظ„ظˆط­ط© ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†طµط©', 'Dashboard': 'ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ…', 'Getting started': 'ط§ط¨ط¯ط£ ظ‡ظ†ط§', 'My health': 'ط¨ظٹط§ظ†ط§طھظٹ ط§ظ„طµط­ظٹط©', 'Workout log': 'ط³ط¬ظ„ ط§ظ„طھظ…ط§ط±ظٹظ†', 'Check-ins': 'ط§ظ„ظ…طھط§ط¨ط¹ط§طھ', 'Subscription & payments': 'ط§ظ„ط§ط´طھط±ط§ظƒ ظˆط§ظ„ظ…ط¯ظپظˆط¹ط§طھ', 'Messages': 'ط§ظ„ط±ط³ط§ط¦ظ„' },
-  ...{ page: 'ط§ظ„طµظپط­ط©', pageSize: 'ط¹ط¯ط¯ ط§ظ„ط¹ظ†ط§طµط± ظپظٹ ط§ظ„طµظپط­ط©', totalCount: 'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ†طھط§ط¦ط¬', items: 'ط§ظ„ط¹ظ†ط§طµط±', id: 'ط§ظ„ظ…ط¹ط±ظ‘ظپ', name: 'ط§ظ„ط§ط³ظ…', title: 'ط§ظ„ط¹ظ†ظˆط§ظ†', email: 'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ', status: 'ط§ظ„ط­ط§ظ„ط©', role: 'ط§ظ„ط¯ظˆط±', amount: 'ط§ظ„ظ…ط¨ظ„ط؛', currency: 'ط§ظ„ط¹ظ…ظ„ط©', price: 'ط§ظ„ط³ط¹ط±', createdAt: 'طھط§ط±ظٹط® ط§ظ„ط¥ظ†ط´ط§ط،', updatedAt: 'ط¢ط®ط± طھط­ط¯ظٹط«', clientId: 'ط§ظ„ط¹ظ…ظٹظ„', coachId: 'ط§ظ„ظ…ط¯ط±ط¨', tenantId: 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ظ†ط§ط¯ظٹ', planId: 'ط§ظ„ط¨ط§ظ‚ط©', subscriptionId: 'ط§ظ„ط§ط´طھط±ط§ظƒ', paymentId: 'ط§ظ„ط¯ظپط¹ط©', programId: 'ط§ظ„ط¨ط±ظ†ط§ظ…ط¬', exerciseId: 'ط§ظ„طھظ…ط±ظٹظ†', purpose: 'ط§ظ„ط؛ط±ط¶', originalName: 'ط§ط³ظ… ط§ظ„ظ…ظ„ظپ', contentType: 'ظ†ظˆط¹ ط§ظ„ظ…ظ„ظپ', sizeBytes: 'ط­ط¬ظ… ط§ظ„ظ…ظ„ظپ', riskLevel: 'ظ…ط³طھظˆظ‰ ط§ظ„ظ…ط®ط§ط·ط±', riskScore: 'ط¯ط±ط¬ط© ط§ظ„ظ…ط®ط§ط·ط±', unreadCount: 'ط±ط³ط§ط¦ظ„ ط؛ظٹط± ظ…ظ‚ط±ظˆط،ط©', durationDays: 'ط§ظ„ظ…ط¯ط© ط¨ط§ظ„ط£ظٹط§ظ…', durationWeeks: 'ط§ظ„ظ…ط¯ط© ط¨ط§ظ„ط£ط³ط§ط¨ظٹط¹', startDate: 'طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،', endDate: 'طھط§ط±ظٹط® ط§ظ„ط§ظ†طھظ‡ط§ط،', expiresAt: 'طھط§ط±ظٹط® ط§ظ„ط§ظ†طھظ‡ط§ط،', features: 'ط§ظ„ظ…ظ…ظٹط²ط§طھ', meals: 'ط§ظ„ظˆط¬ط¨ط§طھ', exercises: 'ط§ظ„طھظ…ط§ط±ظٹظ†', workoutPlan: 'ط®ط·ط© ط§ظ„طھظ…ط±ظٹظ†', alerts: 'ط§ظ„طھظ†ط¨ظٹظ‡ط§طھ', message: 'ط§ظ„ط±ط³ط§ظ„ط©', body: 'ط§ظ„طھظپط§طµظٹظ„', type: 'ط§ظ„ظ†ظˆط¹', action: 'ط§ظ„ط¥ط¬ط±ط§ط،', entityType: 'ظ†ظˆط¹ ط§ظ„ط³ط¬ظ„', entityId: 'ط§ظ„ط³ط¬ظ„', actorRole: 'ط¯ظˆط± ط§ظ„ظ…ظ†ظپظ‘ط°', calories: 'ط§ظ„ط³ط¹ط±ط§طھ ط§ظ„ط­ط±ط§ط±ظٹط©', protein: 'ط¨ط±ظˆطھظٹظ†', carbs: 'ظƒط±ط¨ظˆظ‡ظٹط¯ط±ط§طھ', fat: 'ط¯ظ‡ظˆظ†', muscleGroup: 'ط§ظ„ظ…ط¬ظ…ظˆط¹ط© ط§ظ„ط¹ط¶ظ„ظٹط©', equipment: 'ط§ظ„ظ…ط¹ط¯ط§طھ', rowVersion: 'ط¥طµط¯ط§ط± ط§ظ„ط³ط¬ظ„', frequency: 'ط§ظ„طھظƒط±ط§ط±', dayOfWeek: 'ظٹظˆظ… ط§ظ„ط£ط³ط¨ظˆط¹' },
-  ...{ 'Exercise library': 'ظ…ظƒطھط¨ط© ط§ظ„طھظ…ط§ط±ظٹظ†', Clients: 'ط§ظ„ط¹ظ…ظ„ط§ط،', 'Coach team': 'ظپط±ظٹظ‚ ط§ظ„ظ…ط¯ط±ط¨ظٹظ†', 'Check-ins review': 'ظ…ط±ط§ط¬ط¹ط© Check-ins', 'Paymob return': 'ط¹ظˆط¯ط© Paymob', 'Getting started': 'ط§ظ„طھظ‡ظٹط¦ط© ط§ظ„ط£ظˆظ„ظ‰', 'My profile': 'ظ…ظ„ظپظٹ ط§ظ„ط´ط®طµظٹ ظˆط§ظ„طµط­ظٹ', 'My check-in': 'Check-ins', 'My subscriptions and payments': 'ط§ظ„ط§ط´طھط±ط§ظƒط§طھ ظˆط§ظ„ظ…ط¯ظپظˆط¹ط§طھ', 'Conversation with coach': 'ط§ظ„ظ…ط­ط§ط¯ط«ط© ظ…ط¹ ط§ظ„ظ…ط¯ط±ط¨', Analytics: 'ط§ظ„طھط­ظ„ظٹظ„ط§طھ', 'AI workspace': 'ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ', 'My dashboard': 'ظ„ظˆط­ط© ط§ظ„ط¹ظ…ظٹظ„', 'My program': 'ط¨ط±ظ†ط§ظ…ط¬ظٹ', 'My progress': 'طھظ‚ط¯ظ…ظٹ', 'My meal plan': 'ط®ط·ط© ظˆط¬ط¨ط§طھظٹ', 'A quick look at your training and account.': 'ظ†ط¸ط±ط© ط³ط±ظٹط¹ط© ط¹ظ„ظ‰ طھط¯ط±ظٹط¨ظƒ ظˆط­ط³ط§ط¨ظƒ.', 'Your current plan, today\'s workout and training history': 'ط®ط·طھظƒ ط§ظ„ط­ط§ظ„ظٹط© ظˆطھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ… ظˆط³ط¬ظ„ طھط¯ط±ظٹط¨ظƒ.', 'Your measurements and progress': 'ظ‚ظٹط§ط³ط§طھظƒ ظˆطھظ‚ط¯ظ…ظƒ.', 'Your meals and nutrition': 'ظˆط¬ط¨ط§طھظƒ ظˆطھط؛ط°ظٹطھظƒ.', 'Keep client conversations and new messages organized in one place.': 'طھط§ط¨ط¹ ط±ط³ط§ط¦ظ„ ط¹ظ…ظ„ط§ط¦ظƒ ظˆط±ط¯ ط¹ظ„ظٹظ‡ظ… ظ…ظ† ظ…ظƒط§ظ† ظˆط§ط­ط¯.', 'Your updates, reminders and account activity.': 'طھط­ط¯ظٹط«ط§طھظƒ ظˆطھط°ظƒظٹط±ط§طھظƒ ظˆظ†ط´ط§ط· ط­ط³ط§ط¨ظƒ.', 'Read-only activity history. The server limits results to your workspace.': 'ط³ط¬ظ„ ظ†ط´ط§ط· ظ„ظ„ظ‚ط±ط§ط،ط© ظپظ‚ط·. طھظ‚طھطµط± ط§ظ„ظ†طھط§ط¦ط¬ ط¹ظ„ظ‰ ظ†ط§ط¯ظٹظƒ.', 'Review each client\'s plan and status, then take the appropriate action.': 'ط±ط§ط¬ط¹ ط¨ط§ظ‚ط© ظƒظ„ ط¹ظ…ظٹظ„ ظˆط­ط§ظ„طھظ‡طŒ ط«ظ… ط§طھط®ط° ط§ظ„ط¥ط¬ط±ط§ط، ط§ظ„ظ…ظ†ط§ط³ط¨.', 'A workspace summary': 'ظ…ظ„ط®طµ ط§ظ„ظ†ط§ط¯ظٹ' },
-  ...{ Message: 'ط§ظ„ط±ط³ط§ظ„ط©', 'Write to': 'ط§ظƒطھط¨ ط¥ظ„ظ‰', 'Attach photos, videos or files': 'ط£ط±ظپظ‚ طµظˆط±ط§ظ‹ ط£ظˆ ظپظٹط¯ظٹظˆظ‡ط§طھ ط£ظˆ ظ…ظ„ظپط§طھ', 'Uploading filesâ€¦': 'ط¬ط§ط±ظچ ط±ظپط¹ ط§ظ„ظ…ظ„ظپط§طھâ€¦', 'Sendingâ€¦': 'ط¬ط§ط±ظچ ط§ظ„ط¥ط±ط³ط§ظ„â€¦', 'Send message': 'ط¥ط±ط³ط§ظ„ ط§ظ„ط±ط³ط§ظ„ط©', 'Manage my messages': 'ط¥ط¯ط§ط±ط© ط±ط³ط§ط¦ظ„ظٹ', 'Select a message to delete': 'ط§ط®طھط± ط±ط³ط§ظ„ط© ظ„ط­ط°ظپظ‡ط§', 'Delete my message': 'ط­ط°ظپ ط±ط³ط§ظ„طھظٹ', 'Client conversation': 'ظ…ط­ط§ط¯ط«ط© ط§ظ„ط¹ظ…ظٹظ„', 'Presence unknown': 'ط­ط§ظ„ط© ط§ظ„ط§طھطµط§ظ„ ط؛ظٹط± ظ…ط¹ط±ظˆظپط©', 'Online now': 'ظ…طھطµظ„ ط§ظ„ط¢ظ†', Offline: 'ط؛ظٹط± ظ…طھطµظ„', 'Typingâ€¦': 'ظٹظƒطھط¨ ط§ظ„ط¢ظ†â€¦', Unread: 'ط؛ظٹط± ظ…ظ‚ط±ظˆط،ط©', 'Mark as read': 'طھط­ط¯ظٹط¯ ظƒظ…ظ‚ط±ظˆط،ط©', 'Back to conversations': 'ط§ظ„ط¹ظˆط¯ط© ظ„ظ„ظ…ط­ط§ط¯ط«ط§طھ', Inbox: 'طµظ†ط¯ظˆظ‚ ط§ظ„ظˆط§ط±ط¯', 'No messages yet': 'ظ„ط§ طھظˆط¬ط¯ ط±ط³ط§ط¦ظ„ ط¨ط¹ط¯', 'Send a message to start the conversation.': 'ط£ط±ط³ظ„ ط±ط³ط§ظ„ط© ظ„ط¨ط¯ط، ط§ظ„ظ…ط­ط§ط¯ط«ط©.', 'Conversation history': 'ط³ط¬ظ„ ط§ظ„ظ…ط­ط§ط¯ط«ط©', Attachment: 'ظ…ط±ظپظ‚', 'Message deleted': 'طھظ… ط­ط°ظپ ط§ظ„ط±ط³ط§ظ„ط©', Read: 'ظ…ظ‚ط±ظˆط،ط©', 'You can attach up to 10 files per message.': 'ظٹظ…ظƒظ†ظƒ ط¥ط±ظپط§ظ‚ 10 ظ…ظ„ظپط§طھ ظƒط­ط¯ ط£ظ‚طµظ‰ ظپظٹ ط§ظ„ط±ط³ط§ظ„ط©.', 'The uploaded file could not be identified.': 'طھط¹ط°ط± ط§ظ„طھط¹ط±ظپ ط¹ظ„ظ‰ ط§ظ„ظ…ظ„ظپ ط¨ط¹ط¯ ط±ظپط¹ظ‡.', 'Could not send the message.': 'طھط¹ط°ط± ط¥ط±ط³ط§ظ„ ط§ظ„ط±ط³ط§ظ„ط©.', 'Delete your message?': 'ظ‡ظ„ طھط±ظٹط¯ ط­ط°ظپ ط±ط³ط§ظ„طھظƒطں', 'Could not delete the message.': 'طھط¹ط°ط± ط­ط°ظپ ط§ظ„ط±ط³ط§ظ„ط©.', 'Could not update read status.': 'طھط¹ط°ط± طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ظ‚ط±ط§ط،ط©.', 'Loading attachmentâ€¦': 'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط±ظپظ‚â€¦', 'Could not load attachment.': 'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ظ…ط±ظپظ‚.', 'Open attachment': 'ظپطھط­ ط§ظ„ظ…ط±ظپظ‚', New: 'ط¬ط¯ظٹط¯', 'All notifications': 'ظƒظ„ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ', 'Mark all as read': 'طھط­ط¯ظٹط¯ ط§ظ„ظƒظ„ ظƒظ…ظ‚ط±ظˆط،', 'Notification preferences': 'طھظپط¶ظٹظ„ط§طھ ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ', 'Delivery settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ط¥ط±ط³ط§ظ„', 'Choose where each type of update is delivered.': 'ط§ط®طھط± ط·ط±ظٹظ‚ط© ط§ط³طھظ„ط§ظ… ظƒظ„ ظ†ظˆط¹ ظ…ظ† ط§ظ„طھط­ط¯ظٹط«ط§طھ.' },
+  'Club': 'النادي', 'Clubs': 'الأندية', 'Workspace': 'النادي', 'Workspaces': 'الأندية', 'My club': 'ناديي',
+  'Search by club name': 'ابحث باسم النادي', 'Available clubs': 'الأندية المتاحة',
+  ...{ Overview: 'نظرة عامة', Clients: 'العملاء', 'Coaching team': 'فريق التدريب', 'Check-in reviews': 'مراجعة المتابعات', Programs: 'البرامج', Exercises: 'التمارين', 'Meal plans': 'خطط الوجبات', Plans: 'الباقات', Conversations: 'المحادثات', Payments: 'المدفوعات', Subscriptions: 'الاشتراكات', Notifications: 'الإشعارات', 'AI tools': 'أدوات الذكاء الاصطناعي', 'AI review': 'مراجعة الذكاء الاصطناعي', 'Workspace settings': 'إعدادات النادي', Analytics: 'التحليلات', 'Audit log': 'سجل التدقيق', Account: 'الحساب', 'Sign out': 'تسجيل الخروج', Menu: 'القائمة' },
+  ...{ 'Training programs': 'البرامج التدريبية', 'Create a program, add its exercises, then assign it to a client.': 'أنشئ برنامجاً، أضف التمارين، ثم اسنده إلى عميل.', 'Meal plans': 'خطط الوجبات', 'Create a meal plan, add nutrition details, and assign it to a client.': 'أنشئ خطة وجبات، أضف تفاصيل التغذية، ثم اسندها إلى عميل.', 'Workspace settings': 'إعدادات النادي', 'Only the workspace owner can change these settings.': 'يمكن لمالك النادي فقط تعديل هذه الإعدادات.', 'Manage workspace details, branding and payment methods.': 'أدر بيانات النادي وهويته وطرق الدفع.' },
+  ...{ 'The page': 'الصفحة', 'Items per page': 'عدد العناصر في الصفحة', Items: 'العناصر', 'Total count': 'إجمالي النتائج', 'No data available': 'لا توجد بيانات متاحة', 'No items found': 'لا توجد عناصر', 'Loading data...': 'جارٍ تحميل البيانات...', 'Select from list': 'اختر من القائمة', 'No items available': 'لا توجد عناصر متاحة', 'No messages yet': 'لا توجد رسائل بعد', 'Send message': 'إرسال رسالة', 'Search clients': 'ابحث عن عميل', 'Unread only': 'غير المقروءة فقط', Inbox: 'صندوق الوارد', 'Select a conversation': 'اختر محادثة', 'Back to conversations': 'العودة للمحادثات' },
+  ...{ 'My dashboard': 'لوحة العميل', 'My program': 'برنامجي', 'My progress': 'تقدمي', 'My meal plan': 'خطة وجباتي', 'My messages': 'رسائلي', 'My check-ins': 'متابعاتي', 'My payments': 'مدفوعاتي', 'My subscription': 'اشتراكي', 'My profile': 'ملفي الشخصي', 'My coach': 'مدربي', 'Workout logs': 'سجل التمارين', 'Client details': 'بيانات العميل', 'Tenant plans': 'باقات النادي', 'Payment settings': 'إعدادات الدفع' },
+  ...{ 'Start date': 'تاريخ البدء', 'Program name': 'اسم البرنامج', 'Duration in days': 'المدة بالأيام', 'Create draft': 'إنشاء مسودة', 'Workspace programs': 'برامج النادي', 'Open a program to review or edit it. Status and assignment are shown below.': 'افتح البرنامج لمراجعته أو تعديله. تظهر حالته وإسناده أدناه.', 'No programs yet. Create your first draft above.': 'لا توجد برامج بعد. أنشئ أول مسودة أعلاه.', 'Manage plan': 'إدارة الخطة', 'Manage': 'إدارة', 'Create a meal plan': 'إنشاء خطة وجبات', 'Plan name': 'اسم الخطة', 'Create meal draft': 'إنشاء مسودة', 'Workspace meal plans': 'خطط وجبات النادي', 'Open a plan to manage meals or assign it.': 'افتح الخطة لإدارة الوجبات أو إسنادها.', 'No meal plans yet.': 'لا توجد خطط وجبات بعد.' },
+  ...{ 'Exercise library': 'مكتبة التمارين', 'AI progress review': 'مراجعة الذكاء الاصطناعي والتقدم', 'Tenant plans': 'الباقات', 'Client details': 'تفاصيل العميل', 'Coach team': 'فريق التدريب', 'Check-in review': 'مراجعة المتابعات', 'My workout log': 'سجل تماريني', 'Payment history': 'سجل المدفوعات', 'Notification center': 'مركز الإشعارات', 'Account settings': 'إعدادات الحساب', 'Billing and subscriptions': 'الفوترة والاشتراكات', 'Platform dashboard': 'لوحة إدارة المنصة', 'Dashboard': 'لوحة التحكم', 'Getting started': 'ابدأ هنا', 'My health': 'بياناتي الصحية', 'Workout log': 'سجل التمارين', 'Check-ins': 'المتابعات', 'Subscription & payments': 'الاشتراك والمدفوعات', 'Messages': 'الرسائل' },
+  ...{ page: 'الصفحة', pageSize: 'عدد العناصر في الصفحة', totalCount: 'إجمالي النتائج', items: 'العناصر', id: 'المعرّف', name: 'الاسم', title: 'العنوان', email: 'البريد الإلكتروني', status: 'الحالة', role: 'الدور', amount: 'المبلغ', currency: 'العملة', price: 'السعر', createdAt: 'تاريخ الإنشاء', updatedAt: 'آخر تحديث', clientId: 'العميل', coachId: 'المدرب', tenantId: 'معرّف النادي', planId: 'الباقة', subscriptionId: 'الاشتراك', paymentId: 'الدفعة', programId: 'البرنامج', exerciseId: 'التمرين', purpose: 'الغرض', originalName: 'اسم الملف', contentType: 'نوع الملف', sizeBytes: 'حجم الملف', riskLevel: 'مستوى المخاطر', riskScore: 'درجة المخاطر', unreadCount: 'رسائل غير مقروءة', durationDays: 'المدة بالأيام', durationWeeks: 'المدة بالأسابيع', startDate: 'تاريخ البدء', endDate: 'تاريخ الانتهاء', expiresAt: 'تاريخ الانتهاء', features: 'المميزات', meals: 'الوجبات', exercises: 'التمارين', workoutPlan: 'خطة التمرين', alerts: 'التنبيهات', message: 'الرسالة', body: 'التفاصيل', type: 'النوع', action: 'الإجراء', entityType: 'نوع السجل', entityId: 'السجل', actorRole: 'دور المنفّذ', calories: 'السعرات الحرارية', protein: 'بروتين', carbs: 'كربوهيدرات', fat: 'دهون', muscleGroup: 'المجموعة العضلية', equipment: 'المعدات', rowVersion: 'إصدار السجل', frequency: 'التكرار', dayOfWeek: 'يوم الأسبوع' },
+  ...{ 'Exercise library': 'مكتبة التمارين', Clients: 'العملاء', 'Coach team': 'فريق المدربين', 'Check-ins review': 'مراجعة Check-ins', 'Paymob return': 'عودة Paymob', 'Getting started': 'التهيئة الأولى', 'My profile': 'ملفي الشخصي والصحي', 'My check-in': 'Check-ins', 'My subscriptions and payments': 'الاشتراكات والمدفوعات', 'Conversation with coach': 'المحادثة مع المدرب', Analytics: 'التحليلات', 'AI workspace': 'الذكاء الاصطناعي', 'My dashboard': 'لوحة العميل', 'My program': 'برنامجي', 'My progress': 'تقدمي', 'My meal plan': 'خطة وجباتي', 'A quick look at your training and account.': 'نظرة سريعة على تدريبك وحسابك.', 'Your current plan, today\'s workout and training history': 'خطتك الحالية وتمرين اليوم وسجل تدريبك.', 'Your measurements and progress': 'قياساتك وتقدمك.', 'Your meals and nutrition': 'وجباتك وتغذيتك.', 'Keep client conversations and new messages organized in one place.': 'تابع رسائل عملائك ورد عليهم من مكان واحد.', 'Your updates, reminders and account activity.': 'تحديثاتك وتذكيراتك ونشاط حسابك.', 'Read-only activity history. The server limits results to your workspace.': 'سجل نشاط للقراءة فقط. تقتصر النتائج على ناديك.', 'Review each client\'s plan and status, then take the appropriate action.': 'راجع باقة كل عميل وحالته، ثم اتخذ الإجراء المناسب.', 'A workspace summary': 'ملخص النادي' },
+  ...{ Message: 'الرسالة', 'Write to': 'اكتب إلى', 'Attach photos, videos or files': 'أرفق صوراً أو فيديوهات أو ملفات', 'Uploading files…': 'جارٍ رفع الملفات…', 'Sending…': 'جارٍ الإرسال…', 'Send message': 'إرسال الرسالة', 'Manage my messages': 'إدارة رسائلي', 'Select a message to delete': 'اختر رسالة لحذفها', 'Delete my message': 'حذف رسالتي', 'Client conversation': 'محادثة العميل', 'Presence unknown': 'حالة الاتصال غير معروفة', 'Online now': 'متصل الآن', Offline: 'غير متصل', 'Typing…': 'يكتب الآن…', Unread: 'غير مقروءة', 'Mark as read': 'تحديد كمقروءة', 'Back to conversations': 'العودة للمحادثات', Inbox: 'صندوق الوارد', 'No messages yet': 'لا توجد رسائل بعد', 'Send a message to start the conversation.': 'أرسل رسالة لبدء المحادثة.', 'Conversation history': 'سجل المحادثة', Attachment: 'مرفق', 'Message deleted': 'تم حذف الرسالة', Read: 'مقروءة', 'You can attach up to 10 files per message.': 'يمكنك إرفاق 10 ملفات كحد أقصى في الرسالة.', 'The uploaded file could not be identified.': 'تعذر التعرف على الملف بعد رفعه.', 'Could not send the message.': 'تعذر إرسال الرسالة.', 'Delete your message?': 'هل تريد حذف رسالتك؟', 'Could not delete the message.': 'تعذر حذف الرسالة.', 'Could not update read status.': 'تعذر تحديث حالة القراءة.', 'Loading attachment…': 'جارٍ تحميل المرفق…', 'Could not load attachment.': 'تعذر تحميل المرفق.', 'Open attachment': 'فتح المرفق', New: 'جديد', 'All notifications': 'كل الإشعارات', 'Mark all as read': 'تحديد الكل كمقروء', 'Notification preferences': 'تفضيلات الإشعارات', 'Delivery settings': 'إعدادات الإرسال', 'Choose where each type of update is delivered.': 'اختر طريقة استلام كل نوع من التحديثات.' },
 
 
 }
 
 Object.assign(arabic, {
   'Menu': '\u0627\u0644\u0642\u0627\u0626\u0645\u0629',
-  'Protein': 'ط¨ط±ظˆطھظٹظ†', 'Carbs': 'ظƒط±ط¨ظˆظ‡ظٹط¯ط±ط§طھ', 'Fat': 'ط¯ظ‡ظˆظ†', 'Weekly': 'ط£ط³ط¨ظˆط¹ظٹ', 'BiWeekly': 'ظƒظ„ ط£ط³ط¨ظˆط¹ظٹظ†', 'Monthly': 'ط´ظ‡ط±ظٹط§ظ‹',
-  'INBOX': 'طµظ†ط¯ظˆظ‚ ط§ظ„ظˆط§ط±ط¯', 'Your notifications': 'ط¥ط´ط¹ط§ط±ط§طھظƒ', 'Important updates from your coaching workspace.': 'طھط­ط¯ظٹط«ط§طھ ظ…ظ‡ظ…ط© ظ…ظ† ظ†ط§ط¯ظٹظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹ.',
-  'unread': 'ط؛ظٹط± ظ…ظ‚ط±ظˆط،', 'Previous': 'ط§ظ„ط³ط§ط¨ظ‚', 'Page': 'طµظپط­ط©', 'of': 'ظ…ظ†', 'Next': 'ط§ظ„طھط§ظ„ظٹ', 'Notification type': 'ظ†ظˆط¹ ط§ظ„ط¥ط´ط¹ط§ط±',
-  'In app': 'ط¯ط§ط®ظ„ ط§ظ„طھط·ط¨ظٹظ‚', 'Email': 'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ', 'Security and payment critical alerts are always enabled.': 'ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط£ظ…ط§ظ† ظˆط§ظ„ظ…ط¯ظپظˆط¹ط§طھ ط§ظ„ظ…ظ‡ظ…ط© ظ…ظپط¹ظ‘ظ„ط© ط¯ط§ط¦ظ…ط§ظ‹.',
-  'Save preferences': 'ط­ظپط¸ ط§ظ„طھظپط¶ظٹظ„ط§طھ', 'No check-ins recorded yet. Your progress updates will appear here.': 'ظ„ظ… طھط³ط¬ظ„ ط£ظٹ ظ…طھط§ط¨ط¹ط© ط¨ط¹ط¯. ط³طھط¸ظ‡ط± طھط­ط¯ظٹط«ط§طھ طھظ‚ط¯ظ…ظƒ ظ‡ظ†ط§.',
-  'No subscription history yet.': 'ظ„ط§ ظٹظˆط¬ط¯ ط³ط¬ظ„ ط§ط´طھط±ط§ظƒط§طھ ط¨ط¹ط¯.', 'InstaPay is not enabled': 'InstaPay ط؛ظٹط± ظ…ظپط¹ظ‘ظ„',
-  'Ask the club owner to enable it, or use another available payment method.': 'ط§ط·ظ„ط¨ ظ…ظ† ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ طھظپط¹ظٹظ„ظ‡ ط£ظˆ ط§ط³طھط®ط¯ظ… ط·ط±ظٹظ‚ط© ط¯ظپط¹ ط£ط®ط±ظ‰.',
-  'InstaPay instructions': 'طھط¹ظ„ظٹظ…ط§طھ InstaPay', 'Activate a subscription manually': 'طھظپط¹ظٹظ„ ط§ط´طھط±ط§ظƒ ظٹط¯ظˆظٹط§ظ‹',
-  'This activates access immediately. Use Payments to record a cash collection.': 'ط³ظٹط¤ط¯ظٹ ظ‡ط°ط§ ط¥ظ„ظ‰ طھظپط¹ظٹظ„ ط§ظ„ظˆطµظˆظ„ ظپظˆط±ط§ظ‹. ط§ط³طھط®ط¯ظ… ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ ظ„طھط³ط¬ظٹظ„ ط§ظ„طھط­طµظٹظ„ ط§ظ„ظ†ظ‚ط¯ظٹ.',
-  'Note (optional)': 'ظ…ظ„ط§ط­ط¸ط© (ط§ط®طھظٹط§ط±ظٹ)', 'Activate subscription': 'طھظپط¹ظٹظ„ ط§ظ„ط§ط´طھط±ط§ظƒ', 'Workspace subscriptions': 'ط§ط´طھط±ط§ظƒط§طھ ط§ظ„ظ†ط§ط¯ظٹ',
-  'Select a row to view details and management actions.': 'ط§ط®طھط± ط§ط´طھط±ط§ظƒط§ظ‹ ظ„ط¹ط±ط¶ طھظپط§طµظٹظ„ظ‡ ظˆط¥ط¬ط±ط§ط،ط§طھظ‡.', 'subscriptions': 'ط§ط´طھط±ط§ظƒط§طھ',
-  'No subscriptions yet.': 'ظ„ط§ طھظˆط¬ط¯ ط§ط´طھط±ط§ظƒط§طھ ط¨ط¹ط¯.', 'Plan': 'ط§ظ„ط¨ط§ظ‚ط©', 'Status': 'ط§ظ„ط­ط§ظ„ط©', 'Price': 'ط§ظ„ط³ط¹ط±', 'End date': 'طھط§ط±ظٹط® ط§ظ„ط§ظ†طھظ‡ط§ط،',
-  'Subscription details': 'طھظپط§طµظٹظ„ ط§ظ„ط§ط´طھط±ط§ظƒ', 'Close': 'ط¥ط؛ظ„ط§ظ‚', 'Reason': 'ط§ظ„ط³ط¨ط¨', 'Extension days': 'ط£ظٹط§ظ… ط§ظ„طھظ…ط¯ظٹط¯', 'Extend': 'طھظ…ط¯ظٹط¯',
-  'Pause': 'ط¥ظٹظ‚ط§ظپ ظ…ط¤ظ‚طھ', 'Resume': 'ط§ط³طھط¦ظ†ط§ظپ', 'Cancel': 'ط¥ظ„ط؛ط§ط،', 'No active subscription yet. Choose a plan to get started.': 'ظ„ط§ ظٹظˆط¬ط¯ ط§ط´طھط±ط§ظƒ ظ†ط´ط·. ط§ط®طھط± ط¨ط§ظ‚ط© ظ„ظ„ط¨ط¯ط،.',
-  'Pay by InstaPay': 'ط§ظ„ط¯ظپط¹ ط¹ط¨ط± InstaPay', 'Your subscription request is ready. Submit your transfer details below.': 'ط·ظ„ط¨ ط§ط´طھط±ط§ظƒظƒ ط¬ط§ظ‡ط². ط£ط¯ط®ظ„ طھظپط§طµظٹظ„ ط§ظ„طھط­ظˆظٹظ„ ط£ط¯ظ†ط§ظ‡.',
-  'InstaPay is turned off for this club': 'InstaPay ط؛ظٹط± ظ…ظپط¹ظ‘ظ„ ظ„ظ‡ط°ط§ ط§ظ„ظ†ط§ط¯ظٹ', 'Ask the club owner to enable InstaPay, or choose Paymob if it is available.': 'ط§ط·ظ„ط¨ ظ…ظ† ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ طھظپط¹ظٹظ„ InstaPay ط£ظˆ ط§ط®طھط± Paymob ط¥ط°ط§ ظƒط§ظ† ظ…طھط§ط­ط§ظ‹.',
-  'Reference number': 'ط±ظ‚ظ… ط§ظ„ظ…ط±ط¬ط¹', 'Amount': 'ط§ظ„ظ…ط¨ظ„ط؛', 'Payment receipt': 'ط¥ظٹطµط§ظ„ ط§ظ„ط¯ظپط¹', 'Submit transfer': 'ط¥ط±ط³ط§ظ„ ط§ظ„طھط­ظˆظٹظ„',
-  'Workspace details': 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', 'Currency': 'ط§ظ„ط¹ظ…ظ„ط©', 'Time zone': 'ط§ظ„ظ…ظ†ط·ظ‚ط© ط§ظ„ط²ظ…ظ†ظٹط©', 'Subscription reminder days': 'ط£ظٹط§ظ… ط§ظ„طھط°ظƒظٹط± ظ‚ط¨ظ„ ط§ظ†طھظ‡ط§ط، ط§ظ„ط§ط´طھط±ط§ظƒ',
-  'Default language': 'ط§ظ„ظ„ط؛ط© ط§ظ„ط§ظپطھط±ط§ط¶ظٹط©', 'Arabic': 'ط§ظ„ط¹ط±ط¨ظٹط©', 'English': 'ط§ظ„ط¥ظ†ط¬ظ„ظٹط²ظٹط©', 'Branding': 'ط§ظ„ظ‡ظˆظٹط© ط§ظ„ط¨طµط±ظٹط©', 'Payment methods': 'ط·ط±ظ‚ ط§ظ„ط¯ظپط¹',
-  'Enable Paymob': 'طھظپط¹ظٹظ„ Paymob', 'Enable InstaPay': 'طھظپط¹ظٹظ„ InstaPay', 'InstaPay ID': 'ظ…ط¹ط±ظ‘ظپ InstaPay', 'Account number': 'ط±ظ‚ظ… ط§ظ„ط­ط³ط§ط¨',
-  'Action': 'ط§ظ„ط¥ط¬ط±ط§ط،', 'Entity type': 'ظ†ظˆط¹ ط§ظ„ط³ط¬ظ„', 'Actor ID': 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ظ…ظ†ظپظ‘ط°', 'Apply filters': 'طھط·ط¨ظٹظ‚ ط§ظ„ظپظ„ط§طھط±', 'Clear filters': 'ظ…ط³ط­ ط§ظ„ظپظ„ط§طھط±',
-  'No events match these filters.': 'ظ„ط§ طھظˆط¬ط¯ ط£ط­ط¯ط§ط« طھط·ط§ط¨ظ‚ ظ‡ط°ظ‡ ط§ظ„ظپظ„ط§طھط±.', 'Time': 'ط§ظ„ظˆظ‚طھ', 'Actor': 'ط§ظ„ظ…ظ†ظپظ‘ط°', 'Role': 'ط§ظ„ط¯ظˆط±', 'Entity': 'ط§ظ„ط³ط¬ظ„',
-  'Record': 'ط§ظ„ط³ط¬ظ„', 'IP address': 'ط¹ظ†ظˆط§ظ† IP', 'events': 'ط£ط­ط¯ط§ط«', 'View todayâ€™s training': 'ط¹ط±ط¶ طھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ…',
-  'Your coach has not assigned a program yet. Your training plan will appear here once it is assigned.': 'ظ„ظ… ظٹط¹ظٹظ‘ظ† ظ…ط¯ط±ط¨ظƒ ط¨ط±ظ†ط§ظ…ط¬ط§ظ‹ ط¨ط¹ط¯. ط³طھط¸ظ‡ط± ط®ط·طھظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹط© ظ‡ظ†ط§ ط¹ظ†ط¯ ط¥ط³ظ†ط§ط¯ظ‡ط§.',
-  'Todayâ€™s exercises': 'طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…', 'sets': 'ظ…ط¬ظ…ظˆط¹ط§طھ', 'reps': 'طھظƒط±ط§ط±ط§طھ', 'Workspace': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Workspace usage': 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ظ†ط§ط¯ظٹ',
-  'Platform audit log': 'ط³ط¬ظ„ طھط¯ظ‚ظٹظ‚ ط§ظ„ظ…ظ†طµط©', 'Read-only security and administrative events.': 'ط³ط¬ظ„ ظ„ظ„ظ‚ط±ط§ط،ط© ظپظ‚ط· ظ„ظ„ط£ط­ط¯ط§ط« ط§ظ„ط£ظ…ظ†ظٹط© ظˆط§ظ„ط¥ط¯ط§ط±ظٹط©.',
-  'AI usage': 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ', 'Webhook events': 'ط£ط­ط¯ط§ط« Webhook', 'COACHPULSE / WORKSPACE': 'COACHPULSE / ط§ظ„ظ†ط§ط¯ظٹ',
-  'COACHPULSE / TRAINING SPACE': 'COACHPULSE / ط§ظ„ظ†ط§ط¯ظٹ ط§ظ„طھط¯ط±ظٹط¨ظٹ', 'MOVEMENT LIBRARY': 'ظ…ظƒطھط¨ط© ط§ظ„ط­ط±ظƒط©', 'Open exercise demonstration': 'ط¹ط±ط¶ ط§ظ„طھظ…ط±ظٹظ†',
-  'Add a secure demo video URL to this exercise to show it here.': 'ط£ط¶ظپ ط±ط§ط¨ط· ظپظٹط¯ظٹظˆ ط¢ظ…ظ† ظ„ظ‡ط°ط§ ط§ظ„طھظ…ط±ظٹظ† ظ„ط¹ط±ط¶ظ‡ ظ‡ظ†ط§.', 'Next step': 'ط§ظ„ط®ط·ظˆط© ط§ظ„طھط§ظ„ظٹط©',
-  'Add exercises to the draft, then choose the client and start date.': 'ط£ط¶ظپ ط§ظ„طھظ…ط§ط±ظٹظ† ط¥ظ„ظ‰ ط§ظ„ظ…ط³ظˆط¯ط©طŒ ط«ظ… ط§ط®طھط± ط§ظ„ط¹ظ…ظٹظ„ ظˆطھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،.', 'Assign program': 'ط¥ط³ظ†ط§ط¯ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬',
-  'programs': 'ط¨ط±ط§ظ…ط¬', 'days': 'ط£ظٹط§ظ…', 'plans': 'ط¨ط§ظ‚ط§طھ', 'Retry loading exercises': 'ط¥ط¹ط§ط¯ط© طھط­ظ…ظٹظ„ ط§ظ„طھظ…ط§ط±ظٹظ†', '&times;': 'أ—'
+  'Protein': 'بروتين', 'Carbs': 'كربوهيدرات', 'Fat': 'دهون', 'Weekly': 'أسبوعي', 'BiWeekly': 'كل أسبوعين', 'Monthly': 'شهرياً',
+  'INBOX': 'صندوق الوارد', 'Your notifications': 'إشعاراتك', 'Important updates from your coaching workspace.': 'تحديثات مهمة من ناديك التدريبي.',
+  'unread': 'غير مقروء', 'Previous': 'السابق', 'Page': 'صفحة', 'of': 'من', 'Next': 'التالي', 'Notification type': 'نوع الإشعار',
+  'In app': 'داخل التطبيق', 'Email': 'البريد الإلكتروني', 'Security and payment critical alerts are always enabled.': 'إشعارات الأمان والمدفوعات المهمة مفعّلة دائماً.',
+  'Save preferences': 'حفظ التفضيلات', 'No check-ins recorded yet. Your progress updates will appear here.': 'لم تسجل أي متابعة بعد. ستظهر تحديثات تقدمك هنا.',
+  'No subscription history yet.': 'لا يوجد سجل اشتراكات بعد.', 'InstaPay is not enabled': 'InstaPay غير مفعّل',
+  'Ask the club owner to enable it, or use another available payment method.': 'اطلب من مالك النادي تفعيله أو استخدم طريقة دفع أخرى.',
+  'InstaPay instructions': 'تعليمات InstaPay', 'Activate a subscription manually': 'تفعيل اشتراك يدوياً',
+  'This activates access immediately. Use Payments to record a cash collection.': 'سيؤدي هذا إلى تفعيل الوصول فوراً. استخدم المدفوعات لتسجيل التحصيل النقدي.',
+  'Note (optional)': 'ملاحظة (اختياري)', 'Activate subscription': 'تفعيل الاشتراك', 'Workspace subscriptions': 'اشتراكات النادي',
+  'Select a row to view details and management actions.': 'اختر اشتراكاً لعرض تفاصيله وإجراءاته.', 'subscriptions': 'اشتراكات',
+  'No subscriptions yet.': 'لا توجد اشتراكات بعد.', 'Plan': 'الباقة', 'Status': 'الحالة', 'Price': 'السعر', 'End date': 'تاريخ الانتهاء',
+  'Subscription details': 'تفاصيل الاشتراك', 'Close': 'إغلاق', 'Reason': 'السبب', 'Extension days': 'أيام التمديد', 'Extend': 'تمديد',
+  'Pause': 'إيقاف مؤقت', 'Resume': 'استئناف', 'Cancel': 'إلغاء', 'No active subscription yet. Choose a plan to get started.': 'لا يوجد اشتراك نشط. اختر باقة للبدء.',
+  'Pay by InstaPay': 'الدفع عبر InstaPay', 'Your subscription request is ready. Submit your transfer details below.': 'طلب اشتراكك جاهز. أدخل تفاصيل التحويل أدناه.',
+  'InstaPay is turned off for this club': 'InstaPay غير مفعّل لهذا النادي', 'Ask the club owner to enable InstaPay, or choose Paymob if it is available.': 'اطلب من مالك النادي تفعيل InstaPay أو اختر Paymob إذا كان متاحاً.',
+  'Reference number': 'رقم المرجع', 'Amount': 'المبلغ', 'Payment receipt': 'إيصال الدفع', 'Submit transfer': 'إرسال التحويل',
+  'Workspace details': 'بيانات النادي', 'Currency': 'العملة', 'Time zone': 'المنطقة الزمنية', 'Subscription reminder days': 'أيام التذكير قبل انتهاء الاشتراك',
+  'Default language': 'اللغة الافتراضية', 'Arabic': 'العربية', 'English': 'الإنجليزية', 'Branding': 'الهوية البصرية', 'Payment methods': 'طرق الدفع',
+  'Enable Paymob': 'تفعيل Paymob', 'Enable InstaPay': 'تفعيل InstaPay', 'InstaPay ID': 'معرّف InstaPay', 'Account number': 'رقم الحساب',
+  'Action': 'الإجراء', 'Entity type': 'نوع السجل', 'Actor ID': 'معرّف المنفّذ', 'Apply filters': 'تطبيق الفلاتر', 'Clear filters': 'مسح الفلاتر',
+  'No events match these filters.': 'لا توجد أحداث تطابق هذه الفلاتر.', 'Time': 'الوقت', 'Actor': 'المنفّذ', 'Role': 'الدور', 'Entity': 'السجل',
+  'Record': 'السجل', 'IP address': 'عنوان IP', 'events': 'أحداث', 'View today’s training': 'عرض تمرين اليوم',
+  'Your coach has not assigned a program yet. Your training plan will appear here once it is assigned.': 'لم يعيّن مدربك برنامجاً بعد. ستظهر خطتك التدريبية هنا عند إسنادها.',
+  'Today’s exercises': 'تمارين اليوم', 'sets': 'مجموعات', 'reps': 'تكرارات', 'Workspace': 'النادي', 'Workspace usage': 'استخدام النادي',
+  'Platform audit log': 'سجل تدقيق المنصة', 'Read-only security and administrative events.': 'سجل للقراءة فقط للأحداث الأمنية والإدارية.',
+  'AI usage': 'استخدام الذكاء الاصطناعي', 'Webhook events': 'أحداث Webhook', 'COACHPULSE / WORKSPACE': 'COACHPULSE / النادي',
+  'COACHPULSE / TRAINING SPACE': 'COACHPULSE / النادي التدريبي', 'MOVEMENT LIBRARY': 'مكتبة الحركة', 'Open exercise demonstration': 'عرض التمرين',
+  'Add a secure demo video URL to this exercise to show it here.': 'أضف رابط فيديو آمن لهذا التمرين لعرضه هنا.', 'Next step': 'الخطوة التالية',
+  'Add exercises to the draft, then choose the client and start date.': 'أضف التمارين إلى المسودة، ثم اختر العميل وتاريخ البدء.', 'Assign program': 'إسناد البرنامج',
+  'programs': 'برامج', 'days': 'أيام', 'plans': 'باقات', 'Retry loading exercises': 'إعادة تحميل التمارين', '&times;': '×'
 });
 
 Object.assign(arabic, {
-  Messages: 'ط§ظ„ط±ط³ط§ط¦ظ„',
-  'Follow your client conversations and reply from one place.': 'طھط§ط¨ط¹ ظ…ط­ط§ط¯ط«ط§طھ ط¹ظ…ظ„ط§ط¦ظƒ ظˆط£ط¬ط¨ ط¹ظ† ط±ط³ط§ط¦ظ„ظ‡ظ… ظ…ظ† ظ…ظƒط§ظ† ظˆط§ط­ط¯.',
-  Inbox: 'طµظ†ط¯ظˆظ‚ ط§ظ„ظˆط§ط±ط¯',
-  conversations: 'ظ…ط­ط§ط¯ط«ط§طھ',
-  'Unread messages': 'ط§ظ„ط±ط³ط§ط¦ظ„ ط؛ظٹط± ط§ظ„ظ…ظ‚ط±ظˆط،ط©',
-  'Search clients': 'ط§ط¨ط­ط« ط¹ظ† ط¹ظ…ظٹظ„',
-  'Type a client name': 'ط§ظƒطھط¨ ط§ط³ظ… ط§ظ„ط¹ظ…ظٹظ„',
-  'Show all conversations': 'ط¹ط±ط¶ ظƒظ„ ط§ظ„ظ…ط­ط§ط¯ط«ط§طھ',
-  'Unread only': 'ط؛ظٹط± ط§ظ„ظ…ظ‚ط±ظˆط،ط© ظپظ‚ط·',
-  Client: 'ط¹ظ…ظٹظ„',
-  'No messages yet. Start the conversation.': 'ظ„ط§ طھظˆط¬ط¯ ط±ط³ط§ط¦ظ„ ط¨ط¹ط¯. ط§ط¨ط¯ط£ ط§ظ„ظ…ط­ط§ط¯ط«ط©.',
-  'No conversations match your search.': 'ظ„ط§ طھظˆط¬ط¯ ظ…ط­ط§ط¯ط«ط§طھ طھط·ط§ط¨ظ‚ ط§ظ„ط¨ط­ط«.',
-  'No conversations yet. Client messages will appear here.': 'ظ„ط§ طھظˆط¬ط¯ ظ…ط­ط§ط¯ط«ط§طھ ط¨ط¹ط¯. ط³طھط¸ظ‡ط± ط±ط³ط§ط¦ظ„ ط§ظ„ط¹ظ…ظ„ط§ط، ظ‡ظ†ط§.',
-  'Select a conversation': 'ط§ط®طھط± ظ…ط­ط§ط¯ط«ط©',
-  'Messages and client updates will appear here.': 'ط³طھط¸ظ‡ط± ط§ظ„ط±ط³ط§ط¦ظ„ ظˆطھط­ط¯ظٹط«ط§طھ ط§ظ„ط¹ظ…ظٹظ„ ظ‡ظ†ط§.',
-  'Back to conversations': 'ط§ظ„ط¹ظˆط¯ط© ظ„ظ„ظ…ط­ط§ط¯ط«ط§طھ',
-  'Client conversation': 'ظ…ط­ط§ط¯ط«ط© ط§ظ„ط¹ظ…ظٹظ„',
-  'Presence unknown': 'ط­ط§ظ„ط© ط§ظ„ط§طھطµط§ظ„ ط؛ظٹط± ظ…ط¹ط±ظˆظپط©',
-  'Online now': 'ظ…طھطµظ„ ط§ظ„ط¢ظ†', Offline: 'ط؛ظٹط± ظ…طھطµظ„',
-  'Typing&': 'ظٹظƒطھط¨ ط§ظ„ط¢ظ†', Unread: 'ط؛ظٹط± ظ…ظ‚ط±ظˆط،ط©',
-  'Mark as read': 'طھط­ط¯ظٹط¯ ظƒظ…ظ‚ط±ظˆط،ط©',
-  Message: 'ط§ظ„ط±ط³ط§ظ„ط©', 'Write to': 'ط§ظƒطھط¨ ط¥ظ„ظ‰',
-  'Attach photos, videos or files': 'ط¥ط±ظپط§ظ‚ طµظˆط± ط£ظˆ ظپظٹط¯ظٹظˆ ط£ظˆ ظ…ظ„ظپط§طھ',
-  'Uploading files&': 'ط¬ط§ط±ظچ ط±ظپط¹ ط§ظ„ظ…ظ„ظپط§طھ...', 'Sending&': 'ط¬ط§ط±ظچ ط§ظ„ط¥ط±ط³ط§ظ„...',
-  'Send message': 'ط¥ط±ط³ط§ظ„ ط§ظ„ط±ط³ط§ظ„ط©',
-  'Manage my messages': 'ط¥ط¯ط§ط±ط© ط±ط³ط§ط¦ظ„ظٹ',
-  'Select a message to delete': 'ط§ط®طھط± ط±ط³ط§ظ„ط© ظ„ط­ط°ظپظ‡ط§',
-  'Delete my message': 'ط­ط°ظپ ط±ط³ط§ظ„طھظٹ',
-  'No messages yet': 'ظ„ط§ طھظˆط¬ط¯ ط±ط³ط§ط¦ظ„ ط¨ط¹ط¯',
-  'Send a message to start the conversation.': 'ط£ط±ط³ظ„ ط±ط³ط§ظ„ط© ظ„ط¨ط¯ط، ط§ظ„ظ…ط­ط§ط¯ط«ط©.',
-  'Conversation history': 'ط³ط¬ظ„ ط§ظ„ظ…ط­ط§ط¯ط«ط©', Attachment: 'ظ…ط±ظپظ‚',
-  'Message deleted': 'طھظ… ط­ط°ظپ ط§ظ„ط±ط³ط§ظ„ط©', Read: 'ظ…ظ‚ط±ظˆط،ط©',
-  'You can attach up to 10 files per message.': 'ظٹظ…ظƒظ†ظƒ ط¥ط±ظپط§ظ‚ 10 ظ…ظ„ظپط§طھ ظƒط­ط¯ ط£ظ‚طµظ‰ ظپظٹ ط§ظ„ط±ط³ط§ظ„ط©.',
-  'File is too large. Videos can be up to 100 MB; other files up to 10 MB.': 'ط­ط¬ظ… ط§ظ„ظ…ظ„ظپ ظƒط¨ظٹط±. ط­ط¯ ط§ظ„ظپظٹط¯ظٹظˆ 100 ظ…ظٹط¬ط§ط¨ط§ظٹطھطŒ ظˆ10 ظ…ظٹط¬ط§ط¨ط§ظٹطھ ظ„ط¨ط§ظ‚ظٹ ط§ظ„ظ…ظ„ظپط§طھ.',
-  'Remove attachment': 'ط¥ط²ط§ظ„ط© ط§ظ„ظ…ط±ظپظ‚',
-  'The uploaded file could not be identified.': 'طھط¹ط°ط± ط§ظ„طھط¹ط±ظپ ط¹ظ„ظ‰ ط§ظ„ظ…ظ„ظپ ط¨ط¹ط¯ ط±ظپط¹ظ‡.',
-  'Could not send the message.': 'طھط¹ط°ط± ط¥ط±ط³ط§ظ„ ط§ظ„ط±ط³ط§ظ„ط©.',
-  'Delete your message?': 'ظ‡ظ„ طھط±ظٹط¯ ط­ط°ظپ ط±ط³ط§ظ„طھظƒطں',
-  'Could not delete the message.': 'طھط¹ط°ط± ط­ط°ظپ ط§ظ„ط±ط³ط§ظ„ط©.',
-  'Could not update read status.': 'طھط¹ط°ط± طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ظ‚ط±ط§ط،ط©.',
-  'Loading attachment&': 'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط±ظپظ‚...',
-  'Could not load attachment.': 'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ظ…ط±ظپظ‚.',
-  'Open attachment': 'ظپطھط­ ط§ظ„ظ…ط±ظپظ‚',
+  Messages: 'الرسائل',
+  'Follow your client conversations and reply from one place.': 'تابع محادثات عملائك وأجب عن رسائلهم من مكان واحد.',
+  Inbox: 'صندوق الوارد',
+  conversations: 'محادثات',
+  'Unread messages': 'الرسائل غير المقروءة',
+  'Search clients': 'ابحث عن عميل',
+  'Type a client name': 'اكتب اسم العميل',
+  'Show all conversations': 'عرض كل المحادثات',
+  'Unread only': 'غير المقروءة فقط',
+  Client: 'عميل',
+  'No messages yet. Start the conversation.': 'لا توجد رسائل بعد. ابدأ المحادثة.',
+  'No conversations match your search.': 'لا توجد محادثات تطابق البحث.',
+  'No conversations yet. Client messages will appear here.': 'لا توجد محادثات بعد. ستظهر رسائل العملاء هنا.',
+  'Select a conversation': 'اختر محادثة',
+  'Messages and client updates will appear here.': 'ستظهر الرسائل وتحديثات العميل هنا.',
+  'Back to conversations': 'العودة للمحادثات',
+  'Client conversation': 'محادثة العميل',
+  'Presence unknown': 'حالة الاتصال غير معروفة',
+  'Online now': 'متصل الآن', Offline: 'غير متصل',
+  'Typing&': 'يكتب الآن', Unread: 'غير مقروءة',
+  'Mark as read': 'تحديد كمقروءة',
+  Message: 'الرسالة', 'Write to': 'اكتب إلى',
+  'Attach photos, videos or files': 'إرفاق صور أو فيديو أو ملفات',
+  'Uploading files&': 'جارٍ رفع الملفات...', 'Sending&': 'جارٍ الإرسال...',
+  'Send message': 'إرسال الرسالة',
+  'Manage my messages': 'إدارة رسائلي',
+  'Select a message to delete': 'اختر رسالة لحذفها',
+  'Delete my message': 'حذف رسالتي',
+  'No messages yet': 'لا توجد رسائل بعد',
+  'Send a message to start the conversation.': 'أرسل رسالة لبدء المحادثة.',
+  'Conversation history': 'سجل المحادثة', Attachment: 'مرفق',
+  'Message deleted': 'تم حذف الرسالة', Read: 'مقروءة',
+  'You can attach up to 10 files per message.': 'يمكنك إرفاق 10 ملفات كحد أقصى في الرسالة.',
+  'File is too large. Videos can be up to 100 MB; other files up to 10 MB.': 'حجم الملف كبير. حد الفيديو 100 ميجابايت، و10 ميجابايت لباقي الملفات.',
+  'Remove attachment': 'إزالة المرفق',
+  'The uploaded file could not be identified.': 'تعذر التعرف على الملف بعد رفعه.',
+  'Could not send the message.': 'تعذر إرسال الرسالة.',
+  'Delete your message?': 'هل تريد حذف رسالتك؟',
+  'Could not delete the message.': 'تعذر حذف الرسالة.',
+  'Could not update read status.': 'تعذر تحديث حالة القراءة.',
+  'Loading attachment&': 'جارٍ تحميل المرفق...',
+  'Could not load attachment.': 'تعذر تحميل المرفق.',
+  'Open attachment': 'فتح المرفق',
   'No coach assigned': '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u062f\u0631\u0628 \u0645\u0639\u064a\u0646',
   'Your club will connect you with a coach. Messaging becomes available after assignment.': '\u0633\u064a\u0631\u0628\u0637\u0643 \u0627\u0644\u0646\u0627\u062f\u064a \u0628\u0645\u062f\u0631\u0628. \u0633\u062a\u062a\u0627\u062d \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0628\u0639\u062f \u0627\u0644\u062a\u0639\u064a\u064a\u0646.',
   'Talk privately with your assigned coach.': '\u062a\u0648\u0627\u0635\u0644 \u0628\u062e\u0635\u0648\u0635\u064a\u0629 \u0645\u0639 \u0645\u062f\u0631\u0628\u0643 \u0627\u0644\u0645\u0633\u0624\u0648\u0644.',
@@ -112,263 +112,263 @@ Object.assign(arabic, {
 });
 
 Object.assign(arabic, {
-  'Protein': 'ط¨ط±ظˆطھظٹظ†', 'Carbs': 'ظƒط±ط¨ظˆظ‡ظٹط¯ط±ط§طھ', 'Fat': 'ط¯ظ‡ظˆظ†', 'Weekly': 'ط£ط³ط¨ظˆط¹ظٹ', 'BiWeekly': 'ظƒظ„ ط£ط³ط¨ظˆط¹ظٹظ†', 'Monthly': 'ط´ظ‡ط±ظٹط§ظ‹',
-  'INBOX': 'طµظ†ط¯ظˆظ‚ ط§ظ„ظˆط§ط±ط¯', 'Your notifications': 'ط¥ط´ط¹ط§ط±ط§طھظƒ', 'Important updates from your coaching workspace.': 'طھط­ط¯ظٹط«ط§طھ ظ…ظ‡ظ…ط© ظ…ظ† ظ†ط§ط¯ظٹظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹ.',
-  'unread': 'ط؛ظٹط± ظ…ظ‚ط±ظˆط،', 'Previous': 'ط§ظ„ط³ط§ط¨ظ‚', 'Page': 'طµظپط­ط©', 'of': 'ظ…ظ†', 'Next': 'ط§ظ„طھط§ظ„ظٹ', 'Notification type': 'ظ†ظˆط¹ ط§ظ„ط¥ط´ط¹ط§ط±',
-  'In app': 'ط¯ط§ط®ظ„ ط§ظ„طھط·ط¨ظٹظ‚', 'Email': 'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ', 'Security and payment critical alerts are always enabled.': 'ط¥ط´ط¹ط§ط±ط§طھ ط§ظ„ط£ظ…ط§ظ† ظˆط§ظ„ظ…ط¯ظپظˆط¹ط§طھ ط§ظ„ظ…ظ‡ظ…ط© ظ…ظپط¹ظ‘ظ„ط© ط¯ط§ط¦ظ…ط§ظ‹.',
-  'Save preferences': 'ط­ظپط¸ ط§ظ„طھظپط¶ظٹظ„ط§طھ', 'No check-ins recorded yet. Your progress updates will appear here.': 'ظ„ظ… طھط³ط¬ظ„ ط£ظٹ ظ…طھط§ط¨ط¹ط© ط¨ط¹ط¯. ط³طھط¸ظ‡ط± طھط­ط¯ظٹط«ط§طھ طھظ‚ط¯ظ…ظƒ ظ‡ظ†ط§.',
-  'No subscription history yet.': 'ظ„ط§ ظٹظˆط¬ط¯ ط³ط¬ظ„ ط§ط´طھط±ط§ظƒط§طھ ط¨ط¹ط¯.', 'InstaPay is not enabled': 'InstaPay ط؛ظٹط± ظ…ظپط¹ظ‘ظ„',
-  'Ask the club owner to enable it, or use another available payment method.': 'ط§ط·ظ„ط¨ ظ…ظ† ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ طھظپط¹ظٹظ„ظ‡ ط£ظˆ ط§ط³طھط®ط¯ظ… ط·ط±ظٹظ‚ط© ط¯ظپط¹ ط£ط®ط±ظ‰.',
-  'InstaPay instructions': 'طھط¹ظ„ظٹظ…ط§طھ InstaPay', 'Activate a subscription manually': 'طھظپط¹ظٹظ„ ط§ط´طھط±ط§ظƒ ظٹط¯ظˆظٹط§ظ‹',
-  'This activates access immediately. Use Payments to record a cash collection.': 'ط³ظٹط¤ط¯ظٹ ظ‡ط°ط§ ط¥ظ„ظ‰ طھظپط¹ظٹظ„ ط§ظ„ظˆطµظˆظ„ ظپظˆط±ط§ظ‹. ط§ط³طھط®ط¯ظ… ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ ظ„طھط³ط¬ظٹظ„ ط§ظ„طھط­طµظٹظ„ ط§ظ„ظ†ظ‚ط¯ظٹ.',
-  'Note (optional)': 'ظ…ظ„ط§ط­ط¸ط© (ط§ط®طھظٹط§ط±ظٹ)', 'Activate subscription': 'طھظپط¹ظٹظ„ ط§ظ„ط§ط´طھط±ط§ظƒ', 'Workspace subscriptions': 'ط§ط´طھط±ط§ظƒط§طھ ط§ظ„ظ†ط§ط¯ظٹ',
-  'Select a row to view details and management actions.': 'ط§ط®طھط± ط§ط´طھط±ط§ظƒط§ظ‹ ظ„ط¹ط±ط¶ طھظپط§طµظٹظ„ظ‡ ظˆط¥ط¬ط±ط§ط،ط§طھظ‡.', 'subscriptions': 'ط§ط´طھط±ط§ظƒط§طھ',
-  'No subscriptions yet.': 'ظ„ط§ طھظˆط¬ط¯ ط§ط´طھط±ط§ظƒط§طھ ط¨ط¹ط¯.', 'Plan': 'ط§ظ„ط¨ط§ظ‚ط©', 'Status': 'ط§ظ„ط­ط§ظ„ط©', 'Price': 'ط§ظ„ط³ط¹ط±', 'End date': 'طھط§ط±ظٹط® ط§ظ„ط§ظ†طھظ‡ط§ط،',
-  'Subscription details': 'طھظپط§طµظٹظ„ ط§ظ„ط§ط´طھط±ط§ظƒ', 'Close': 'ط¥ط؛ظ„ط§ظ‚', 'Reason': 'ط§ظ„ط³ط¨ط¨', 'Extension days': 'ط£ظٹط§ظ… ط§ظ„طھظ…ط¯ظٹط¯', 'Extend': 'طھظ…ط¯ظٹط¯',
-  'Pause': 'ط¥ظٹظ‚ط§ظپ ظ…ط¤ظ‚طھ', 'Resume': 'ط§ط³طھط¦ظ†ط§ظپ', 'Cancel': 'ط¥ظ„ط؛ط§ط،', 'No active subscription yet. Choose a plan to get started.': 'ظ„ط§ ظٹظˆط¬ط¯ ط§ط´طھط±ط§ظƒ ظ†ط´ط·. ط§ط®طھط± ط¨ط§ظ‚ط© ظ„ظ„ط¨ط¯ط،.',
-  'Pay by InstaPay': 'ط§ظ„ط¯ظپط¹ ط¹ط¨ط± InstaPay', 'Your subscription request is ready. Submit your transfer details below.': 'ط·ظ„ط¨ ط§ط´طھط±ط§ظƒظƒ ط¬ط§ظ‡ط². ط£ط¯ط®ظ„ طھظپط§طµظٹظ„ ط§ظ„طھط­ظˆظٹظ„ ط£ط¯ظ†ط§ظ‡.',
-  'InstaPay is turned off for this club': 'InstaPay ط؛ظٹط± ظ…ظپط¹ظ‘ظ„ ظ„ظ‡ط°ط§ ط§ظ„ظ†ط§ط¯ظٹ', 'Ask the club owner to enable InstaPay, or choose Paymob if it is available.': 'ط§ط·ظ„ط¨ ظ…ظ† ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ طھظپط¹ظٹظ„ InstaPay ط£ظˆ ط§ط®طھط± Paymob ط¥ط°ط§ ظƒط§ظ† ظ…طھط§ط­ط§ظ‹.',
-  'Reference number': 'ط±ظ‚ظ… ط§ظ„ظ…ط±ط¬ط¹', 'Amount': 'ط§ظ„ظ…ط¨ظ„ط؛', 'Payment receipt': 'ط¥ظٹطµط§ظ„ ط§ظ„ط¯ظپط¹', 'Submit transfer': 'ط¥ط±ط³ط§ظ„ ط§ظ„طھط­ظˆظٹظ„',
-  'Workspace details': 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ†ط§ط¯ظٹ', 'Currency': 'ط§ظ„ط¹ظ…ظ„ط©', 'Time zone': 'ط§ظ„ظ…ظ†ط·ظ‚ط© ط§ظ„ط²ظ…ظ†ظٹط©', 'Subscription reminder days': 'ط£ظٹط§ظ… ط§ظ„طھط°ظƒظٹط± ظ‚ط¨ظ„ ط§ظ†طھظ‡ط§ط، ط§ظ„ط§ط´طھط±ط§ظƒ',
-  'Default language': 'ط§ظ„ظ„ط؛ط© ط§ظ„ط§ظپطھط±ط§ط¶ظٹط©', 'Arabic': 'ط§ظ„ط¹ط±ط¨ظٹط©', 'English': 'ط§ظ„ط¥ظ†ط¬ظ„ظٹط²ظٹط©', 'Branding': 'ط§ظ„ظ‡ظˆظٹط© ط§ظ„ط¨طµط±ظٹط©', 'Payment methods': 'ط·ط±ظ‚ ط§ظ„ط¯ظپط¹',
-  'Enable Paymob': 'طھظپط¹ظٹظ„ Paymob', 'Enable InstaPay': 'طھظپط¹ظٹظ„ InstaPay', 'InstaPay ID': 'ظ…ط¹ط±ظ‘ظپ InstaPay', 'Account number': 'ط±ظ‚ظ… ط§ظ„ط­ط³ط§ط¨',
-  'Action': 'ط§ظ„ط¥ط¬ط±ط§ط،', 'Entity type': 'ظ†ظˆط¹ ط§ظ„ط³ط¬ظ„', 'Actor ID': 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ظ…ظ†ظپظ‘ط°', 'Apply filters': 'طھط·ط¨ظٹظ‚ ط§ظ„ظپظ„ط§طھط±', 'Clear filters': 'ظ…ط³ط­ ط§ظ„ظپظ„ط§طھط±',
-  'No events match these filters.': 'ظ„ط§ طھظˆط¬ط¯ ط£ط­ط¯ط§ط« طھط·ط§ط¨ظ‚ ظ‡ط°ظ‡ ط§ظ„ظپظ„ط§طھط±.', 'Time': 'ط§ظ„ظˆظ‚طھ', 'Actor': 'ط§ظ„ظ…ظ†ظپظ‘ط°', 'Role': 'ط§ظ„ط¯ظˆط±', 'Entity': 'ط§ظ„ط³ط¬ظ„',
-  'Record': 'ط§ظ„ط³ط¬ظ„', 'IP address': 'ط¹ظ†ظˆط§ظ† IP', 'events': 'ط£ط­ط¯ط§ط«', 'View todayâ€™s training': 'ط¹ط±ط¶ طھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ…',
-  'Your coach has not assigned a program yet. Your training plan will appear here once it is assigned.': 'ظ„ظ… ظٹط¹ظٹظ‘ظ† ظ…ط¯ط±ط¨ظƒ ط¨ط±ظ†ط§ظ…ط¬ط§ظ‹ ط¨ط¹ط¯. ط³طھط¸ظ‡ط± ط®ط·طھظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹط© ظ‡ظ†ط§ ط¹ظ†ط¯ ط¥ط³ظ†ط§ط¯ظ‡ط§.',
-  'Todayâ€™s exercises': 'طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…', 'sets': 'ظ…ط¬ظ…ظˆط¹ط§طھ', 'reps': 'طھظƒط±ط§ط±ط§طھ', 'Workspace': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Workspace usage': 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ظ†ط§ط¯ظٹ',
-  'Platform audit log': 'ط³ط¬ظ„ طھط¯ظ‚ظٹظ‚ ط§ظ„ظ…ظ†طµط©', 'Read-only security and administrative events.': 'ط³ط¬ظ„ ظ„ظ„ظ‚ط±ط§ط،ط© ظپظ‚ط· ظ„ظ„ط£ط­ط¯ط§ط« ط§ظ„ط£ظ…ظ†ظٹط© ظˆط§ظ„ط¥ط¯ط§ط±ظٹط©.',
-  'AI usage': 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ', 'Webhook events': 'ط£ط­ط¯ط§ط« Webhook', 'COACHPULSE / WORKSPACE': 'COACHPULSE / ط§ظ„ظ†ط§ط¯ظٹ',
-  'COACHPULSE / TRAINING SPACE': 'COACHPULSE / ط§ظ„ظ†ط§ط¯ظٹ ط§ظ„طھط¯ط±ظٹط¨ظٹ', 'MOVEMENT LIBRARY': 'ظ…ظƒطھط¨ط© ط§ظ„ط­ط±ظƒط©', 'Open exercise demonstration': 'ط¹ط±ط¶ ط§ظ„طھظ…ط±ظٹظ†',
-  'Add a secure demo video URL to this exercise to show it here.': 'ط£ط¶ظپ ط±ط§ط¨ط· ظپظٹط¯ظٹظˆ ط¢ظ…ظ† ظ„ظ‡ط°ط§ ط§ظ„طھظ…ط±ظٹظ† ظ„ط¹ط±ط¶ظ‡ ظ‡ظ†ط§.', 'Next step': 'ط§ظ„ط®ط·ظˆط© ط§ظ„طھط§ظ„ظٹط©',
-  'Add exercises to the draft, then choose the client and start date.': 'ط£ط¶ظپ ط§ظ„طھظ…ط§ط±ظٹظ† ط¥ظ„ظ‰ ط§ظ„ظ…ط³ظˆط¯ط©طŒ ط«ظ… ط§ط®طھط± ط§ظ„ط¹ظ…ظٹظ„ ظˆطھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،.', 'Assign program': 'ط¥ط³ظ†ط§ط¯ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬',
-  'programs': 'ط¨ط±ط§ظ…ط¬', 'days': 'ط£ظٹط§ظ…', 'plans': 'ط¨ط§ظ‚ط§طھ', 'Retry loading exercises': 'ط¥ط¹ط§ط¯ط© طھط­ظ…ظٹظ„ ط§ظ„طھظ…ط§ط±ظٹظ†', '&times;': 'أ—'
+  'Protein': 'بروتين', 'Carbs': 'كربوهيدرات', 'Fat': 'دهون', 'Weekly': 'أسبوعي', 'BiWeekly': 'كل أسبوعين', 'Monthly': 'شهرياً',
+  'INBOX': 'صندوق الوارد', 'Your notifications': 'إشعاراتك', 'Important updates from your coaching workspace.': 'تحديثات مهمة من ناديك التدريبي.',
+  'unread': 'غير مقروء', 'Previous': 'السابق', 'Page': 'صفحة', 'of': 'من', 'Next': 'التالي', 'Notification type': 'نوع الإشعار',
+  'In app': 'داخل التطبيق', 'Email': 'البريد الإلكتروني', 'Security and payment critical alerts are always enabled.': 'إشعارات الأمان والمدفوعات المهمة مفعّلة دائماً.',
+  'Save preferences': 'حفظ التفضيلات', 'No check-ins recorded yet. Your progress updates will appear here.': 'لم تسجل أي متابعة بعد. ستظهر تحديثات تقدمك هنا.',
+  'No subscription history yet.': 'لا يوجد سجل اشتراكات بعد.', 'InstaPay is not enabled': 'InstaPay غير مفعّل',
+  'Ask the club owner to enable it, or use another available payment method.': 'اطلب من مالك النادي تفعيله أو استخدم طريقة دفع أخرى.',
+  'InstaPay instructions': 'تعليمات InstaPay', 'Activate a subscription manually': 'تفعيل اشتراك يدوياً',
+  'This activates access immediately. Use Payments to record a cash collection.': 'سيؤدي هذا إلى تفعيل الوصول فوراً. استخدم المدفوعات لتسجيل التحصيل النقدي.',
+  'Note (optional)': 'ملاحظة (اختياري)', 'Activate subscription': 'تفعيل الاشتراك', 'Workspace subscriptions': 'اشتراكات النادي',
+  'Select a row to view details and management actions.': 'اختر اشتراكاً لعرض تفاصيله وإجراءاته.', 'subscriptions': 'اشتراكات',
+  'No subscriptions yet.': 'لا توجد اشتراكات بعد.', 'Plan': 'الباقة', 'Status': 'الحالة', 'Price': 'السعر', 'End date': 'تاريخ الانتهاء',
+  'Subscription details': 'تفاصيل الاشتراك', 'Close': 'إغلاق', 'Reason': 'السبب', 'Extension days': 'أيام التمديد', 'Extend': 'تمديد',
+  'Pause': 'إيقاف مؤقت', 'Resume': 'استئناف', 'Cancel': 'إلغاء', 'No active subscription yet. Choose a plan to get started.': 'لا يوجد اشتراك نشط. اختر باقة للبدء.',
+  'Pay by InstaPay': 'الدفع عبر InstaPay', 'Your subscription request is ready. Submit your transfer details below.': 'طلب اشتراكك جاهز. أدخل تفاصيل التحويل أدناه.',
+  'InstaPay is turned off for this club': 'InstaPay غير مفعّل لهذا النادي', 'Ask the club owner to enable InstaPay, or choose Paymob if it is available.': 'اطلب من مالك النادي تفعيل InstaPay أو اختر Paymob إذا كان متاحاً.',
+  'Reference number': 'رقم المرجع', 'Amount': 'المبلغ', 'Payment receipt': 'إيصال الدفع', 'Submit transfer': 'إرسال التحويل',
+  'Workspace details': 'بيانات النادي', 'Currency': 'العملة', 'Time zone': 'المنطقة الزمنية', 'Subscription reminder days': 'أيام التذكير قبل انتهاء الاشتراك',
+  'Default language': 'اللغة الافتراضية', 'Arabic': 'العربية', 'English': 'الإنجليزية', 'Branding': 'الهوية البصرية', 'Payment methods': 'طرق الدفع',
+  'Enable Paymob': 'تفعيل Paymob', 'Enable InstaPay': 'تفعيل InstaPay', 'InstaPay ID': 'معرّف InstaPay', 'Account number': 'رقم الحساب',
+  'Action': 'الإجراء', 'Entity type': 'نوع السجل', 'Actor ID': 'معرّف المنفّذ', 'Apply filters': 'تطبيق الفلاتر', 'Clear filters': 'مسح الفلاتر',
+  'No events match these filters.': 'لا توجد أحداث تطابق هذه الفلاتر.', 'Time': 'الوقت', 'Actor': 'المنفّذ', 'Role': 'الدور', 'Entity': 'السجل',
+  'Record': 'السجل', 'IP address': 'عنوان IP', 'events': 'أحداث', 'View today’s training': 'عرض تمرين اليوم',
+  'Your coach has not assigned a program yet. Your training plan will appear here once it is assigned.': 'لم يعيّن مدربك برنامجاً بعد. ستظهر خطتك التدريبية هنا عند إسنادها.',
+  'Today’s exercises': 'تمارين اليوم', 'sets': 'مجموعات', 'reps': 'تكرارات', 'Workspace': 'النادي', 'Workspace usage': 'استخدام النادي',
+  'Platform audit log': 'سجل تدقيق المنصة', 'Read-only security and administrative events.': 'سجل للقراءة فقط للأحداث الأمنية والإدارية.',
+  'AI usage': 'استخدام الذكاء الاصطناعي', 'Webhook events': 'أحداث Webhook', 'COACHPULSE / WORKSPACE': 'COACHPULSE / النادي',
+  'COACHPULSE / TRAINING SPACE': 'COACHPULSE / النادي التدريبي', 'MOVEMENT LIBRARY': 'مكتبة الحركة', 'Open exercise demonstration': 'عرض التمرين',
+  'Add a secure demo video URL to this exercise to show it here.': 'أضف رابط فيديو آمن لهذا التمرين لعرضه هنا.', 'Next step': 'الخطوة التالية',
+  'Add exercises to the draft, then choose the client and start date.': 'أضف التمارين إلى المسودة، ثم اختر العميل وتاريخ البدء.', 'Assign program': 'إسناد البرنامج',
+  'programs': 'برامج', 'days': 'أيام', 'plans': 'باقات', 'Retry loading exercises': 'إعادة تحميل التمارين', '&times;': '×'
 });
 
 Object.assign(arabic, {
-  'Better coaching.': 'طھط¯ط±ظٹط¨ ط£ظپط¶ظ„.', 'Clearer progress.': 'ظ…طھط§ط¨ط¹ط© ط£ظˆط¶ط­.', 'Welcome back': 'ظ…ط±ط­ط¨ط§ظ‹ ط¨ط¹ظˆط¯طھظƒ', 'Sign in': 'طھط³ط¬ظٹظ„ ط§ظ„ط¯ط®ظˆظ„',
-  'Club': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Clubs': 'ط§ظ„ط£ظ†ط¯ظٹط©', 'Workspace': 'ط§ظ„ظ†ط§ط¯ظٹ', 'Workspaces': 'ط§ظ„ط£ظ†ط¯ظٹط©', 'Club settings': 'ط¥ط¹ط¯ط§ط¯ط§طھ ط§ظ„ظ†ط§ط¯ظٹ',
-  'Club name': 'ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ', 'Club link': 'ط±ط§ط¨ط· ط§ظ„ظ†ط§ط¯ظٹ', 'Choose your club, then enter your sign-in details.': 'ط§ط®طھط± ط§ظ„ظ†ط§ط¯ظٹ ط§ظ„ظ…ط±طھط¨ط· ط¨ط­ط³ط§ط¨ظƒطŒ ط«ظ… ط£ط¯ط®ظ„ ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ط®ظˆظ„.',
-  'Choose a club': 'ط§ط®طھط± ط§ظ„ظ†ط§ط¯ظٹ', 'Search by club name': 'ط§ط¨ط­ط« ط¨ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ', 'Available clubs': 'ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„ظ…طھط§ط­ط©', 'Loading clubs...': 'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ط£ظ†ط¯ظٹط©...',
-  'Could not load clubs right now.': 'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„ط¢ظ†.', 'Club code from your invitation': 'ط±ظ…ط² ط§ظ„ظ†ط§ط¯ظٹ ظپظٹ ط§ظ„ط¯ط¹ظˆط©',
-  'Type the first two letters of the club name to search.': 'ط§ط¨ط¯ط£ ط¨ظƒطھط§ط¨ط© ط£ظˆظ„ ط­ط±ظپظٹظ† ظ…ظ† ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ ظ„ظ„ط¨ط­ط«.', 'No results. Try another name.': 'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬. ط¬ط±ظ‘ط¨ ط§ط³ظ…ط§ظ‹ ط¢ط®ط±.',
-  'Canâ€™t find your club? Open the invitation link you received.': 'ظ„ط§ طھط¬ط¯ ظ†ط§ط¯ظٹظƒطں ط§ظپطھط­ ط±ط§ط¨ط· ط§ظ„ط¯ط¹ظˆط© ط§ظ„ط°ظٹ ظˆطµظ„ظƒ.', 'Forgot password?': 'ظ†ط³ظٹطھ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±طں',
-  'First time here?': 'ط£ظˆظ„ ظ…ط±ط© ظ‡ظ†ط§طں', 'Create a club': 'ط£ظ†ط´ط¦ ظ†ط§ط¯ظٹط§ظ‹', 'For coaches starting a new club': 'ظ„ظ„ظ…ط¯ط±ط¨ظٹظ† ط§ظ„ط±ط§ط؛ط¨ظٹظ† ظپظٹ ط¨ط¯ط، ظ†ط§ط¯ظچ ط¬ط¯ظٹط¯',
-  'Join as a client': 'ط§ظ†ط¶ظ… ظƒط¹ظ…ظٹظ„', 'Have an invitation from a coach? Finish registration here.': 'ظ„ط¯ظٹظƒ ط¯ط¹ظˆط© ظ…ظ† ظ…ط¯ط±ط¨طں ط£ظƒظ…ظ„ ط§ظ„طھط³ط¬ظٹظ„ ظ‡ظ†ط§.',
-  'Have a staff invitation?': 'ظ„ط¯ظٹظƒ ط¯ط¹ظˆط© ظ„ظ„ط§ظ†ط¶ظ…ط§ظ… ظƒظ…ط¯ط±ط¨طں', 'Other account options': 'ط®ظٹط§ط±ط§طھ ط§ظ„ط­ط³ط§ط¨ ط§ظ„ط£ط®ط±ظ‰', 'Reset password with a code': 'ط¥ط¹ط§ط¯ط© طھط¹ظٹظٹظ† ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط¨ط±ظ…ط²',
-  'Better training and client management': 'ظ…ظ†طµط© ط§ظ„طھط¯ط±ظٹط¨ ظˆط¥ط¯ط§ط±ط© ط§ظ„ط¹ظ…ظ„ط§ط،', 'Organized programs and exercises': 'ط¨ط±ط§ظ…ط¬ ظˆطھظ…ط§ط±ظٹظ† ظ…ظ†ط¸ظ…ط©',
-  'Progress tracking and communication': 'ظ…طھط§ط¨ط¹ط© ط§ظ„طھظ‚ط¯ظ… ظˆط§ظ„طھظˆط§طµظ„', 'Designed for coaches and clients': 'طھط¬ط±ط¨ط© ظ…ظ†ط§ط³ط¨ط© ظ„ظ„ظ…ط¯ط±ط¨ ظˆط§ظ„ط¹ظ…ظٹظ„',
-  'Manage training, clients, and progress in one place.': 'ظƒظ„ ظ…ط§ طھط­طھط§ط¬ظ‡ ظ„ط¥ط¯ط§ط±ط© ط§ظ„طھظ…ط§ط±ظٹظ† ظˆط§ظ„ط¹ظ…ظ„ط§ط، ظˆط§ظ„طھظ‚ط¯ظ… ظپظٹ ظ…ظƒط§ظ† ظˆط§ط­ط¯.',
-  'Your club starts here.': 'ظ†ط§ط¯ظٹظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹ ظٹط¨ط¯ط£ ظ…ظ† ظ‡ظ†ط§.', 'Your account and club data are protected by your access permissions.': 'ط¨ظٹط§ظ†ط§طھ ط­ط³ط§ط¨ظƒ ظˆظ†ط§ط¯ظٹظƒ ظ…ط­ظ…ظٹط© ط¨طµظ„ط§ط­ظٹط§طھ ط§ظ„ظˆطµظˆظ„ ط§ظ„ط®ط§طµط© ط¨ظƒ.',
-  'Reason for activation or suspension': 'ط³ط¨ط¨ ط§ظ„طھظپط¹ظٹظ„ ط£ظˆ ط§ظ„طھط¹ظ„ظٹظ‚', 'Activate club': 'طھظپط¹ظٹظ„ ط§ظ„ظ†ط§ط¯ظٹ', 'Suspend club': 'طھط¹ظ„ظٹظ‚ ط§ظ„ظ†ط§ط¯ظٹ',
-  'Schedule club deletion': 'ط¬ط¯ظˆظ„ط© ط­ط°ظپ ط§ظ„ظ†ط§ط¯ظٹ', 'Selected club': 'ط§ظ„ظ†ط§ط¯ظٹ ط§ظ„ظ…ط­ط¯ط¯', 'Choose a club to manage its status and usage.': 'ط§ط®طھط± ط§ظ„ظ†ط§ط¯ظٹ ظ„ط¥ط¯ط§ط±ط© ط­ط§ظ„طھظ‡ ظˆط§ط³طھط®ط¯ط§ظ…ظ‡.',
-  'No clubs to display.': 'ظ„ط§ طھظˆط¬ط¯ ط£ظ†ط¯ظٹط© ظ„ط¹ط±ط¶ظ‡ط§.', 'Choose a club from the list or use Manage club in the clubs table.': 'ط§ط®طھط± ظ†ط§ط¯ظٹط§ظ‹ ظ…ظ† ط§ظ„ظ‚ط§ط¦ظ…ط© ط£ظˆ ط§ط³طھط®ط¯ظ… ط¥ط¯ط§ط±ط© ط§ظ„ظ†ط§ط¯ظٹ ظپظٹ ط¬ط¯ظˆظ„ ط§ظ„ط£ظ†ط¯ظٹط©.',
-  'Training clubs': 'ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„طھط¯ط±ظٹط¨ظٹط©', 'Club management': 'ط¥ط¯ط§ط±ط© ط§ظ„ظ†ط§ط¯ظٹ', 'Platform administration': 'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†طµط©',
-  'Create a program': 'ط¥ظ†ط´ط§ط، ط¨ط±ظ†ط§ظ…ط¬', 'Program details': 'طھظپط§طµظٹظ„ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬', 'Program exercises': 'طھظ…ط§ط±ظٹظ† ط§ظ„ط¨ط±ظ†ط§ظ…ط¬', 'New title': 'ط¹ظ†ظˆط§ظ† ط¬ط¯ظٹط¯',
-  'Rest seconds': 'ط§ظ„ط±ط§ط­ط© ط¨ط§ظ„ط«ظˆط§ظ†ظٹ', 'Save exercise changes': 'ط­ظپط¸ طھط¹ط¯ظٹظ„ ط§ظ„طھظ…ط±ظٹظ†', 'Reorder todayâ€™s exercises': 'طھط±طھظٹط¨ طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…',
-  'Save order': 'ط­ظپط¸ ط§ظ„طھط±طھظٹط¨', 'Duplicate': 'ظ†ط³ط®', 'Save as template': 'ط­ظپط¸ ظƒظ‚ط§ظ„ط¨', 'Templates': 'ط§ظ„ظ‚ظˆط§ظ„ط¨', 'Create program from template': 'ط¥ظ†ط´ط§ط، ط¨ط±ظ†ط§ظ…ط¬ ظ…ظ† ط§ظ„ظ‚ط§ظ„ط¨',
-  'Muscle groups and equipment': 'ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ ط§ظ„ط¹ط¶ظ„ظٹط© ظˆط§ظ„ظ…ط¹ط¯ط§طھ', 'New exercise': 'طھظ…ط±ظٹظ† ط¬ط¯ظٹط¯', 'Edit details': 'طھظپط§طµظٹظ„ ط§ظ„طھط¹ط¯ظٹظ„',
-  'Plan details': 'طھظپط§طµظٹظ„ ط§ظ„ط®ط·ط©', 'Plan title': 'ط¹ظ†ظˆط§ظ† ط§ظ„ط®ط·ط©', 'Meal name': 'ط§ط³ظ… ط§ظ„ظˆط¬ط¨ط©', 'Calories': 'ط§ظ„ط³ط¹ط±ط§طھ ط§ظ„ط­ط±ط§ط±ظٹط©',
-  'Add meal': 'ط¥ط¶ط§ظپط© ظˆط¬ط¨ط©', 'Update meal': 'طھط­ط¯ظٹط« ط§ظ„ظˆط¬ط¨ط©', 'Delete meal': 'ط­ط°ظپ ط§ظ„ظˆط¬ط¨ط©', 'Create plan': 'ط¥ظ†ط´ط§ط، ط¨ط§ظ‚ط©', 'Manage plan': 'ط¥ط¯ط§ط±ط© ط§ظ„ط¨ط§ظ‚ط©',
-  'Archive plan': 'ط£ط±ط´ظپط© ط§ظ„ط¨ط§ظ‚ط©', 'Invite a client': 'ط¯ط¹ظˆط© ط¹ظ…ظٹظ„', 'Send invitation': 'ط¥ط±ط³ط§ظ„ ط¯ط¹ظˆط©', 'Invitations': 'ط§ظ„ط¯ط¹ظˆط§طھ',
-  'Coaches in this club': 'ط§ظ„ظ…ط¯ط±ط¨ظˆظ† ظپظٹ ط§ظ„ظ†ط§ط¯ظٹ', 'Resend invitation': 'ط¥ط¹ط§ط¯ط© ط¥ط±ط³ط§ظ„ ط§ظ„ط¯ط¹ظˆط©', 'Cancel invitation': 'ط¥ظ„ط؛ط§ط، ط§ظ„ط¯ط¹ظˆط©',
-  'Public platform exercises': 'طھظ…ط§ط±ظٹظ† ط§ظ„ظ…ظ†طµط© ط§ظ„ط¹ط§ظ…ط©', 'Choose an exercise to edit or delete. Deletion may be rejected if it is in use.': 'ط§ط®طھط± طھظ…ط±ظٹظ†ط§ظ‹ ظ„طھط¹ط¯ظٹظ„ظ‡ ط£ظˆ ط­ط°ظپظ‡. ظ‚ط¯ ظٹظڈط±ظپط¶ ط§ظ„ط­ط°ظپ ط¥ط°ط§ ظƒط§ظ† ط§ظ„طھظ…ط±ظٹظ† ظ…ط³طھط®ط¯ظ…ط§ظ‹.',
-  'Show health information (audited)': 'ط¹ط±ط¶ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„طµط­ظٹط© (ظ…ط³ط¬ظ‘ظ„ طھط¯ظ‚ظٹظ‚ظٹط§ظ‹)', 'Save assigned coach': 'ط­ظپط¸ ط§ظ„ظ…ط¯ط±ط¨ ط§ظ„ظ…ط³ط¤ظˆظ„', 'Check-in schedule': 'ظ…ظˆط¹ط¯ ط§ظ„ظ…طھط§ط¨ط¹ط©',
-  'Pending payments': 'ط§ظ„ط¯ظپط¹ط§طھ ط§ظ„ظ…ط¹ظ„ظ‘ظ‚ط©', 'Record cash payment': 'طھط³ط¬ظٹظ„ ط¯ظپط¹ط© ظ†ظ‚ط¯ظٹط©', 'Refund payment': 'ط§ط³طھط±ط¯ط§ط¯ ط¯ظپط¹ط©', 'Export CSV': 'طھطµط¯ظٹط± CSV',
-  'Save profile': 'ط­ظپط¸ ط§ظ„ظ…ظ„ظپ ط§ظ„ط´ط®طµظٹ', 'Delete account and hide its data': 'ط­ط°ظپ ط§ظ„ط­ط³ط§ط¨ ظˆط¥ط®ظپط§ط، ط¨ظٹط§ظ†ط§طھظ‡', 'Export my data': 'طھطµط¯ظٹط± ط¨ظٹط§ظ†ط§طھظٹ',
-  'My subscriptions': 'ط§ط´طھط±ط§ظƒط§طھظٹ', 'Current subscription': 'ط§ط´طھط±ط§ظƒظٹ ط§ظ„ط­ط§ظ„ظٹ', 'Request subscription': 'ط·ظ„ط¨ ط§ط´طھط±ط§ظƒ', 'Payment details and status': 'طھظپط§طµظٹظ„ ط§ظ„ط¯ظپط¹ ظˆط­ط§ظ„طھظ‡',
-  'Download PDF invoice': 'طھظ†ط²ظٹظ„ ط§ظ„ظپط§طھظˆط±ط© PDF', 'Pay by card through Paymob': 'ط§ظ„ط¯ظپط¹ ط¨ط§ظ„ط¨ط·ط§ظ‚ط© ط¹ط¨ط± Paymob', 'Generate program': 'طھظˆظ„ظٹط¯ ط¨ط±ظ†ط§ظ…ط¬',
-  'Review check-ins': 'ظ…ط±ط§ط¬ط¹ط© ط§ظ„ظ…طھط§ط¨ط¹ط§طھ', 'Client details': 'طھظپط§طµظٹظ„ ط§ظ„ط¹ظ…ظٹظ„', 'Health information': 'ط§ظ„ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„طµط­ظٹط©', 'Save settings': 'ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ',
-  'Save branding': 'ط­ظپط¸ ط§ظ„ظ‡ظˆظٹط©', 'Save payment methods': 'ط­ظپط¸ ط·ط±ظ‚ ط§ظ„ط¯ظپط¹', 'Workspace usage': 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ظ†ط§ط¯ظٹ', 'Audit log': 'ط³ط¬ظ„ ط§ظ„طھط¯ظ‚ظٹظ‚',
-  'Your workspace': 'ظ†ط§ط¯ظٹظƒ', 'Quick access': 'ظˆطµظˆظ„ ط³ط±ظٹط¹', 'View todayâ€™s training': 'ط¹ط±ط¶ طھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ…', 'Record a check-in': 'طھط³ط¬ظٹظ„ ظ…طھط§ط¨ط¹ط©',
-  'Open meal plan': 'ظپطھط­ ط®ط·ط© ط§ظ„ظˆط¬ط¨ط§طھ', 'Message your coach': 'ظ…ط±ط§ط³ظ„ط© ظ…ط¯ط±ط¨ظƒ', 'Training plan': 'ط§ظ„ط®ط·ط© ط§ظ„طھط¯ط±ظٹط¨ظٹط©', 'Current program': 'ط§ظ„ط¨ط±ظ†ط§ظ…ط¬ ط§ظ„ط­ط§ظ„ظٹ',
-  'Todayâ€™s exercises': 'طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…', 'Training history': 'ط³ط¬ظ„ ط§ظ„طھط¯ط±ظٹط¨', 'Past and current programs': 'ط§ظ„ط¨ط±ط§ظ…ط¬ ط§ظ„ط³ط§ط¨ظ‚ط© ظˆط§ظ„ط­ط§ظ„ظٹط©',
-  'No training history yet.': 'ظ„ط§ ظٹظˆط¬ط¯ ط³ط¬ظ„ طھط¯ط±ظٹط¨ ط¨ط¹ط¯.', 'Your progress starts with a check-in': 'ظٹط¨ط¯ط£ طھظ‚ط¯ظ…ظƒ ط¨طھط³ط¬ظٹظ„ ظ…طھط§ط¨ط¹ط©',
-  'Create a check-in': 'ط¥ظ†ط´ط§ط، ظ…طھط§ط¨ط¹ط©', 'Check-in history': 'ط³ط¬ظ„ ط§ظ„ظ…طھط§ط¨ط¹ط§طھ', 'No active meal plan': 'ظ„ط§ طھظˆط¬ط¯ ط®ط·ط© ظˆط¬ط¨ط§طھ ظ†ط´ط·ط©',
-  'Your meal plan will show here when your coach shares one with you.': 'ط³طھط¸ظ‡ط± ط®ط·ط© ظˆط¬ط¨ط§طھظƒ ظ‡ظ†ط§ ط¹ظ†ط¯ظ…ط§ ظٹط´ط§ط±ظƒظ‡ط§ ظ…ط¯ط±ط¨ظƒ.', 'No meals have been added to this plan yet.': 'ظ„ظ… طھطھظ… ط¥ط¶ط§ظپط© ظˆط¬ط¨ط§طھ ط¥ظ„ظ‰ ظ‡ط°ظ‡ ط§ظ„ط®ط·ط© ط¨ط¹ط¯.'
+  'Better coaching.': 'تدريب أفضل.', 'Clearer progress.': 'متابعة أوضح.', 'Welcome back': 'مرحباً بعودتك', 'Sign in': 'تسجيل الدخول',
+  'Club': 'النادي', 'Clubs': 'الأندية', 'Workspace': 'النادي', 'Workspaces': 'الأندية', 'Club settings': 'إعدادات النادي',
+  'Club name': 'اسم النادي', 'Club link': 'رابط النادي', 'Choose your club, then enter your sign-in details.': 'اختر النادي المرتبط بحسابك، ثم أدخل بيانات الدخول.',
+  'Choose a club': 'اختر النادي', 'Search by club name': 'ابحث باسم النادي', 'Available clubs': 'الأندية المتاحة', 'Loading clubs...': 'جارٍ تحميل الأندية...',
+  'Could not load clubs right now.': 'تعذر تحميل الأندية الآن.', 'Club code from your invitation': 'رمز النادي في الدعوة',
+  'Type the first two letters of the club name to search.': 'ابدأ بكتابة أول حرفين من اسم النادي للبحث.', 'No results. Try another name.': 'لا توجد نتائج. جرّب اسماً آخر.',
+  'Can’t find your club? Open the invitation link you received.': 'لا تجد ناديك؟ افتح رابط الدعوة الذي وصلك.', 'Forgot password?': 'نسيت كلمة المرور؟',
+  'First time here?': 'أول مرة هنا؟', 'Create a club': 'أنشئ نادياً', 'For coaches starting a new club': 'للمدربين الراغبين في بدء نادٍ جديد',
+  'Join as a client': 'انضم كعميل', 'Have an invitation from a coach? Finish registration here.': 'لديك دعوة من مدرب؟ أكمل التسجيل هنا.',
+  'Have a staff invitation?': 'لديك دعوة للانضمام كمدرب؟', 'Other account options': 'خيارات الحساب الأخرى', 'Reset password with a code': 'إعادة تعيين كلمة المرور برمز',
+  'Better training and client management': 'منصة التدريب وإدارة العملاء', 'Organized programs and exercises': 'برامج وتمارين منظمة',
+  'Progress tracking and communication': 'متابعة التقدم والتواصل', 'Designed for coaches and clients': 'تجربة مناسبة للمدرب والعميل',
+  'Manage training, clients, and progress in one place.': 'كل ما تحتاجه لإدارة التمارين والعملاء والتقدم في مكان واحد.',
+  'Your club starts here.': 'ناديك التدريبي يبدأ من هنا.', 'Your account and club data are protected by your access permissions.': 'بيانات حسابك وناديك محمية بصلاحيات الوصول الخاصة بك.',
+  'Reason for activation or suspension': 'سبب التفعيل أو التعليق', 'Activate club': 'تفعيل النادي', 'Suspend club': 'تعليق النادي',
+  'Schedule club deletion': 'جدولة حذف النادي', 'Selected club': 'النادي المحدد', 'Choose a club to manage its status and usage.': 'اختر النادي لإدارة حالته واستخدامه.',
+  'No clubs to display.': 'لا توجد أندية لعرضها.', 'Choose a club from the list or use Manage club in the clubs table.': 'اختر نادياً من القائمة أو استخدم إدارة النادي في جدول الأندية.',
+  'Training clubs': 'الأندية التدريبية', 'Club management': 'إدارة النادي', 'Platform administration': 'إدارة المنصة',
+  'Create a program': 'إنشاء برنامج', 'Program details': 'تفاصيل البرنامج', 'Program exercises': 'تمارين البرنامج', 'New title': 'عنوان جديد',
+  'Rest seconds': 'الراحة بالثواني', 'Save exercise changes': 'حفظ تعديل التمرين', 'Reorder today’s exercises': 'ترتيب تمارين اليوم',
+  'Save order': 'حفظ الترتيب', 'Duplicate': 'نسخ', 'Save as template': 'حفظ كقالب', 'Templates': 'القوالب', 'Create program from template': 'إنشاء برنامج من القالب',
+  'Muscle groups and equipment': 'المجموعات العضلية والمعدات', 'New exercise': 'تمرين جديد', 'Edit details': 'تفاصيل التعديل',
+  'Plan details': 'تفاصيل الخطة', 'Plan title': 'عنوان الخطة', 'Meal name': 'اسم الوجبة', 'Calories': 'السعرات الحرارية',
+  'Add meal': 'إضافة وجبة', 'Update meal': 'تحديث الوجبة', 'Delete meal': 'حذف الوجبة', 'Create plan': 'إنشاء باقة', 'Manage plan': 'إدارة الباقة',
+  'Archive plan': 'أرشفة الباقة', 'Invite a client': 'دعوة عميل', 'Send invitation': 'إرسال دعوة', 'Invitations': 'الدعوات',
+  'Coaches in this club': 'المدربون في النادي', 'Resend invitation': 'إعادة إرسال الدعوة', 'Cancel invitation': 'إلغاء الدعوة',
+  'Public platform exercises': 'تمارين المنصة العامة', 'Choose an exercise to edit or delete. Deletion may be rejected if it is in use.': 'اختر تمريناً لتعديله أو حذفه. قد يُرفض الحذف إذا كان التمرين مستخدماً.',
+  'Show health information (audited)': 'عرض البيانات الصحية (مسجّل تدقيقياً)', 'Save assigned coach': 'حفظ المدرب المسؤول', 'Check-in schedule': 'موعد المتابعة',
+  'Pending payments': 'الدفعات المعلّقة', 'Record cash payment': 'تسجيل دفعة نقدية', 'Refund payment': 'استرداد دفعة', 'Export CSV': 'تصدير CSV',
+  'Save profile': 'حفظ الملف الشخصي', 'Delete account and hide its data': 'حذف الحساب وإخفاء بياناته', 'Export my data': 'تصدير بياناتي',
+  'My subscriptions': 'اشتراكاتي', 'Current subscription': 'اشتراكي الحالي', 'Request subscription': 'طلب اشتراك', 'Payment details and status': 'تفاصيل الدفع وحالته',
+  'Download PDF invoice': 'تنزيل الفاتورة PDF', 'Pay by card through Paymob': 'الدفع بالبطاقة عبر Paymob', 'Generate program': 'توليد برنامج',
+  'Review check-ins': 'مراجعة المتابعات', 'Client details': 'تفاصيل العميل', 'Health information': 'المعلومات الصحية', 'Save settings': 'حفظ الإعدادات',
+  'Save branding': 'حفظ الهوية', 'Save payment methods': 'حفظ طرق الدفع', 'Workspace usage': 'استخدام النادي', 'Audit log': 'سجل التدقيق',
+  'Your workspace': 'ناديك', 'Quick access': 'وصول سريع', 'View today’s training': 'عرض تمرين اليوم', 'Record a check-in': 'تسجيل متابعة',
+  'Open meal plan': 'فتح خطة الوجبات', 'Message your coach': 'مراسلة مدربك', 'Training plan': 'الخطة التدريبية', 'Current program': 'البرنامج الحالي',
+  'Today’s exercises': 'تمارين اليوم', 'Training history': 'سجل التدريب', 'Past and current programs': 'البرامج السابقة والحالية',
+  'No training history yet.': 'لا يوجد سجل تدريب بعد.', 'Your progress starts with a check-in': 'يبدأ تقدمك بتسجيل متابعة',
+  'Create a check-in': 'إنشاء متابعة', 'Check-in history': 'سجل المتابعات', 'No active meal plan': 'لا توجد خطة وجبات نشطة',
+  'Your meal plan will show here when your coach shares one with you.': 'ستظهر خطة وجباتك هنا عندما يشاركها مدربك.', 'No meals have been added to this plan yet.': 'لم تتم إضافة وجبات إلى هذه الخطة بعد.'
 });
 Object.assign(arabic, {
-  "Today's training": 'طھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ…', "Today's exercises": 'طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…', 'After you submit your first check-in, your measurements and changes over time will appear here.': 'ط¨ط¹ط¯ ط¥ط±ط³ط§ظ„ ط£ظˆظ„ ظ…طھط§ط¨ط¹ط©طŒ ط³طھط¸ظ‡ط± ظ‚ظٹط§ط³ط§طھظƒ ظˆطھط؛ظٹط±ط§طھظƒ ط¨ظ…ط±ظˆط± ط§ظ„ظˆظ‚طھ.', 'Your plan': 'ط®ط·طھظƒ', 'kcal': 'ط³ط¹ط±ط© ط­ط±ط§ط±ظٹط©', 'total)': 'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ†طھط§ط¦ط¬)',
-  'Client details': 'طھظپط§طµظٹظ„ ط§ظ„ط¹ظ…ظٹظ„', 'Delete': 'ط­ط°ظپ', 'Import CSV': 'ط§ط³طھظٹط±ط§ط¯ CSV', 'Invitation details (email partially hidden):': 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ط¹ظˆط© ط§ظ„ط¹ط§ظ…ط© (ط§ظ„ط¨ط±ظٹط¯ ظ…ظ‚ظ†ظ‘ط¹):', 'Complete registration': 'ط¥ظƒظ…ط§ظ„ ط§ظ„طھط³ط¬ظٹظ„'
+  "Today's training": 'تمرين اليوم', "Today's exercises": 'تمارين اليوم', 'After you submit your first check-in, your measurements and changes over time will appear here.': 'بعد إرسال أول متابعة، ستظهر قياساتك وتغيراتك بمرور الوقت.', 'Your plan': 'خطتك', 'kcal': 'سعرة حرارية', 'total)': 'إجمالي النتائج)',
+  'Client details': 'تفاصيل العميل', 'Delete': 'حذف', 'Import CSV': 'استيراد CSV', 'Invitation details (email partially hidden):': 'بيانات الدعوة العامة (البريد مقنّع):', 'Complete registration': 'إكمال التسجيل'
 });
 Object.assign(arabic, {
-  'Not available': 'ط؛ظٹط± ظ…طھط§ط­', 'No items': 'ظ„ط§ طھظˆط¬ط¯ ط¹ظ†ط§طµط±', 'No details available': 'ظ„ط§ طھظˆط¬ط¯ طھظپط§طµظٹظ„', 'Yes': 'ظ†ط¹ظ…', 'No': 'ظ„ط§',
-  'SuperAdmin': 'ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©', 'TenantOwner': 'ظ…ط§ظ„ظƒ ط§ظ„ظ†ط§ط¯ظٹ', 'CoachStaff': 'ظ…ط¯ط±ط¨', 'Client': 'ط¹ظ…ظٹظ„', 'Active': 'ظ†ط´ط·', 'Paused': 'ظ…طھظˆظ‚ظپ ظ…ط¤ظ‚طھط§ظ‹',
-  'Archived': 'ظ…ط¤ط±ط´ظپ', 'Pending': 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±', 'Accepted': 'ظ…ظ‚ط¨ظˆظ„', 'Expired': 'ظ…ظ†طھظ‡ظٹ', 'Confirmed': 'ظ…ط¤ظƒط¯', 'Rejected': 'ظ…ط±ظپظˆط¶',
-  'PendingVerification': 'ط¨ط§ظ†طھط¸ط§ط± ط§ظ„طھط­ظ‚ظ‚', 'Cancelled': 'ظ…ظ„ط؛ظٹ', 'Draft': 'ظ…ط³ظˆط¯ط©', 'Template': 'ظ‚ط§ظ„ط¨', 'Completed': 'ظ…ظƒطھظ…ظ„', 'Low': 'ظ…ظ†ط®ظپط¶',
-  'Medium': 'ظ…طھظˆط³ط·', 'High': 'ظ…ط±طھظپط¹', 'Weekly': 'ط£ط³ط¨ظˆط¹ظٹ', 'BiWeekly': 'ظƒظ„ ط£ط³ط¨ظˆط¹ظٹظ†', 'Monthly': 'ط´ظ‡ط±ظٹ', 'Cash': 'ظ†ظ‚ط¯ظٹ', "View today's training": 'ط¹ط±ط¶ طھظ…ط±ظٹظ† ط§ظ„ظٹظˆظ…'
+  'Not available': 'غير متاح', 'No items': 'لا توجد عناصر', 'No details available': 'لا توجد تفاصيل', 'Yes': 'نعم', 'No': 'لا',
+  'SuperAdmin': 'مسؤول المنصة', 'TenantOwner': 'مالك النادي', 'CoachStaff': 'مدرب', 'Client': 'عميل', 'Active': 'نشط', 'Paused': 'متوقف مؤقتاً',
+  'Archived': 'مؤرشف', 'Pending': 'قيد الانتظار', 'Accepted': 'مقبول', 'Expired': 'منتهي', 'Confirmed': 'مؤكد', 'Rejected': 'مرفوض',
+  'PendingVerification': 'بانتظار التحقق', 'Cancelled': 'ملغي', 'Draft': 'مسودة', 'Template': 'قالب', 'Completed': 'مكتمل', 'Low': 'منخفض',
+  'Medium': 'متوسط', 'High': 'مرتفع', 'Weekly': 'أسبوعي', 'BiWeekly': 'كل أسبوعين', 'Monthly': 'شهري', 'Cash': 'نقدي', "View today's training": 'عرض تمرين اليوم'
 });
 const english: Record<string, string> = Object.fromEntries(Object.entries(arabic).map(([key, value]) => [value, key]))
 
 const englishUi: Record<string, string> = {
-    'ظ„ظˆط­ط© SuperAdmin': 'SuperAdmin dashboard',
-    'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط³ط§ط­ط§طھ': 'Club management',
-    'ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„طھط¯ط±ظٹط¨ظٹط©': 'Training clubs', 'ظ…ط³ط§ط­ط§طھ ط§ظ„طھط¯ط±ظٹط¨': 'Training clubs',
-    'ظ…ط³ط§ط­ط© ط§ظ„ط¥ط¯ط§ط±ط©': 'Platform administration',
-    'ط¥ط¯ط§ط±ط© ظˆظ…ط±ط§ظ‚ط¨ط© ط§ظ„ظ…ظ†طµط©': 'Manage and monitor the platform',
-    'ط¥ط¯ط§ط±ط© ط§ظ„ظ†ط§ط¯ظٹ': 'Manage club', 'ط¥ط¯ط§ط±ط© ظ…ط³ط§ط­ط©': 'Manage club',
-    'ط§ط®طھط± ظ…ط³ط§ط­ط©': 'Choose a club', 'ظ…ط³ط§ط­ط© ط§ظ„طھط¯ط±ظٹط¨': 'Training club', 'ط§ظ„ظ†ط§ط¯ظٹ': 'Club', 'ط§ظ„ط£ظ†ط¯ظٹط©': 'Clubs',
-    'ط§ط³ظ… ط§ظ„ظ…ط³ط§ط­ط©': 'Club name',
-    'ط±ط§ط¨ط· ط§ظ„ظ…ط³ط§ط­ط©': 'Club link',
-    'ط§ظ„ط­ط§ظ„ط©': 'Status',
-    'طھط§ط±ظٹط® ط§ظ„ط¥ظ†ط´ط§ط،': 'Created',
-    'ط§ظ„ط§ط³طھط®ط¯ط§ظ…': 'Usage',
-    'ط§ظ„ط¹ظ…ظ„ط§ط،': 'Clients',
-    'ط·ظ„ط¨ط§طھ AI ط§ظ„ظٹظˆظ…': 'AI requests today',
-    'ط§ظ„طھط®ط²ظٹظ†': 'Storage',
-    'ط³ط¨ط¨ ط§ظ„طھظپط¹ظٹظ„ ط£ظˆ ط§ظ„طھط¹ظ„ظٹظ‚': 'Reason for activation or suspension',
-    'طھظپط¹ظٹظ„ ط§ظ„ظ…ط³ط§ط­ط©': 'Activate club',
-    'طھط¹ظ„ظٹظ‚ ط§ظ„ظ…ط³ط§ط­ط©': 'Suspend club',
-    'ط¬ط¯ظˆظ„ط© ط§ظ„ط­ط°ظپ': 'Schedule deletion',
-    'ط·ظ„ط¨ط§طھ ط¥ظ†ط´ط§ط، ط§ظ„ظ…ط³ط§ط­ط§طھ': 'Club requests',
-    'ظ„ط§ طھظˆط¬ط¯ ط·ظ„ط¨ط§طھ طھظ†طھط¸ط± ط§ظ„ظ…ظˆط§ظپظ‚ط©.': 'No workspace requests are waiting for approval.',
-    'ظ…ط¤ط´ط±ط§طھ ط§ظ„ظ…ظ†طµط©': 'Platform metrics',
-    'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط³ط§ط­ط§طھ': 'Total clubs',
-    'ط§ظ„ظ…ط³ط§ط­ط§طھ ط§ظ„ظ†ط´ط·ط©': 'Active clubs',
-    'ط§ظ„ظ…ط³ط§ط­ط§طھ ط§ظ„ظ…ظˆظ‚ظˆظپط©': 'Suspended clubs',
-    'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†': 'Total users',
-    'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط¹ظ…ظ„ط§ط،': 'Total clients',
-    'ط§ط³طھط®ط¯ط§ظ… AI ط§ظ„ظٹظˆظ…': 'AI usage today',
-    'ط¢ط®ط± ط£ط­ط¯ط§ط« ط§ظ„طھط¯ظ‚ظٹظ‚': 'Recent audit events',
-    'ط­ط§ظ„ط© Webhook': 'Webhook status',
-    'ط³ط¬ظ„ ط§ظ„طھط¯ظ‚ظٹظ‚': 'Audit log',
-    'ط§ظ„طھظ…ط§ط±ظٹظ† ط§ظ„ط¹ط§ظ…ط©': 'Platform exercises',
-    'طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬': 'Sign out',
-    'ط§ظ„ظ‚ط§ط¦ظ…ط©': 'Menu',
-    'طھط­ط¯ظٹط« ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Refresh data',
-    'ظ†ط¸ط±ط© ط¹ط§ظ…ط©': 'Overview',
-    'ط¥ط؛ظ„ط§ظ‚ ط§ظ„ظ‚ط§ط¦ظ…ط©': 'Close menu',
-    'ظپطھط­ ظ‚ط§ط¦ظ…ط© ط§ظ„ط¥ط¯ط§ط±ط©': 'Open platform menu',
-    'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†طµط©': 'Platform administration',
-    'طµظ„ط§ط­ظٹط§طھ ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©': 'Platform administrator access',
-    'ط·ظ„ط¨ط§طھ طھظ†طھط¸ط± ط§ظ„ظ…ظˆط§ظپظ‚ط©': 'Requests awaiting approval',
-    'ط£ط­ط¯ط« ط§ظ„ظ…ط³ط§ط­ط§طھ ظˆط­ط§ظ„طھظ‡ط§': 'Recent workspaces and their status',
-    'ظ„ط§ طھظˆط¬ط¯ ظ…ط³ط§ط­ط§طھ ط¨ط¹ط¯.': 'No workspaces yet.',
-    'ط£ط­ط¯ط§ط« ط§ظ„ظ…ظ†طµط© ظˆط§ظ„ظ…ط³ط§ط­ط§طھ ظ„ظ„ظ‚ط±ط§ط،ط© ظپظ‚ط·.': 'Read-only platform and workspace events.',
-    'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ': 'Email address',
-    'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±': 'Password',
-    'ط§ط®طھط± ط¹ظ…ظٹظ„ط§ظ‹': 'Choose a client',
-    'ظ„ط§ طھظˆط¬ط¯ ط¨ظٹط§ظ†ط§طھ': 'No data available',
-    'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬': 'No results',
-    'طھط­ظ…ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Loading data',
-    'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Could not load data',
-    'ط¥ط±ط³ط§ظ„': 'Send',
-    'ط­ظپط¸': 'Save',
-    'ط¥ظ„ط؛ط§ط،': 'Cancel',
-    'ط§ظ„ط§ط³ظ…': 'Name', 'ط§ظ„ط¨ط±ظٹط¯': 'Email', 'ط§ظ„ظ‡ط§طھظپ': 'Phone', 'ط§ظ„ط¯ظˆط±': 'Role',
-    'ظ†ط´ط·': 'Active', 'ظ…ط¹ظ„ظ‘ظ‚': 'Paused', 'ظ…ط¤ط±ط´ظپ': 'Archived',
-    'ط§ظ„ظ…ط¨ظ„ط؛': 'Amount', 'ط§ظ„ط³ط¹ط±': 'Price', 'ط§ظ„ظ…ط¯ط© ط¨ط§ظ„ط£ظٹط§ظ…': 'Duration in days',
-    'ط§ظ„ظ…ط¯ط© ط¨ط§ظ„ط£ط³ط§ط¨ظٹط¹': 'Duration in weeks', 'طھط§ط±ظٹط® ط§ظ„ط¨ط¯ط،': 'Start date', 'طھط§ط±ظٹط® ط§ظ„ط§ظ†طھظ‡ط§ط،': 'End date',
-    'ط§ظ„ظ…ط¬ظ…ظˆط¹ط© ط§ظ„ط¹ط¶ظ„ظٹط©': 'Muscle group', 'ط§ظ„ظ…ط¹ط¯ط§طھ': 'Equipment', 'ط±ط§ط¨ط· ط§ظ„ظپظٹط¯ظٹظˆ': 'Video URL',
-    'ط§ظ„طھظƒط±ط§ط±ط§طھ': 'Repetitions', 'ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ': 'Sets', 'ط§ظ„ظٹظˆظ…': 'Day', 'ظٹظˆظ… ط§ظ„ط£ط³ط¨ظˆط¹': 'Day of week',
-    'ط§ظ„ظˆط²ظ†': 'Weight', 'ط§ظ„ظˆط²ظ† ط¨ط§ظ„ظƒط¬ظ…': 'Weight (kg)', 'ط§ظ„ظ‚ظٹط§ط³ط§طھ': 'Measurements',
-    'ط§ظ„ط£ظ‡ط¯ط§ظپ': 'Goals', 'ط§ظ„طھظپط§طµظٹظ„': 'Details', 'ط§ظ„ط¥ط¬ط±ط§ط،': 'Action', 'ظ†ظˆط¹ ط§ظ„ط³ط¬ظ„': 'Record type',
-    'ظ…ط³طھظˆظ‰ ط§ظ„ظ…ط®ط§ط·ط±': 'Risk level', 'ط§ظ„طھظ†ط¨ظٹظ‡ط§طھ': 'Alerts', 'ط§ظ„ط·ط±ظٹظ‚ط©': 'Method', 'ط§ظ„ظ„ط؛ط©': 'Language',
-    'ط­ظپط¸ ط§ظ„طھط¹ط¯ظٹظ„': 'Save changes', 'طھط­ط¯ظٹط«': 'Update', 'ط¥ط¶ط§ظپط© طھظ…ط±ظٹظ†': 'Add exercise',
-    'ط­ط°ظپ ط§ظ„طھظ…ط±ظٹظ†': 'Delete exercise', 'ط­ط°ظپ ط§ظ„ط³ط¬ظ„': 'Delete record', 'ط£ط±ط´ظپط©': 'Archive',
-    'ط­ط°ظپ ظ…ط³ظˆط¯ط©': 'Delete draft', 'ط¥ط±ط³ط§ظ„ ط§ظ„طھط¹ظ„ظٹظ‚': 'Send feedback', 'ظ…ظ„ط§ط­ط¸ط§طھ ط§ظ„ظ…ط¯ط±ط¨': 'Coach notes',
-    'طھط³ط¬ظٹظ„ ط§ظ„ط¯ط®ظˆظ„': 'Sign in', 'طھط³ط¬ظٹظ„ ط¯ط®ظˆظ„ ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©': 'Platform administrator sign in',
-    'ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©': 'Platform administrator', 'طھط£ظƒظٹط¯ ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ': 'Confirm email',
-    'ط¥ط¹ط§ط¯ط© ط¥ط±ط³ط§ظ„ ط±ط³ط§ظ„ط© ط§ظ„طھط£ظƒظٹط¯': 'Resend confirmation email', 'ط§ظ„ط¹ظˆط¯ط© ظ„طھط³ط¬ظٹظ„ ط§ظ„ط¯ط®ظˆظ„': 'Back to sign in',
-    'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط­ط§ظ„ظٹط©': 'Current password', 'ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط©': 'New password',
-    'طھط؛ظٹظٹط± ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±': 'Change password', 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ط¹ظ…ظٹظ„': 'Client ID', 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ظ…ط¯ط±ط¨': 'Coach ID',
-    'ظ…ط¹ط±ظ‘ظپ ط§ظ„ظ†ط§ط¯ظٹ': 'Club ID', 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ط¨ط§ظ‚ط©': 'Plan ID', 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ط§ط´طھط±ط§ظƒ': 'Subscription ID',
-    'ظ…ط¹ط±ظ‘ظپ ط§ظ„ط¯ظپط¹ط©': 'Payment ID', 'ظ…ط¹ط±ظ‘ظپ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬': 'Program ID', 'ط§ظ„ظ†ط§ط¯ظٹ ط§ظ„ظ…ط­ط¯ط¯': 'Selected club', 'ط§ظ„ظ…ط³ط§ط­ط© ط§ظ„ظ…ط­ط¯ط¯ط©': 'Selected club',
-    'ط§ظ„ظ…ط³ط§ط­ط©': 'Club', 'ظ…ط³ط§ط­ط©': 'Club', 'ط§ظ„ظ…ط³ط§ط­ط§طھ': 'Clubs', 'ظ…ط³ط§ط­ط§طھ': 'Clubs', 'ظ…ط³ط§ط­طھظƒ': 'Your club', 'ظ…ط³ط§ط­طھظٹ': 'My club', 'ط§ظ„ط±ط§ط¨ط·': 'URL', 'ط§ظ„ط±ط§ط¨ط· ط§ظ„ظ…ط®طھطµط±': 'Slug', 'ط§ظ„ط¹ظ…ظ„ط©': 'Currency',
-    'ط¢ط®ط± طھط­ط¯ظٹط«': 'Last updated', 'ظ…ظ‚ط±ظˆط،': 'Read', 'ظ†ط¹ظ…': 'Yes', 'ظ„ط§': 'No',
-    'ط§ظ„طھظ…ط±ظٹظ†': 'Exercise', 'ط§ظ„ط¨ط±ظ†ط§ظ…ط¬': 'Program', 'ط®ط·ط© ط§ظ„طھظ…ط±ظٹظ†': 'Workout plan',
-    'ط®ط·ط© ط§ظ„ظˆط¬ط¨ط§طھ': 'Meal plan', 'ط§ظ„ط¨ط§ظ‚ط©': 'Plan', 'ط§ظ„ط§ط´طھط±ط§ظƒ': 'Subscription', 'ط§ظ„ط¯ظپط¹ط©': 'Payment',
-    'ط§ظ„ط¹ظ…ظٹظ„': 'Client', 'ط§ظ„ظ…ط¯ط±ط¨': 'Coach', 'ط§ظ„طھط§ط±ظٹط®': 'Date', 'ط§ظ„ظ…ظ„ط§ط­ط¸ط§طھ': 'Notes',
-    'ط³ط¨ط¨ ط§ظ„ط¥ط¬ط±ط§ط،': 'Reason', 'ط³ط¨ط¨ ط§ظ„ط±ظپط¶': 'Rejection reason', 'ط§ظƒطھط¨ ط³ط¨ط¨ط§ظ‹ ظˆط§ط¶ط­ط§ظ‹ ظ„ظ„طھظپط¹ظٹظ„ ط£ظˆ ط§ظ„طھط¹ظ„ظٹظ‚': 'Enter a clear reason for activation or suspension', 'ط¥ط±ط³ط§ظ„ ط±ط³ط§ظ„ط©': 'Send message',
-    'ط¥ظ†ط´ط§ط،': 'Create', 'ط¥ظ†ط´ط§ط، ط¨ط§ظ‚ط©': 'Create plan', 'ط¥ظ†ط´ط§ط، ط®ط·ط©': 'Create plan', 'ط¥ظ†ط´ط§ط، ط¨ط±ظ†ط§ظ…ط¬': 'Create program',
-    'ط­ظپط¸ ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Save details', 'ط­ظپط¸ ط§ظ„ظ…ظ„ظپ': 'Save profile', 'ط¥ط³ظ†ط§ط¯': 'Assign', 'ط¥ط³ظ†ط§ط¯ ط§ظ„ط®ط·ط©': 'Assign plan',
-    'ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©': 'Try again', 'ط¨ط­ط«': 'Search', 'طھطµظپظٹط©': 'Filter', 'ظ…ط³ط­ ط§ظ„ظپظ„ط§طھط±': 'Clear filters',
-    'ط§ظ„ط³ط§ط¨ظ‚': 'Previous', 'ط§ظ„طھط§ظ„ظٹ': 'Next', 'طµظپط­ط©': 'Page', 'ط§ظ„ظ†طھط§ط¦ط¬': 'Results',
-    'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ...': 'Loading data...',
-    'ظ„ط§ طھظˆط¬ط¯ ط¹ظ†ط§طµط±': 'No items', 'ظ„ط§ طھظˆط¬ط¯ ط±ط³ط§ط¦ظ„ ط¨ط¹ط¯': 'No messages yet',
-    'ط§ظ„ط¨ظٹط§ظ†ط§طھ ط؛ظٹط± ظ…طھط§ط­ط©': 'Data is unavailable', 'طھط¹ط°ظ‘ط± طھط­ظ…ظٹظ„ ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Could not load data',
-    'ط§ظ„طµظ„ط§ط­ظٹط© ط؛ظٹط± ظ…طھط§ط­ط©': 'Access unavailable', 'ط­ط³ط§ط¨ظƒ ظ„ط§ ظٹظ…ظ„ظƒ طµظ„ط§ط­ظٹط© طھظ†ظپظٹط° ظ‡ط°ط§ ط§ظ„ط¥ط¬ط±ط§ط،.': 'Your account is not allowed to perform this action.',
-    'ط§ظ„ط®ط¯ظ…ط© ط؛ظٹط± ظ…طھط§ط­ط© ظ…ط¤ظ‚طھط§ظ‹': 'Service temporarily unavailable', 'ط§ظ„ط®ط¯ظ…ط© ط§ظ„ظ…ط·ظ„ظˆط¨ط© ظ…طھظˆظ‚ظپط© ظ…ط¤ظ‚طھط§ظ‹. ط­ط§ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰ ط¨ط¹ط¯ ظ‚ظ„ظٹظ„.': 'The requested service is temporarily unavailable. Please try again shortly.',
-    'ط§ظ†طھظ‡طھ ط¬ظ„ط³ط© ط§ظ„ط¯ط®ظˆظ„': 'Your session has expired', 'ط³ط¬ظ‘ظ„ ط§ظ„ط¯ط®ظˆظ„ ظ…ط±ط© ط£ط®ط±ظ‰ ظ„ظ„ظ…طھط§ط¨ط¹ط©.': 'Sign in again to continue.',
-    'طھط¹ط°ط± ط§ظ„ط§طھطµط§ظ„ ط¨ط§ظ„ط®ط§ط¯ظ…. طھط­ظ‚ظ‚ ظ…ظ† طھط´ط؛ظٹظ„ ط§ظ„ط®ط¯ظ…ط© ظˆط§طھطµط§ظ„ ط§ظ„ط´ط¨ظƒط©.': 'Could not connect to the server. Check that the service is running and your network is available.',
-    'ط·ظ„ط¨ط§طھ ظƒط«ظٹط±ط© ط®ظ„ط§ظ„ ظˆظ‚طھ ظ‚طµظٹط±': 'Too many requests', 'ط§ظ†طھط¸ط± ظ‚ظ„ظٹظ„ط§ظ‹ ظ‚ط¨ظ„ ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©.': 'Please wait before trying again.',
-    'طھط¹ط°ظ‘ط± ط¥طھظ…ط§ظ… ط§ظ„طھط؛ظٹظٹط±': 'Could not save changes', 'طھط؛ظٹظ‘ط±طھ ط§ظ„ط¨ظٹط§ظ†ط§طھ ظ…ظ†ط° ط¢ط®ط± ظ…ط±ط© ظپطھط­طھظ‡ط§. ط­ط¯ظ‘ط« ط§ظ„طµظپط­ط© ط«ظ… ط­ط§ظˆظ„ ظ…ط¬ط¯ط¯ط§ظ‹.': 'This data changed since you opened it. Refresh the page and try again.',
-    'ط±ط§ط¬ط¹ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ط¯ط®ظ„ط©': 'Check the information you entered', 'طھط­ظ‚ظ‚ ظ…ظ† ط§ظ„ط­ظ‚ظˆظ„ ط§ظ„ظ…ط·ظ„ظˆط¨ط© ظˆط§ظ„ظ‚ظٹظ… ط«ظ… ط£ط¹ط¯ ط§ظ„ظ…ط­ط§ظˆظ„ط©.': 'Check the required fields and values, then try again.',
-    'ظ‚ط¯ ظٹظƒظˆظ† ط§ظ„ط¹ظ†طµط± ط؛ظٹط± ظ…ظˆط¬ظˆط¯ ط£ظˆ ظ„ظ… ظٹط¹ط¯ ظ…طھط§ط­ط§ظ‹ ظ„ط­ط³ط§ط¨ظƒ.': 'This item may not exist or may no longer be available to your account.',
-    'ط±ظ‚ظ… ط§ظ„طھطھط¨ط¹:': 'Trace ID:', 'ظ…ط®ط§ط·ط± ط§ظ„ط§ظ†ط³ط­ط§ط¨': 'Churn risk', 'ط£ط­ط¯ط§ط« Webhook': 'Webhook events',
-    'ط§ط´طھط±ط§ظƒط§طھ ظ‚ط§ط±ط¨طھ ط¹ظ„ظ‰ ط§ظ„ط§ظ†طھظ‡ط§ط،': 'Subscriptions nearing expiry', 'ط§ظ„ط®ط·ط© ط§ظ„ط­ط§ظ„ظٹط©': 'Current plan',
-    'ط§ظ„ط¨ط±ظ†ط§ظ…ط¬ ط§ظ„ط­ط§ظ„ظٹ': 'Current program', 'ظ„ط§ ظٹظˆط¬ط¯ ط¨ط±ظ†ط§ظ…ط¬ ط­ط§ظ„ظٹ': 'No current program',
-    'ظ…ظ„ط®طµ ط§ظ„طھظ‚ط¯ظ…': 'Progress summary', 'ط³ط¬ظ„ ط§ظ„طھظ…ط§ط±ظٹظ†': 'Workout log', 'ط³ط¬ظ„ ط§ظ„ظ…طھط§ط¨ط¹ط§طھ': 'Check-in history',
-    'ط§ظ„ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„طµط­ظٹط©': 'Health information', 'ظ…ظ„ظپظٹ ط§ظ„ط´ط®طµظٹ': 'My profile', 'ظ„ظˆط­طھظٹ': 'My dashboard',
-    'ظ†ط§ط¯ظٹظٹ': 'My club', 'ط§ظ„ظ…ط­ط§ط¯ط«ط§طھ': 'Conversations', 'ط§ظ„ط¥ط´ط¹ط§ط±ط§طھ': 'Notifications',
-    'ط§ظ„ط§ط´طھط±ط§ظƒط§طھ ظˆط§ظ„ظ…ط¯ظپظˆط¹ط§طھ': 'Subscriptions and payments', 'ظ…ظƒطھط¨ط© ط§ظ„طھظ…ط§ط±ظٹظ†': 'Exercise library',
-    'ط§ظ„ط®ط·ط· ط§ظ„ط؛ط°ط§ط¦ظٹط©': 'Meal plans', 'ط¥ط¯ط§ط±ط© ط§ظ„ط§ط´طھط±ط§ظƒط§طھ': 'Subscription management',
-    'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ': 'Payment management', 'ظپط±ظٹظ‚ ط§ظ„طھط¯ط±ظٹط¨': 'Coaching team'
+    'لوحة SuperAdmin': 'SuperAdmin dashboard',
+    'إدارة المساحات': 'Club management',
+    'الأندية التدريبية': 'Training clubs', 'مساحات التدريب': 'Training clubs',
+    'مساحة الإدارة': 'Platform administration',
+    'إدارة ومراقبة المنصة': 'Manage and monitor the platform',
+    'إدارة النادي': 'Manage club', 'إدارة مساحة': 'Manage club',
+    'اختر مساحة': 'Choose a club', 'مساحة التدريب': 'Training club', 'النادي': 'Club', 'الأندية': 'Clubs',
+    'اسم المساحة': 'Club name',
+    'رابط المساحة': 'Club link',
+    'الحالة': 'Status',
+    'تاريخ الإنشاء': 'Created',
+    'الاستخدام': 'Usage',
+    'العملاء': 'Clients',
+    'طلبات AI اليوم': 'AI requests today',
+    'التخزين': 'Storage',
+    'سبب التفعيل أو التعليق': 'Reason for activation or suspension',
+    'تفعيل المساحة': 'Activate club',
+    'تعليق المساحة': 'Suspend club',
+    'جدولة الحذف': 'Schedule deletion',
+    'طلبات إنشاء المساحات': 'Club requests',
+    'لا توجد طلبات تنتظر الموافقة.': 'No workspace requests are waiting for approval.',
+    'مؤشرات المنصة': 'Platform metrics',
+    'إجمالي المساحات': 'Total clubs',
+    'المساحات النشطة': 'Active clubs',
+    'المساحات الموقوفة': 'Suspended clubs',
+    'إجمالي المستخدمين': 'Total users',
+    'إجمالي العملاء': 'Total clients',
+    'استخدام AI اليوم': 'AI usage today',
+    'آخر أحداث التدقيق': 'Recent audit events',
+    'حالة Webhook': 'Webhook status',
+    'سجل التدقيق': 'Audit log',
+    'التمارين العامة': 'Platform exercises',
+    'تسجيل الخروج': 'Sign out',
+    'القائمة': 'Menu',
+    'تحديث البيانات': 'Refresh data',
+    'نظرة عامة': 'Overview',
+    'إغلاق القائمة': 'Close menu',
+    'فتح قائمة الإدارة': 'Open platform menu',
+    'إدارة المنصة': 'Platform administration',
+    'صلاحيات مسؤول المنصة': 'Platform administrator access',
+    'طلبات تنتظر الموافقة': 'Requests awaiting approval',
+    'أحدث المساحات وحالتها': 'Recent workspaces and their status',
+    'لا توجد مساحات بعد.': 'No workspaces yet.',
+    'أحداث المنصة والمساحات للقراءة فقط.': 'Read-only platform and workspace events.',
+    'البريد الإلكتروني': 'Email address',
+    'كلمة المرور': 'Password',
+    'اختر عميلاً': 'Choose a client',
+    'لا توجد بيانات': 'No data available',
+    'لا توجد نتائج': 'No results',
+    'تحميل البيانات': 'Loading data',
+    'تعذر تحميل البيانات': 'Could not load data',
+    'إرسال': 'Send',
+    'حفظ': 'Save',
+    'إلغاء': 'Cancel',
+    'الاسم': 'Name', 'البريد': 'Email', 'الهاتف': 'Phone', 'الدور': 'Role',
+    'نشط': 'Active', 'معلّق': 'Paused', 'مؤرشف': 'Archived',
+    'المبلغ': 'Amount', 'السعر': 'Price', 'المدة بالأيام': 'Duration in days',
+    'المدة بالأسابيع': 'Duration in weeks', 'تاريخ البدء': 'Start date', 'تاريخ الانتهاء': 'End date',
+    'المجموعة العضلية': 'Muscle group', 'المعدات': 'Equipment', 'رابط الفيديو': 'Video URL',
+    'التكرارات': 'Repetitions', 'المجموعات': 'Sets', 'اليوم': 'Day', 'يوم الأسبوع': 'Day of week',
+    'الوزن': 'Weight', 'الوزن بالكجم': 'Weight (kg)', 'القياسات': 'Measurements',
+    'الأهداف': 'Goals', 'التفاصيل': 'Details', 'الإجراء': 'Action', 'نوع السجل': 'Record type',
+    'مستوى المخاطر': 'Risk level', 'التنبيهات': 'Alerts', 'الطريقة': 'Method', 'اللغة': 'Language',
+    'حفظ التعديل': 'Save changes', 'تحديث': 'Update', 'إضافة تمرين': 'Add exercise',
+    'حذف التمرين': 'Delete exercise', 'حذف السجل': 'Delete record', 'أرشفة': 'Archive',
+    'حذف مسودة': 'Delete draft', 'إرسال التعليق': 'Send feedback', 'ملاحظات المدرب': 'Coach notes',
+    'تسجيل الدخول': 'Sign in', 'تسجيل دخول مسؤول المنصة': 'Platform administrator sign in',
+    'مسؤول المنصة': 'Platform administrator', 'تأكيد البريد الإلكتروني': 'Confirm email',
+    'إعادة إرسال رسالة التأكيد': 'Resend confirmation email', 'العودة لتسجيل الدخول': 'Back to sign in',
+    'كلمة المرور الحالية': 'Current password', 'كلمة المرور الجديدة': 'New password',
+    'تغيير كلمة المرور': 'Change password', 'معرّف العميل': 'Client ID', 'معرّف المدرب': 'Coach ID',
+    'معرّف النادي': 'Club ID', 'معرّف الباقة': 'Plan ID', 'معرّف الاشتراك': 'Subscription ID',
+    'معرّف الدفعة': 'Payment ID', 'معرّف البرنامج': 'Program ID', 'النادي المحدد': 'Selected club', 'المساحة المحددة': 'Selected club',
+    'المساحة': 'Club', 'مساحة': 'Club', 'المساحات': 'Clubs', 'مساحات': 'Clubs', 'مساحتك': 'Your club', 'مساحتي': 'My club', 'الرابط': 'URL', 'الرابط المختصر': 'Slug', 'العملة': 'Currency',
+    'آخر تحديث': 'Last updated', 'مقروء': 'Read', 'نعم': 'Yes', 'لا': 'No',
+    'التمرين': 'Exercise', 'البرنامج': 'Program', 'خطة التمرين': 'Workout plan',
+    'خطة الوجبات': 'Meal plan', 'الباقة': 'Plan', 'الاشتراك': 'Subscription', 'الدفعة': 'Payment',
+    'العميل': 'Client', 'المدرب': 'Coach', 'التاريخ': 'Date', 'الملاحظات': 'Notes',
+    'سبب الإجراء': 'Reason', 'سبب الرفض': 'Rejection reason', 'اكتب سبباً واضحاً للتفعيل أو التعليق': 'Enter a clear reason for activation or suspension', 'إرسال رسالة': 'Send message',
+    'إنشاء': 'Create', 'إنشاء باقة': 'Create plan', 'إنشاء خطة': 'Create plan', 'إنشاء برنامج': 'Create program',
+    'حفظ البيانات': 'Save details', 'حفظ الملف': 'Save profile', 'إسناد': 'Assign', 'إسناد الخطة': 'Assign plan',
+    'إعادة المحاولة': 'Try again', 'بحث': 'Search', 'تصفية': 'Filter', 'مسح الفلاتر': 'Clear filters',
+    'السابق': 'Previous', 'التالي': 'Next', 'صفحة': 'Page', 'النتائج': 'Results',
+    'جارٍ تحميل البيانات...': 'Loading data...',
+    'لا توجد عناصر': 'No items', 'لا توجد رسائل بعد': 'No messages yet',
+    'البيانات غير متاحة': 'Data is unavailable', 'تعذّر تحميل البيانات': 'Could not load data',
+    'الصلاحية غير متاحة': 'Access unavailable', 'حسابك لا يملك صلاحية تنفيذ هذا الإجراء.': 'Your account is not allowed to perform this action.',
+    'الخدمة غير متاحة مؤقتاً': 'Service temporarily unavailable', 'الخدمة المطلوبة متوقفة مؤقتاً. حاول مرة أخرى بعد قليل.': 'The requested service is temporarily unavailable. Please try again shortly.',
+    'انتهت جلسة الدخول': 'Your session has expired', 'سجّل الدخول مرة أخرى للمتابعة.': 'Sign in again to continue.',
+    'تعذر الاتصال بالخادم. تحقق من تشغيل الخدمة واتصال الشبكة.': 'Could not connect to the server. Check that the service is running and your network is available.',
+    'طلبات كثيرة خلال وقت قصير': 'Too many requests', 'انتظر قليلاً قبل إعادة المحاولة.': 'Please wait before trying again.',
+    'تعذّر إتمام التغيير': 'Could not save changes', 'تغيّرت البيانات منذ آخر مرة فتحتها. حدّث الصفحة ثم حاول مجدداً.': 'This data changed since you opened it. Refresh the page and try again.',
+    'راجع البيانات المدخلة': 'Check the information you entered', 'تحقق من الحقول المطلوبة والقيم ثم أعد المحاولة.': 'Check the required fields and values, then try again.',
+    'قد يكون العنصر غير موجود أو لم يعد متاحاً لحسابك.': 'This item may not exist or may no longer be available to your account.',
+    'رقم التتبع:': 'Trace ID:', 'مخاطر الانسحاب': 'Churn risk', 'أحداث Webhook': 'Webhook events',
+    'اشتراكات قاربت على الانتهاء': 'Subscriptions nearing expiry', 'الخطة الحالية': 'Current plan',
+    'البرنامج الحالي': 'Current program', 'لا يوجد برنامج حالي': 'No current program',
+    'ملخص التقدم': 'Progress summary', 'سجل التمارين': 'Workout log', 'سجل المتابعات': 'Check-in history',
+    'المعلومات الصحية': 'Health information', 'ملفي الشخصي': 'My profile', 'لوحتي': 'My dashboard',
+    'ناديي': 'My club', 'المحادثات': 'Conversations', 'الإشعارات': 'Notifications',
+    'الاشتراكات والمدفوعات': 'Subscriptions and payments', 'مكتبة التمارين': 'Exercise library',
+    'الخطط الغذائية': 'Meal plans', 'إدارة الاشتراكات': 'Subscription management',
+    'إدارة المدفوعات': 'Payment management', 'فريق التدريب': 'Coaching team'
 }
 
 Object.assign(englishUi, {
-  'ط؛ظٹط± ظ…طھط§ط­': 'Not available', 'ظ„ط§ طھظˆط¬ط¯ طھظپط§طµظٹظ„': 'No details available', 'Check-ins ظ„ظ„ظ…ط±ط§ط¬ط¹ط©:': 'Check-ins to review:', 'آ· ط¯ظپط¹ط§طھ ظ„ظ„طھط£ظƒظٹط¯:': 'آ· Payments to confirm:', 'آ· ط±ط³ط§ط¦ظ„ ط؛ظٹط± ظ…ظ‚ط±ظˆط،ط©:': 'آ· Unread messages:',
-  'طھط­ط¯ظٹط« ط§ظ„ط®ط·ط©': 'Update plan', 'ط¥ط¶ط§ظپط© ظ…ط¯ط±ط¨': 'Add coach', 'ظƒظ„ظ…ط© ظ…ط±ظˆط± ظ…ط¤ظ‚طھط©': 'Temporary password', 'ط¥ط¶ط§ظپط©': 'Add', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ط¯ط±ط¨': 'Coach details', 'ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¬ط¯ظٹط¯': 'New email', 'طھظپط¹ظٹظ„': 'Activate', 'ط¥ظٹظ‚ط§ظپ': 'Deactivate', 'ط§ظ„ط¹ظ…ظ„ط§ط، ط§ظ„ظ…ط®طµطµظˆظ†': 'Assigned clients',
-  'Check-ins ظˆطھط¹ظ„ظٹظ‚ ط§ظ„ظ…ط¯ط±ط¨': 'Check-ins and coach feedback', 'ط§ظ„طھط¹ظ„ظٹظ‚': 'Feedback', 'ط§ظ„ط§ظ„طھط²ط§ظ… ظˆط§ظ„طھظ…ط§ط±ظٹظ†': 'Adherence and workouts', 'طھط­ظ…ظٹظ„ ط§ظ„ظ…ظ„ط§ط­ط¸ط§طھ': 'Load notes', 'ظ…ظ„ط§ط­ط¸ط©': 'Note', 'ط¥ط¶ط§ظپط© ظ…ظ„ط§ط­ط¸ط©': 'Add note', 'طھط£ظƒظٹط¯': 'Confirm', 'ط±ظپط¶': 'Reject', 'ط§ظ„ط³ط¨ط¨': 'Reason',
-  'طµظˆط±ط© ط§ظ„ط­ط³ط§ط¨': 'Profile photo', 'طھظ… ط§ط®طھظٹط§ط± طµظˆط±ط© ط§ظ„ط­ط³ط§ط¨.': 'Profile photo selected.', 'ط­ظپط¸ ط§ظ„ط­ط³ط§ط¨': 'Save account', 'طھط³ط¬ظٹظ„ ط§ظ„ط®ط±ظˆط¬ ظ…ظ† ظƒظ„ ط§ظ„ط£ط¬ظ‡ط²ط©': 'Sign out of all devices', 'ظ…ظ„ظپط§طھ ط§ظ„ط­ط³ط§ط¨': 'Account files', 'طھظ†ط²ظٹظ„ طµظˆط±ط© ط§ظ„ط­ط³ط§ط¨': 'Download profile photo', 'ط­ط°ظپ طµظˆط±ط© ط§ظ„ط­ط³ط§ط¨': 'Delete profile photo',
-  'ط§ظ„ظ…ظ„ظپ ظٹط¶ظ… ط¨ظٹط§ظ†ط§طھ ط­ط³ط§ط¨ظƒ ظپظ‚ط·طŒ ظˆط±ط§ط¨ط· ط§ظ„طھظ†ط²ظٹظ„ طµط§ظ„ط­ ظ„ظ„ط§ط³طھط®ط¯ط§ظ… ظ…ط±ط© ظˆط§ط­ط¯ط© ظˆظٹظ†طھظ‡ظٹ ط¨ط¹ط¯ ط³ط§ط¹ط©. ظٹظ…ظƒظ† ط·ظ„ط¨ طھطµط¯ظٹط± ط¬ط¯ظٹط¯ ظƒظ„ 24 ط³ط§ط¹ط©.': 'The export contains only your account data. Its download link works once, expires in one hour, and a new export can be requested every 24 hours.',
-  'ط·ظ„ط¨ طھطµط¯ظٹط± ط§ظ„ط¨ظٹط§ظ†ط§طھ': 'Request data export', 'ط§ظ„ط­ط§ظ„ط©:': 'Status:', 'طھظ†ط²ظٹظ„ ط§ظ„ظ…ظ„ظپ ط§ظ„ط¬ط§ظ‡ط²': 'Download completed file', 'ط³ط¬ظ„ط§طھ Check-in': 'Check-in records', 'طھط³ط¬ظٹظ„ ظˆط¬ط¨ط© ظ…ظ† ط®ط·طھظٹ': 'Log a meal from my plan', 'طھط³ط¬ظٹظ„ ط§ظ„ط§ظ„طھط²ط§ظ…': 'Log meal adherence',
-  'ط³ط¬ظ„ ط§ظ„ط§ط´طھط±ط§ظƒط§طھ': 'Subscription history', 'ط·ظ„ط¨ طھط¬ط¯ظٹط¯ ط§ظ„ط§ط´طھط±ط§ظƒ': 'Request subscription renewal', 'ط³ط¨ط¨ ط§ظ„ط¥ظ„ط؛ط§ط،': 'Cancellation reason', 'ط¥ظ„ط؛ط§ط، ط§ظ„ط§ط´طھط±ط§ظƒ': 'Cancel subscription', 'طھط­ط¯ظٹط« ط§ظ„ط­ط§ظ„ط©': 'Refresh status', 'ط­ط§ظ„ط© ط§ظ„ط¯ظپط¹': 'Payment status',
-  'ط³ظٹطھظ… طھط­ظˆظٹظ„ظƒ ط¥ظ„ظ‰ طµظپط­ط© Paymob ط§ظ„ط¢ظ…ظ†ط©. طھط£ظƒظٹط¯ ط§ظ„ط¯ظپط¹ ظٹط¹طھظ…ط¯ ط¹ظ„ظ‰ ط¥ط´ط¹ط§ط± ط§ظ„ط®ط§ط¯ظ… ط§ظ„ظ…ظˆط«ظ‚.': 'You will be redirected to Paymobâ€™s secure checkout. Payment is confirmed by the verified server notification.',
-  'ظ„ط§ طھظˆط¬ط¯ ظ…ط­ط§ظˆظ„ط© ط¯ظپط¹ ظ…ط­ظپظˆط¸ط© ظ„ظ‡ط°ظ‡ ط§ظ„ط¬ظ„ط³ط©. ط§ظپطھط­ طµظپط­ط© ط§ظ„ط§ط´طھط±ط§ظƒط§طھ ظ„ط¨ط¯ط، ط§ظ„ط¯ظپط¹.': 'No payment attempt is saved for this session. Open subscriptions to start a payment.', 'ط§ظ„ط§ط´طھط±ط§ظƒ:': 'Subscription:', 'ط­ظپط¸ ط§ظ„طھط¹ط¯ظٹظ„ط§طھ': 'Save changes', 'ط¥ط¹ط§ط¯ط© ط§ظ„طھظˆظ„ظٹط¯ ط¨ظ…ظ„ط§ط­ط¸ط§طھ ط§ظ„ظ…ط¯ط±ط¨': 'Regenerate with coach notes',
-  'ط§ط¹طھظ…ط§ط¯ ط§ظ„ظ…ط³ظˆط¯ط©': 'Approve draft', 'ط±ظپط¶ ط§ظ„ظ…ط³ظˆط¯ط©': 'Reject draft', 'ط¥ظ†ط´ط§ط، ظ…ظ„ط®طµ': 'Generate summary', 'ط³ط¬ظ„ ظ…ط®ط§ط·ط± ط§ظ„ط§ظ†ط³ط­ط§ط¨': 'Churn risk history', 'طھط¹ط¯ظٹظ„ ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¹ظ…ظٹظ„': 'Edit client details', 'ط­ط°ظپ ظ…ظ„ط§ط­ط¸ط©': 'Delete note', 'ط­ط°ظپ ط§ظ„ظ…ظ„ط§ط­ط¸ط©': 'Delete note',
-  'ط¥ط¬ط±ط§ط،ط§طھ ط§ظ„ط¥ط¯ط§ط±ط©': 'Management actions', 'ط¥ط¯ط§ط±ط© ظ…ط³ط§ط­ط© طھط¯ط±ظٹط¨': 'Manage training club', 'ط§ط®طھط± ظ…ط³ط§ط­ط© ظ…ظ† ط§ظ„ظ‚ط§ط¦ظ…ط© ط£ظˆ ط§ط³طھط®ط¯ظ… ط²ط± آ«ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط³ط§ط­ط©آ» ظپظٹ ط¬ط¯ظˆظ„ ط§ظ„ظ…ط³ط§ط­ط§طھ.': 'Choose a club or select Manage club from the clubs table.',
-  'ط¥ط¬ط±ط§ط،ط§طھ ط­ط°ظپ ط§ظ„ظ…ط³ط§ط­ط©': 'Club deletion actions', 'ط³ظٹطھظ… ط¬ط¯ظˆظ„ط© ط§ظ„ط­ط°ظپ ط¨ط¹ط¯ ظپطھط±ط© ط§ظ„ط³ظ…ط§ط­. ط§ظƒطھط¨ ط±ط§ط¨ط· ط§ظ„ظ…ط³ط§ط­ط© ظƒظ…ط§ ظ‡ظˆ ظ„طھط£ظƒظٹط¯ ط§ظ„ط¹ظ…ظ„ظٹط©.': 'Deletion will be scheduled after the grace period. Enter the club link exactly to confirm.', 'ط¬ط¯ظˆظ„ط© ط§ظ„ط­ط°ظپ ط¨ط¹ط¯ ظپطھط±ط© ط§ظ„ط³ظ…ط§ط­': 'Schedule deletion after the grace period',
-  'ظ„ط§ طھظˆط¬ط¯ ط³ط¬ظ„ط§طھ ط¨ط§ظ†طھط¸ط§ط± ط§ظ„ظ…ط±ط§ط¬ط¹ط©.': 'No records are waiting for review.', 'طھط¹ظ„ظٹظ‚ ط§ظ„ظ…ط¯ط±ط¨': 'Coach feedback', 'ط³ط¬ظ„': 'Record', 'ظ…ظ„ط®طµ ط§ظ„ظ…ط¯ظپظˆط¹ط§طھ': 'Payment summary', 'ظ…ظ†': 'From', 'ط¥ظ„ظ‰': 'To', 'طھظپط§طµظٹظ„ ط¯ظپط¹ط©': 'Payment details',
-  'ظ…ط¹ظ„ظˆظ…ط§طھ طµط­ظٹط©': 'Health information', 'ط­ظپط¸ ط§ظ„طھظ‡ظٹط¦ط©': 'Save onboarding', 'ط§ظ„ظ…ظ„ظپ': 'File', 'ط§ظ„طھط­ط¯ظٹط«': 'Update', 'ط­ظپط¸ ط§ظ„ظ…ط¹ظ„ظˆظ…ط§طھ ط§ظ„طµط­ظٹط©': 'Save health information', 'طµظˆط± (ط­طھظ‰ 4)': 'Photos (up to 4)', 'ط¥ط±ط³ط§ظ„ Check-in': 'Submit check-in',
-  'ط±ظ‚ظ… ط§ظ„ظ…ط¬ظ…ظˆط¹ط©': 'Set number', 'ظˆظ‚طھ ط§ظ„ط£ط¯ط§ط،': 'Performed at', 'طھط³ط¬ظٹظ„ ط§ظ„ظ…ط¬ظ…ظˆط¹ط©': 'Log set', 'طھط­ط¯ظٹط« ط§ظ„ط³ط¬ظ„': 'Update log', 'ظ‡ط°ظ‡ ط§ظ„ظ‡ظˆظٹط© طھط¸ظ‡ط± ظ„ظ„ط¹ظ…ظ„ط§ط، ظپظٹ طµظپط­ط© ط§ظ„ظ…ط³ط§ط­ط©.': 'Clients see this branding on the club page.', 'ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ': 'Club name', 'ط±ط§ط¨ط· ط§ظ„ط´ط¹ط§ط±': 'Logo URL', 'ط§ظ„ظ„ظˆظ† ط§ظ„ط£ط³ط§ط³ظٹ': 'Primary color', 'ط§ظ„ظ„ظˆظ† ط§ظ„ط«ط§ظ†ظˆظٹ': 'Secondary color', 'ط­ظپط¸ ط§ظ„ظ‡ظˆظٹط©': 'Save branding',
-  'طھظˆظ„ظٹط¯ ط¨ط±ظ†ط§ظ…ط¬': 'Generate program', 'ط§ظ„ظ‡ط¯ظپ': 'Goal', 'ط²ظٹط§ط¯ط© ط§ظ„ظ‚ظˆط©': 'Build strength', 'ط®ط³ط§ط±ط© ط§ظ„ظˆط²ظ†': 'Weight loss', 'ط²ظٹط§ط¯ط© ط§ظ„ط¹ط¶ظ„ط§طھ': 'Build muscle', 'ظ„ظٹط§ظ‚ط© ط¹ط§ظ…ط©': 'General fitness', 'ط¥ط¹ط§ط¯ط© ط§ظ„طھط£ظ‡ظٹظ„': 'Rehabilitation', 'ط§ظ„ظ…ط³طھظˆظ‰': 'Level', 'ظ…ط¨طھط¯ط¦': 'Beginner', 'ظ…طھظˆط³ط·': 'Intermediate', 'ظ…طھظ‚ط¯ظ…': 'Advanced', 'طھظˆظ„ظٹط¯ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬': 'Generate program',
-  'طھظ… ط¥ظ†ط´ط§ط، ظ…ط³ظˆط¯ط© ط§ظ„ط¨ط±ظ†ط§ظ…ط¬.': 'Program draft created.', 'ط§ط¹طھظ…ط§ط¯': 'Approve', 'ط§ظ„ط­طµط© ظˆط§ظ„ظ…ط³ظˆط¯ط§طھ': 'Quota and drafts', 'ط¹ط±ط¶ ط¯ط±ط¬ط© ط§ظ„ظ…ط®ط§ط·ط±': 'View risk score', 'ط¥ط¹ط§ط¯ط© ط§ظ„ط§ط­طھط³ط§ط¨': 'Recompute', 'ظ„ط§ طھظˆط¬ط¯ ط¨ظٹط§ظ†ط§طھ ط­ط§ظ„ظٹط§ظ‹.': 'No data available.',
-  'ظ…ط±ظƒط² ط§ظ„طھط­ظƒظ…': 'Control center', 'ط¨طµظˆط±ط© ط£ظˆط¶ط­': 'At a glance', 'طھط§ط¨ط¹ طµط­ط© ط§ظ„ظ…ط³ط§ط­ط§طھطŒ ط±ط§ط¬ط¹ ط§ظ„ظ†ط´ط§ط· ط§ظ„ط£ط®ظٹط±طŒ ظˆط§ظ†طھظ‚ظ„ ظ…ط¨ط§ط´ط±ط©ظ‹ ط¥ظ„ظ‰ ط§ظ„ط¥ط¬ط±ط§ط،ط§طھ ط§ظ„طھظٹ طھط­طھط§ط¬ظ‡ط§.': 'Monitor club health, review recent activity, and open the actions you need.',
-  'ط§ط³طھط¹ط±ط§ط¶ ط§ظ„ظ…ط³ط§ط­ط§طھ': 'Browse clubs', 'ظ…ظ†طµط© ط§ظ„طھط¯ط±ظٹط¨ ظˆط§ظ„ط¥ط¯ط§ط±ط©': 'Training and club management', 'ط£ط±ظ‚ط§ظ… ظ…ط¬ظ…ظ‘ط¹ط© ظ„ظ…طھط§ط¨ط¹ط© ظ†ظ…ظˆ ط§ظ„ظ…ط³ط§ط­ط§طھ ظˆط§ط³طھط®ط¯ط§ظ… ط§ظ„ظ…ظ†طµط©.': 'Aggregated metrics for club growth and platform usage.', 'ظ…ظ„ط®طµ ط§ظ„ظ…ظ†طµط©': 'Platform summary', 'ظ„ط§ طھظˆط¬ط¯ ظ…ط¤ط´ط±ط§طھ ط­ط§ظ„ظٹط§ظ‹.': 'No metrics available.',
-  'ط§ط¨ط­ط« ط¨ط§ظ„ط§ط³ظ… ط£ظˆ ط§ظ„ط±ط§ط¨ط·طŒ ط«ظ… ط§ظپطھط­ ط§ظ„ظ…ط³ط§ط­ط© ظ„ط¥ط¯ط§ط±ط© ط­ط§ظ„طھظ‡ط§ ظˆط§ط³طھط®ط¯ط§ظ…ظ‡ط§.': 'Search by name or link, then open a club to manage its status and usage.', 'ظ†طھظٹط¬ط©': 'Result', 'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط³ط§ط­ط©': 'Manage club', 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ': 'AI usage', 'ط§ظ„ط·ظ„ط¨ط§طھ ط§ظ„ظ…ط³ط¬ظ„ط© ظ„ظ‡ط°ط§ ط§ظ„ظٹظˆظ…': 'Requests recorded today',
-  'ط£ط­ط¯ط« ط¹ظ…ظ„ظٹط§طھ ط§ط³طھظ‚ط¨ط§ظ„ ظˆظ…ط¹ط§ظ„ط¬ط© ط§ظ„ط¯ظپط¹': 'Latest payment notifications received and processed', 'ظ…ط±ط§ظ‚ط¨ط© ط§ظ„ظ†ط´ط§ط·': 'Activity monitoring', 'ط³ط¬ظ„ ط§ظ„طھط¯ظ‚ظٹظ‚ ط§ظ„ط£ط®ظٹط±': 'Recent audit log', 'ط£ط­ط¯ط§ط« ط¥ط¯ط§ط±ظٹط© ظˆط£ظ…ظ†ظٹط© ط¹ظ„ظ‰ ظ…ط³طھظˆظ‰ ط§ظ„ظ…ظ†طµط©.': 'Platform security and administrative events.',
-  'ط§ط³طھظƒط´ظپ ظ…ط³ط§ط­ط© طھط¯ط±ظٹط¨': 'Explore a training club', 'ط¹ط±ط¶ ط§ظ„طµظپط­ط© ظˆط§ظ„ط¨ط§ظ‚ط§طھ': 'View club and plans', 'ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† طھظˆظپط± ط§ظ„ط±ط§ط¨ط·': 'Check link availability', 'ط§ظ„ط¨ط§ظ‚ط§طھ ط§ظ„ظ†ط´ط·ط©': 'Active plans', 'ط¯ط¹ظˆط© CoachPulse': 'CoachPulse invitation'
+  'غير متاح': 'Not available', 'لا توجد تفاصيل': 'No details available', 'Check-ins للمراجعة:': 'Check-ins to review:', '· دفعات للتأكيد:': '· Payments to confirm:', '· رسائل غير مقروءة:': '· Unread messages:',
+  'تحديث الخطة': 'Update plan', 'إضافة مدرب': 'Add coach', 'كلمة مرور مؤقتة': 'Temporary password', 'إضافة': 'Add', 'بيانات المدرب': 'Coach details', 'البريد الجديد': 'New email', 'تفعيل': 'Activate', 'إيقاف': 'Deactivate', 'العملاء المخصصون': 'Assigned clients',
+  'Check-ins وتعليق المدرب': 'Check-ins and coach feedback', 'التعليق': 'Feedback', 'الالتزام والتمارين': 'Adherence and workouts', 'تحميل الملاحظات': 'Load notes', 'ملاحظة': 'Note', 'إضافة ملاحظة': 'Add note', 'تأكيد': 'Confirm', 'رفض': 'Reject', 'السبب': 'Reason',
+  'صورة الحساب': 'Profile photo', 'تم اختيار صورة الحساب.': 'Profile photo selected.', 'حفظ الحساب': 'Save account', 'تسجيل الخروج من كل الأجهزة': 'Sign out of all devices', 'ملفات الحساب': 'Account files', 'تنزيل صورة الحساب': 'Download profile photo', 'حذف صورة الحساب': 'Delete profile photo',
+  'الملف يضم بيانات حسابك فقط، ورابط التنزيل صالح للاستخدام مرة واحدة وينتهي بعد ساعة. يمكن طلب تصدير جديد كل 24 ساعة.': 'The export contains only your account data. Its download link works once, expires in one hour, and a new export can be requested every 24 hours.',
+  'طلب تصدير البيانات': 'Request data export', 'الحالة:': 'Status:', 'تنزيل الملف الجاهز': 'Download completed file', 'سجلات Check-in': 'Check-in records', 'تسجيل وجبة من خطتي': 'Log a meal from my plan', 'تسجيل الالتزام': 'Log meal adherence',
+  'سجل الاشتراكات': 'Subscription history', 'طلب تجديد الاشتراك': 'Request subscription renewal', 'سبب الإلغاء': 'Cancellation reason', 'إلغاء الاشتراك': 'Cancel subscription', 'تحديث الحالة': 'Refresh status', 'حالة الدفع': 'Payment status',
+  'سيتم تحويلك إلى صفحة Paymob الآمنة. تأكيد الدفع يعتمد على إشعار الخادم الموثق.': 'You will be redirected to Paymob’s secure checkout. Payment is confirmed by the verified server notification.',
+  'لا توجد محاولة دفع محفوظة لهذه الجلسة. افتح صفحة الاشتراكات لبدء الدفع.': 'No payment attempt is saved for this session. Open subscriptions to start a payment.', 'الاشتراك:': 'Subscription:', 'حفظ التعديلات': 'Save changes', 'إعادة التوليد بملاحظات المدرب': 'Regenerate with coach notes',
+  'اعتماد المسودة': 'Approve draft', 'رفض المسودة': 'Reject draft', 'إنشاء ملخص': 'Generate summary', 'سجل مخاطر الانسحاب': 'Churn risk history', 'تعديل بيانات العميل': 'Edit client details', 'حذف ملاحظة': 'Delete note', 'حذف الملاحظة': 'Delete note',
+  'إجراءات الإدارة': 'Management actions', 'إدارة مساحة تدريب': 'Manage training club', 'اختر مساحة من القائمة أو استخدم زر «إدارة المساحة» في جدول المساحات.': 'Choose a club or select Manage club from the clubs table.',
+  'إجراءات حذف المساحة': 'Club deletion actions', 'سيتم جدولة الحذف بعد فترة السماح. اكتب رابط المساحة كما هو لتأكيد العملية.': 'Deletion will be scheduled after the grace period. Enter the club link exactly to confirm.', 'جدولة الحذف بعد فترة السماح': 'Schedule deletion after the grace period',
+  'لا توجد سجلات بانتظار المراجعة.': 'No records are waiting for review.', 'تعليق المدرب': 'Coach feedback', 'سجل': 'Record', 'ملخص المدفوعات': 'Payment summary', 'من': 'From', 'إلى': 'To', 'تفاصيل دفعة': 'Payment details',
+  'معلومات صحية': 'Health information', 'حفظ التهيئة': 'Save onboarding', 'الملف': 'File', 'التحديث': 'Update', 'حفظ المعلومات الصحية': 'Save health information', 'صور (حتى 4)': 'Photos (up to 4)', 'إرسال Check-in': 'Submit check-in',
+  'رقم المجموعة': 'Set number', 'وقت الأداء': 'Performed at', 'تسجيل المجموعة': 'Log set', 'تحديث السجل': 'Update log', 'هذه الهوية تظهر للعملاء في صفحة المساحة.': 'Clients see this branding on the club page.', 'اسم النادي': 'Club name', 'رابط الشعار': 'Logo URL', 'اللون الأساسي': 'Primary color', 'اللون الثانوي': 'Secondary color', 'حفظ الهوية': 'Save branding',
+  'توليد برنامج': 'Generate program', 'الهدف': 'Goal', 'زيادة القوة': 'Build strength', 'خسارة الوزن': 'Weight loss', 'زيادة العضلات': 'Build muscle', 'لياقة عامة': 'General fitness', 'إعادة التأهيل': 'Rehabilitation', 'المستوى': 'Level', 'مبتدئ': 'Beginner', 'متوسط': 'Intermediate', 'متقدم': 'Advanced', 'توليد البرنامج': 'Generate program',
+  'تم إنشاء مسودة البرنامج.': 'Program draft created.', 'اعتماد': 'Approve', 'الحصة والمسودات': 'Quota and drafts', 'عرض درجة المخاطر': 'View risk score', 'إعادة الاحتساب': 'Recompute', 'لا توجد بيانات حالياً.': 'No data available.',
+  'مركز التحكم': 'Control center', 'بصورة أوضح': 'At a glance', 'تابع صحة المساحات، راجع النشاط الأخير، وانتقل مباشرةً إلى الإجراءات التي تحتاجها.': 'Monitor club health, review recent activity, and open the actions you need.',
+  'استعراض المساحات': 'Browse clubs', 'منصة التدريب والإدارة': 'Training and club management', 'أرقام مجمّعة لمتابعة نمو المساحات واستخدام المنصة.': 'Aggregated metrics for club growth and platform usage.', 'ملخص المنصة': 'Platform summary', 'لا توجد مؤشرات حالياً.': 'No metrics available.',
+  'ابحث بالاسم أو الرابط، ثم افتح المساحة لإدارة حالتها واستخدامها.': 'Search by name or link, then open a club to manage its status and usage.', 'نتيجة': 'Result', 'إدارة المساحة': 'Manage club', 'استخدام الذكاء الاصطناعي': 'AI usage', 'الطلبات المسجلة لهذا اليوم': 'Requests recorded today',
+  'أحدث عمليات استقبال ومعالجة الدفع': 'Latest payment notifications received and processed', 'مراقبة النشاط': 'Activity monitoring', 'سجل التدقيق الأخير': 'Recent audit log', 'أحداث إدارية وأمنية على مستوى المنصة.': 'Platform security and administrative events.',
+  'استكشف مساحة تدريب': 'Explore a training club', 'عرض الصفحة والباقات': 'View club and plans', 'التحقق من توفر الرابط': 'Check link availability', 'الباقات النشطة': 'Active plans', 'دعوة CoachPulse': 'CoachPulse invitation'
 });
 
 Object.assign(englishUi, {
-  'ظ…ظ†طµط© ط§ظ„طھط¯ط±ظٹط¨ ظˆط¥ط¯ط§ط±ط© ط§ظ„ط¹ظ…ظ„ط§ط،': 'Training and client management', 'طھط¯ط±ظٹط¨ ط£ظپط¶ظ„.': 'Better coaching.', 'ظ…طھط§ط¨ط¹ط© ط£ظˆط¶ط­.': 'Clearer progress.',
-  'ظƒظ„ ظ…ط§ طھط­طھط§ط¬ظ‡ ظ„ط¥ط¯ط§ط±ط© ط§ظ„طھظ…ط§ط±ظٹظ† ظˆط§ظ„ط¹ظ…ظ„ط§ط، ظˆط§ظ„طھظ‚ط¯ظ… ظپظٹ ظ…ط³ط§ط­ط© ط¹ظ…ظ„ ظˆط§ط­ط¯ط©.': 'Manage training, clients, and progress in one place.',
-  'ط¨ط±ط§ظ…ط¬ ظˆطھظ…ط§ط±ظٹظ† ظ…ظ†ط¸ظ…ط©': 'Organized programs and exercises', 'ظ…طھط§ط¨ط¹ط© ط§ظ„طھظ‚ط¯ظ… ظˆط§ظ„طھظˆط§طµظ„': 'Progress tracking and communication', 'طھط¬ط±ط¨ط© ظ…ظ†ط§ط³ط¨ط© ظ„ظ„ظ…ط¯ط±ط¨ ظˆط§ظ„ط¹ظ…ظٹظ„': 'Designed for coaches and clients',
-  'ظ…ط³ط§ط­طھظƒ ط§ظ„طھط¯ط±ظٹط¨ظٹط© طھط¨ط¯ط£ ظ…ظ† ظ‡ظ†ط§': 'Your club starts here.', 'ظ…ط±ط­ط¨ط§ظ‹ ط¨ط¹ظˆط¯طھظƒ': 'Welcome back', 'ط§ط®طھط± ظ…ط³ط§ط­ط© ط§ظ„طھط¯ط±ظٹط¨ ط§ظ„ظ…ط±طھط¨ط·ط© ط¨ط­ط³ط§ط¨ظƒطŒ ط«ظ… ط£ط¯ط®ظ„ ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ط®ظˆظ„.': 'Choose your club, then enter your sign-in details.',
-  'ظ…ط³ط§ط­ط© ط§ظ„طھط¯ط±ظٹط¨': 'Club', 'ط¬ط§ط±ظچ طھط­ظ…ظٹظ„ ط§ظ„ط£ظ†ط¯ظٹط©': 'Loading clubs...', 'طھط¹ط°ط± طھط­ظ…ظٹظ„ ط§ظ„ط£ظ†ط¯ظٹط© ط§ظ„ط¢ظ†.': 'Could not load clubs right now.', 'ط±ظ…ط² ط§ظ„ظ†ط§ط¯ظٹ ظ…ظ† ط§ظ„ط¯ط¹ظˆط©': 'Club code from your invitation',
-  'ط§ط¨ط¯ط£ ط¨ظƒطھط§ط¨ط© ط£ظˆظ„ ط­ط±ظپظٹظ† ظ…ظ† ط§ط³ظ… ط§ظ„ظ†ط§ط¯ظٹ ظ„ظ„ط¨ط­ط«.': 'Type the first two letters of the club name to search.', 'ظ„ظ„ط¯ط®ظˆظ„ ط¨ط­ط³ط§ط¨ SuperAdmin': 'For SuperAdmin sign-in',
-  'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬. ط¬ط±ظ‘ط¨ ط§ط³ظ…ط§ظ‹ ط¢ط®ط±.': 'No results. Try another name.', 'ظ„ط§ طھط¬ط¯ ظ†ط§ط¯ظٹظƒطں ط§ظپطھط­ ط±ط§ط¨ط· ط§ظ„ط¯ط¹ظˆط© ط§ظ„ط°ظٹ ظˆطµظ„ظƒ.': 'Canâ€™t find your club? Open the invitation link you received.',
-  'ظ†ط³ظٹطھ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط±طں': 'Forgot password?', 'ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©طں ط§ط®طھط± آ«ظ…ط³ط¤ظˆظ„ ط§ظ„ظ…ظ†طµط©آ» ظ…ظ† ظ‚ط§ط¦ظ…ط© ط§ظ„ظ…ط³ط§ط­ط© ظˆط§طھط±ظƒ ط§ظ„ظ†ط§ط¯ظٹ ط¯ظˆظ† ط§ط®طھظٹط§ط±.': 'SuperAdmin? Choose Platform administrator and leave the club unselected.',
-  'ط£ظˆظ„ ظ…ط±ط© ظ‡ظ†ط§طں': 'First time here?', 'ط£ظ†ط´ط¦ ظ…ط³ط§ط­ط© طھط¯ط±ظٹط¨': 'Create a club', 'ظ„ظ„ظ…ط¯ط±ط¨ظٹظ† ط§ظ„ط±ط§ط؛ط¨ظٹظ† ظپظٹ ط¨ط¯ط، ظ…ط³ط§ط­ط© ط¬ط¯ظٹط¯ط©': 'For coaches starting a new club',
-  'ط§ظ†ط¶ظ… ظƒط¹ظ…ظٹظ„': 'Join as a client', 'ظ„ط¯ظٹظƒ ط¯ط¹ظˆط© ظ…ظ† ظ…ط¯ط±ط¨طں ط£ظƒظ…ظ„ ط§ظ„طھط³ط¬ظٹظ„ ظ‡ظ†ط§': 'Have an invitation from a coach? Finish registration here.',
-  'ظ„ط¯ظٹظƒ ط¯ط¹ظˆط© ظ„ظ„ط§ظ†ط¶ظ…ط§ظ… ظƒظ…ط¯ط±ط¨طں': 'Have a staff invitation?', 'ط®ظٹط§ط±ط§طھ ط§ظ„ط­ط³ط§ط¨ ط§ظ„ط£ط®ط±ظ‰': 'Other account options', 'ط¥ط¹ط§ط¯ط© طھط¹ظٹظٹظ† ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط¨ط±ظ…ط²': 'Reset password with a code',
-  'ط¨ظٹط§ظ†ط§طھ ط­ط³ط§ط¨ظƒ ظˆظ…ط³ط§ط­ط© ط§ظ„طھط¯ط±ظٹط¨ ظ…ط­ظ…ظٹط© ط¨طµظ„ط§ط­ظٹط§طھ ط§ظ„ظˆطµظˆظ„ ط§ظ„ط®ط§طµط© ط¨ظƒ.': 'Your account and club data are protected by your access permissions.',
-  'ط³ط¬ظ‘ظ„ ط§ظ„ط¯ط®ظˆظ„ ط§ظ„ط¢ظ† ط¨ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط©.': 'Sign in with your new password.', 'ظٹظ„ط²ظ… طھط¹ظٹظٹظ† ظƒظ„ظ…ط© ظ…ط±ظˆط± ط¬ط¯ظٹط¯ط© ظ‚ط¨ظ„ ط§ط³طھط®ط¯ط§ظ… ظ„ظˆط­ط© ط§ظ„طھط­ظƒظ….': 'Set a new password before using the dashboard.',
-  'طھط£ظƒظٹط¯ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ط§ظ„ط¬ط¯ظٹط¯ط©': 'Confirm new password', 'ط§ظ„ط±ظ…ط²': 'Code', 'طھظپط§طµظٹظ„ ط§ظ„ط¨ط±ظ†ط§ظ…ط¬': 'Program details', 'طھظ…ط§ط±ظٹظ† ط§ظ„ط¨ط±ظ†ط§ظ…ط¬': 'Program exercises',
-  'ط¹ظ†ظˆط§ظ† ط¬ط¯ظٹط¯': 'New title', 'ط±ط§ط­ط© ط¨ط§ظ„ط«ظˆط§ظ†ظٹ': 'Rest seconds', 'ط­ظپط¸ طھط¹ط¯ظٹظ„ ط§ظ„طھظ…ط±ظٹظ†': 'Save exercise changes', 'طھط±طھظٹط¨ طھظ…ط§ط±ظٹظ† ط§ظ„ظٹظˆظ…': 'Reorder todayâ€™s exercises',
-  'ط­ظپط¸ ط§ظ„طھط±طھظٹط¨': 'Save order', 'ظ†ط³ط®': 'Duplicate', 'ط­ظپط¸ ظƒظ‚ط§ظ„ط¨': 'Save as template', 'ط§ظ„ظ‚ظˆط§ظ„ط¨': 'Templates', 'ط¥ظ†ط´ط§ط، ط¨ط±ظ†ط§ظ…ط¬ ظ…ظ† ط§ظ„ظ‚ط§ظ„ط¨': 'Create program from template',
-  'ط§ظ„ظ…ط¬ظ…ظˆط¹ط§طھ ظˆط§ظ„ط£ط¯ظˆط§طھ': 'Muscle groups and equipment', 'طھظ…ط±ظٹظ† ط¬ط¯ظٹط¯': 'New exercise', 'طھظپط§طµظٹظ„ ط£ظˆ طھط¹ط¯ظٹظ„': 'Edit details', 'طھظپط§طµظٹظ„ ط§ظ„ط®ط·ط©': 'Plan details',
-  'ط¹ظ†ظˆط§ظ† ط§ظ„ط®ط·ط©': 'Plan title', 'ط§ط³ظ… ط§ظ„ظˆط¬ط¨ط©': 'Meal name', 'ط§ظ„ط³ط¹ط±ط§طھ': 'Calories', 'ط¥ط¶ط§ظپط© ظˆط¬ط¨ط©': 'Add meal', 'طھط­ط¯ظٹط« ط§ظ„ظˆط¬ط¨ط©': 'Update meal', 'ط­ط°ظپ ط§ظ„ظˆط¬ط¨ط©': 'Delete meal',
-  'ط§ط³ظ… ط§ظ„ط¨ط§ظ‚ط©': 'Plan name', 'ط¥ط¯ط§ط±ط© ط¨ط§ظ‚ط©': 'Manage plan', 'ط£ط±ط´ظپط© ط§ظ„ط¨ط§ظ‚ط©': 'Archive plan', 'ط¯ط¹ظˆط© ط¹ظ…ظٹظ„': 'Invite a client', 'ط¥ط±ط³ط§ظ„ ط¯ط¹ظˆط©': 'Send invitation',
-  'ط±ظ…ط² ط§ظ„ط¯ط¹ظˆط© ظ„ظ„طھط·ظˆظٹط±:': 'Development invitation token:', 'ظپطھط­ طھط³ط¬ظٹظ„ ط§ظ„ط¹ظ…ظٹظ„': 'Open client registration', 'ط§ظ„ط¯ط¹ظˆط§طھ': 'Invitations', 'ط§ظ„ظ…ط¯ط±ط¨ظˆظ† ظپظٹ ط§ظ„ظ…ط³ط§ط­ط©': 'Coaches in this club',
-  'ط¥ط¹ط§ط¯ط© ط§ظ„ط¥ط±ط³ط§ظ„': 'Resend invitation', 'ط¥ظ„ط؛ط§ط، ط§ظ„ط¯ط¹ظˆط©': 'Cancel invitation', 'طھظ…ط§ط±ظٹظ† ط§ظ„ظ…ظ†طµط© ط§ظ„ط¹ط§ظ…ط©': 'Public platform exercises',
-  'ط§ط®طھط± طھظ…ط±ظٹظ†ط§ظ‹ ظ„طھط¹ط¯ظٹظ„ظ‡ ط£ظˆ ط­ط°ظپظ‡. ط§ظ„ط­ط°ظپ ظ‚ط¯ ظٹظڈط±ظپط¶ ط¥ط°ط§ ظƒط§ظ† ط§ظ„طھظ…ط±ظٹظ† ظ…ط³طھط®ط¯ظ…ط§ظ‹.': 'Choose an exercise to edit or delete. Deletion may be rejected if it is in use.',
-  'ط¥ظٹظ‚ط§ظپ ظ…ط¤ظ‚طھ': 'Paused', 'ط¹ط±ط¶ ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„طµط­ظٹط© (ظ…ط³ط¬ظ‘ظ„ طھط¯ظ‚ظٹظ‚ظٹط§ظ‹)': 'View health information (audited)', 'ط­ظپط¸ ط§ظ„ظ…ط¯ط±ط¨ ط§ظ„ظ…ط³ط¤ظˆظ„': 'Save assigned coach',
-  'طھظƒط±ط§ط± Check-in': 'Check-in frequency', 'ظٹظˆظ… ط§ظ„ط£ط³ط¨ظˆط¹': 'Day of week', 'ط­ظپط¸ ط§ظ„ظ…ظˆط¹ط¯': 'Save schedule', 'ط§ظ„ط¯ظپط¹ط§طھ ط§ظ„ظ…ط¹ظ„ظ‘ظ‚ط©': 'Pending payments',
-  'طھط³ط¬ظٹظ„ ط¯ظپط¹ط© ظƒط§ط´': 'Record cash payment', 'طھط³ط¬ظٹظ„ ط§ظ„ط¯ظپط¹ط©': 'Record payment', 'ط§ط³طھط±ط¯ط§ط¯ ط¯ظپط¹ط©': 'Refund payment', 'طھظ†ظپظٹط° ط§ظ„ط§ط³طھط±ط¯ط§ط¯': 'Process refund',
-  'طھطµط¯ظٹط± CSV': 'Export CSV', 'ط­ط°ظپ ط§ظ„ط­ط³ط§ط¨ ظˆط¥ط®ظپط§ط، ط¨ظٹط§ظ†ط§طھظ‡': 'Delete account and hide its data', 'طھطµط¯ظٹط± ط¨ظٹط§ظ†ط§طھظٹ': 'Export my data',
-  'ط§ظ„ط¨ط§ظ‚ط§طھ': 'Plans', 'ط§ط´طھط±ط§ظƒظٹ ط§ظ„ط­ط§ظ„ظٹ': 'Current subscription', 'ط¥ظ†ط´ط§ط، ط·ظ„ط¨ ط§ط´طھط±ط§ظƒ': 'Request subscription', 'ظ…ط¯ظپظˆط¹ط§طھظٹ': 'My payments',
-  'طھظپط§طµظٹظ„ ط§ظ„ط¯ظپط¹ ظˆط­ط§ظ„طھظ‡': 'Payment details and status', 'طھظ†ط²ظٹظ„ ط§ظ„ظپط§طھظˆط±ط© PDF': 'Download PDF invoice', 'ط§ظ„ط¯ظپط¹ ط¨ط§ظ„ط¨ط·ط§ظ‚ط© ط¹ط¨ط± Paymob': 'Pay by card through Paymob',
-  'ظ„ط§ طھظˆط¬ط¯ ط®ط·ط© ظˆط¬ط¨ط§طھ ظ†ط´ط·ط©': 'No active meal plan', 'ط­طµط© ط§ظ„ط§ط³طھط®ط¯ط§ظ…': 'Usage quota', 'ط¥ط¯ط§ط±ط© ط§ظ„ط¹ظ…ظ„ط§ط، ط§ظ„ظ…ط¤ط³ط³ظٹظٹظ†': 'Club management',
-  'ط¥ط¯ط§ط±ط© ط§ظ„ظ…ط³ط§ط­ط©': 'Manage club', 'ط§ط®طھط± ط§ظ„ظ…ط³ط§ط­ط© ط«ظ… ظ†ظپظ‘ط° ط§ظ„ط¥ط¬ط±ط§ط، ط§ظ„ظ…ظ†ط§ط³ط¨. طھط¸ظ‡ط± طھظپط§طµظٹظ„ظ‡ط§ ظˆط§ط³طھط®ط¯ط§ظ…ظ‡ط§ ظ‡ظ†ط§.': 'Choose a club to manage its status and usage.',
-  'ط§ط®طھط± ظ…ط³ط§ط­ط© ط§ظ„طھط¯ط±ظٹط¨': 'Choose a club', 'ظ„ط§ طھظˆط¬ط¯ ظ…ط³ط§ط­ط§طھ ظ„ط¹ط±ط¶ظ‡ط§.': 'No clubs to display.', 'ط§ط³طھط®ط¯ط§ظ… ط§ظ„ط°ظƒط§ط، ط§ظ„ط§طµط·ظ†ط§ط¹ظٹ': 'AI usage',
-  'ظ…ط±ط§ظ‚ط¨ط© ط§ظ„ظ†ط´ط§ط·': 'Activity monitoring', 'ط³ط¬ظ„ ط§ظ„طھط¯ظ‚ظٹظ‚ ط§ظ„ط£ط®ظٹط±': 'Recent audit log', 'ط£ط­ط¯ط§ط« ط¥ط¯ط§ط±ظٹط© ظˆط£ظ…ظ†ظٹط© ط¹ظ„ظ‰ ظ…ط³طھظˆظ‰ ط§ظ„ظ…ظ†طµط©.': 'Platform security and administrative events.',
-  'ط§ط³طھظƒط´ظپ ظ…ط³ط§ط­ط© طھط¯ط±ظٹط¨': 'Explore a training club', 'ط¹ط±ط¶ ط§ظ„طµظپط­ط© ظˆط§ظ„ط¨ط§ظ‚ط§طھ': 'View club and plans', 'ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† طھظˆظپط± ط§ظ„ط±ط§ط¨ط·': 'Check link availability',
-  'ط§ظ„ط¨ط§ظ‚ط§طھ ط§ظ„ظ†ط´ط·ط©': 'Active plans', 'ط¯ط¹ظˆط© CoachPulse': 'CoachPulse invitation'
+  'منصة التدريب وإدارة العملاء': 'Training and client management', 'تدريب أفضل.': 'Better coaching.', 'متابعة أوضح.': 'Clearer progress.',
+  'كل ما تحتاجه لإدارة التمارين والعملاء والتقدم في مساحة عمل واحدة.': 'Manage training, clients, and progress in one place.',
+  'برامج وتمارين منظمة': 'Organized programs and exercises', 'متابعة التقدم والتواصل': 'Progress tracking and communication', 'تجربة مناسبة للمدرب والعميل': 'Designed for coaches and clients',
+  'مساحتك التدريبية تبدأ من هنا': 'Your club starts here.', 'مرحباً بعودتك': 'Welcome back', 'اختر مساحة التدريب المرتبطة بحسابك، ثم أدخل بيانات الدخول.': 'Choose your club, then enter your sign-in details.',
+  'مساحة التدريب': 'Club', 'جارٍ تحميل الأندية': 'Loading clubs...', 'تعذر تحميل الأندية الآن.': 'Could not load clubs right now.', 'رمز النادي من الدعوة': 'Club code from your invitation',
+  'ابدأ بكتابة أول حرفين من اسم النادي للبحث.': 'Type the first two letters of the club name to search.', 'للدخول بحساب SuperAdmin': 'For SuperAdmin sign-in',
+  'لا توجد نتائج. جرّب اسماً آخر.': 'No results. Try another name.', 'لا تجد ناديك؟ افتح رابط الدعوة الذي وصلك.': 'Can’t find your club? Open the invitation link you received.',
+  'نسيت كلمة المرور؟': 'Forgot password?', 'مسؤول المنصة؟ اختر «مسؤول المنصة» من قائمة المساحة واترك النادي دون اختيار.': 'SuperAdmin? Choose Platform administrator and leave the club unselected.',
+  'أول مرة هنا؟': 'First time here?', 'أنشئ مساحة تدريب': 'Create a club', 'للمدربين الراغبين في بدء مساحة جديدة': 'For coaches starting a new club',
+  'انضم كعميل': 'Join as a client', 'لديك دعوة من مدرب؟ أكمل التسجيل هنا': 'Have an invitation from a coach? Finish registration here.',
+  'لديك دعوة للانضمام كمدرب؟': 'Have a staff invitation?', 'خيارات الحساب الأخرى': 'Other account options', 'إعادة تعيين كلمة المرور برمز': 'Reset password with a code',
+  'بيانات حسابك ومساحة التدريب محمية بصلاحيات الوصول الخاصة بك.': 'Your account and club data are protected by your access permissions.',
+  'سجّل الدخول الآن بكلمة المرور الجديدة.': 'Sign in with your new password.', 'يلزم تعيين كلمة مرور جديدة قبل استخدام لوحة التحكم.': 'Set a new password before using the dashboard.',
+  'تأكيد كلمة المرور الجديدة': 'Confirm new password', 'الرمز': 'Code', 'تفاصيل البرنامج': 'Program details', 'تمارين البرنامج': 'Program exercises',
+  'عنوان جديد': 'New title', 'راحة بالثواني': 'Rest seconds', 'حفظ تعديل التمرين': 'Save exercise changes', 'ترتيب تمارين اليوم': 'Reorder today’s exercises',
+  'حفظ الترتيب': 'Save order', 'نسخ': 'Duplicate', 'حفظ كقالب': 'Save as template', 'القوالب': 'Templates', 'إنشاء برنامج من القالب': 'Create program from template',
+  'المجموعات والأدوات': 'Muscle groups and equipment', 'تمرين جديد': 'New exercise', 'تفاصيل أو تعديل': 'Edit details', 'تفاصيل الخطة': 'Plan details',
+  'عنوان الخطة': 'Plan title', 'اسم الوجبة': 'Meal name', 'السعرات': 'Calories', 'إضافة وجبة': 'Add meal', 'تحديث الوجبة': 'Update meal', 'حذف الوجبة': 'Delete meal',
+  'اسم الباقة': 'Plan name', 'إدارة باقة': 'Manage plan', 'أرشفة الباقة': 'Archive plan', 'دعوة عميل': 'Invite a client', 'إرسال دعوة': 'Send invitation',
+  'رمز الدعوة للتطوير:': 'Development invitation token:', 'فتح تسجيل العميل': 'Open client registration', 'الدعوات': 'Invitations', 'المدربون في المساحة': 'Coaches in this club',
+  'إعادة الإرسال': 'Resend invitation', 'إلغاء الدعوة': 'Cancel invitation', 'تمارين المنصة العامة': 'Public platform exercises',
+  'اختر تمريناً لتعديله أو حذفه. الحذف قد يُرفض إذا كان التمرين مستخدماً.': 'Choose an exercise to edit or delete. Deletion may be rejected if it is in use.',
+  'إيقاف مؤقت': 'Paused', 'عرض البيانات الصحية (مسجّل تدقيقياً)': 'View health information (audited)', 'حفظ المدرب المسؤول': 'Save assigned coach',
+  'تكرار Check-in': 'Check-in frequency', 'يوم الأسبوع': 'Day of week', 'حفظ الموعد': 'Save schedule', 'الدفعات المعلّقة': 'Pending payments',
+  'تسجيل دفعة كاش': 'Record cash payment', 'تسجيل الدفعة': 'Record payment', 'استرداد دفعة': 'Refund payment', 'تنفيذ الاسترداد': 'Process refund',
+  'تصدير CSV': 'Export CSV', 'حذف الحساب وإخفاء بياناته': 'Delete account and hide its data', 'تصدير بياناتي': 'Export my data',
+  'الباقات': 'Plans', 'اشتراكي الحالي': 'Current subscription', 'إنشاء طلب اشتراك': 'Request subscription', 'مدفوعاتي': 'My payments',
+  'تفاصيل الدفع وحالته': 'Payment details and status', 'تنزيل الفاتورة PDF': 'Download PDF invoice', 'الدفع بالبطاقة عبر Paymob': 'Pay by card through Paymob',
+  'لا توجد خطة وجبات نشطة': 'No active meal plan', 'حصة الاستخدام': 'Usage quota', 'إدارة العملاء المؤسسيين': 'Club management',
+  'إدارة المساحة': 'Manage club', 'اختر المساحة ثم نفّذ الإجراء المناسب. تظهر تفاصيلها واستخدامها هنا.': 'Choose a club to manage its status and usage.',
+  'اختر مساحة التدريب': 'Choose a club', 'لا توجد مساحات لعرضها.': 'No clubs to display.', 'استخدام الذكاء الاصطناعي': 'AI usage',
+  'مراقبة النشاط': 'Activity monitoring', 'سجل التدقيق الأخير': 'Recent audit log', 'أحداث إدارية وأمنية على مستوى المنصة.': 'Platform security and administrative events.',
+  'استكشف مساحة تدريب': 'Explore a training club', 'عرض الصفحة والباقات': 'View club and plans', 'التحقق من توفر الرابط': 'Check link availability',
+  'الباقات النشطة': 'Active plans', 'دعوة CoachPulse': 'CoachPulse invitation'
 });
 Object.assign(englishUi, {
-  'ط­ط°ظپ': 'Delete', 'ط§ط³طھظٹط±ط§ط¯ CSV': 'Import CSV', 'طھظپط§طµظٹظ„ ط§ظ„ط¹ظ…ظٹظ„': 'Client details', 'ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¯ط¹ظˆط© ط§ظ„ط¹ط§ظ…ط© (ط§ظ„ط¨ط±ظٹط¯ ظ…ظ‚ظ†ظ‘ط¹):': 'Invitation details (email partially hidden):', 'ط¥ظƒظ…ط§ظ„ ط§ظ„طھط³ط¬ظٹظ„': 'Complete registration'
+  'حذف': 'Delete', 'استيراد CSV': 'Import CSV', 'تفاصيل العميل': 'Client details', 'بيانات الدعوة العامة (البريد مقنّع):': 'Invitation details (email partially hidden):', 'إكمال التسجيل': 'Complete registration'
 });
 Object.assign(arabic, {
   conversations: '\u0645\u062d\u0627\u062f\u062b\u0627\u062a', conversation: '\u0645\u062d\u0627\u062f\u062b\u0629',
@@ -456,7 +456,7 @@ Object.assign(arabic, {
   'Request a new club': '\u0627\u0637\u0644\u0628 \u0625\u0646\u0634\u0627\u0621 \u0646\u0627\u062F\u064D \u062C\u062F\u064A\u062F',
   'For coaches who want to set up a club': '\u0644\u0644\u0645\u062F\u0631\u0628\u064A\u0646 \u0627\u0644\u0631\u0627\u063A\u0628\u064A\u0646 \u0641\u064A \u0625\u0646\u0634\u0627\u0621 \u0646\u0627\u062F\u064D',
   'Join as a client': '\u0627\u0646\u0636\u0645 \u0643\u0639\u0645\u064A\u0644',
-  'Complete registration with your coachâ€™s invitation': '\u0623\u0643\u0645\u0644 \u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0628\u062F\u0639\u0648\u0629 \u0645\u062F\u0631\u0628\u0643',
+  'Complete registration with your coach’s invitation': '\u0623\u0643\u0645\u0644 \u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0628\u062F\u0639\u0648\u0629 \u0645\u062F\u0631\u0628\u0643',
   'Have a staff invitation? Accept it here.': '\u0644\u062F\u064A\u0643 \u062F\u0639\u0648\u0629 \u0644\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0643\u0645\u062F\u0631\u0628\u061F \u0627\u0642\u0628\u0644\u0647\u0627 \u0645\u0646 \u0647\u0646\u0627.',
   'Other account options': '\u062E\u064A\u0627\u0631\u0627\u062A \u0623\u062E\u0631\u0649 \u0644\u0644\u062D\u0633\u0627\u0628',
   'Your account and club information are protected by role-based access controls.': '\u062A\u062D\u0645\u064A \u0636\u0648\u0627\u0628\u0637 \u0627\u0644\u0648\u0635\u0648\u0644 \u062D\u0633\u0627\u0628\u0643 \u0648\u0628\u064A\u0627\u0646\u0627\u062A \u0646\u0627\u062F\u064A\u0643.',
@@ -483,21 +483,11 @@ for (let byte = 0; byte < 256; byte++) {
 // mistaken for Windows-1252 punctuation (for example, ٹ represents byte 0x8A).
 for (let byte = 0; byte < 256; byte++) {
   const character = cp1256Decoder.decode(Uint8Array.of(byte))
-  if (character.length === 1 && /[\u0600-\u06ff]/.test(character)) legacyArabicByteMap.set(character, byte)
+  if (character.length === 1 && character !== '\uFFFD' && !legacyArabicByteMap.has(character)) legacyArabicByteMap.set(character, byte)
 }
 
-function repairLegacyArabic(text: string) {
-  // Several older translations were UTF-8 Arabic decoded as Windows-1256/1252.
-  // Reverse that byte mapping before displaying or looking up translated labels.
-  if (!/(?:ط[\u00A7\u00A9\u00A3\u00A5\u00AE\u00AF\u00AA\u06BE\u061B]|ظ[\u201E\u201C\u201D\u201A]|ï؟½)/.test(text)) return text
-  const bytes: number[] = []
-  for (const character of text) {
-    const byte = legacyArabicByteMap.get(character)
-    if (byte === undefined) return text
-    bytes.push(byte)
-  }
-  const repaired = new TextDecoder('utf-8').decode(Uint8Array.from(bytes))
-  return /[\u0600-\u06ff]/.test(repaired) ? repaired : text
+export function repairLegacyArabic(text: string) {
+  return text
 }
 
 function repairBrokenUiArabic(text: string) {
@@ -604,20 +594,64 @@ function repairBrokenUiArabic(text: string) {
   return repairs.reduce((value, [pattern, replacement]) => value.replace(pattern, replacement), text)
 }
 
-Object.assign(arabic, { 'Loading data...': '\u062C\u0627\u0631\u064D \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A...', 'Reference': '\u0627\u0644\u0645\u0631\u062C\u0639', 'Coach team': '\u0641\u0631\u064A\u0642 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646', 'Manage staff access and assign clients to their responsible coach.': '\u0623\u062F\u0631 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646 \u0648\u0623\u0633\u0646\u062F \u0643\u0644 \u0639\u0645\u064A\u0644 \u0644\u0645\u062F\u0631\u0628\u0647 \u0627\u0644\u0645\u0633\u0624\u0648\u0644.', 'coaches': '\u0645\u062F\u0631\u0628\u0648\u0646', 'Manage coaches and assignments': '\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646 \u0648\u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0639\u0645\u0644\u0627\u0621' })
-const repairedEnglish = Object.fromEntries(Object.entries(arabic).map(([key, value]) => [repairBrokenUiArabic(repairLegacyArabic(value)), key]))
-const repairedEnglishUi = Object.fromEntries(Object.entries(englishUi).map(([key, value]) => [repairLegacyArabic(key), value]))
+function repairArabicUiTextPass(text: string) {
+  let output = ''
+  let bytes: number[] = []
+  let characters: string[] = []
+  let changed = false
+  const decoder = new TextDecoder('utf-8')
+  const flush = () => {
+    if (!bytes.length) return
+    const decoded = decoder.decode(Uint8Array.from(bytes))
+    if (/[\u0600-\u06ff]/.test(decoded) && !decoded.includes('\uFFFD')) {
+      output += decoded
+      changed = true
+    } else {
+      output += characters.join('')
+    }
+    bytes = []
+    characters = []
+  }
+  const input = [...text]
+  for (let index = 0; index < input.length; index++) {
+    const character = input[index]
+    const byte = legacyArabicByteMap.get(character)
+    if (byte === undefined) {
+      flush()
+      if (character.codePointAt(0)! <= 0xff) {
+        let end = index
+        while (end < input.length && input[end].codePointAt(0)! <= 0xff) end++
+        const run = input.slice(index, end).join('')
+        const decoded = decoder.decode(Uint8Array.from(input.slice(index, end).map(value => value.codePointAt(0)!)))
+        if (/[\u0600-\u06ff]/.test(decoded) && !decoded.includes('\uFFFD')) {
+          output += decoded
+          changed = true
+        } else output += run
+        index = end - 1
+      } else output += character
+    } else {
+      bytes.push(byte)
+      characters.push(character)
+    }
+  }
+  flush()
+  return repairBrokenUiArabic(repairLegacyArabic(changed ? output : text))
+}
 
-export function toEnglish(text: string) {
-  const repaired = repairBrokenUiArabic(repairLegacyArabic(text))
-  const exact = englishUi[text] ?? repairedEnglishUi[repaired] ?? english[text] ?? repairedEnglish[repaired]
-  if (exact) return exact
-  if (repaired !== text) return repaired
+export function repairArabicUiText(text: string) {
   return text
 }
 
+void repairArabicUiTextPass
+
+Object.assign(arabic, { 'Loading data...': '\u062C\u0627\u0631\u064D \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A...', 'Reference': '\u0627\u0644\u0645\u0631\u062C\u0639', 'Coach team': '\u0641\u0631\u064A\u0642 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646', 'Manage staff access and assign clients to their responsible coach.': '\u0623\u062F\u0631 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646 \u0648\u0623\u0633\u0646\u062F \u0643\u0644 \u0639\u0645\u064A\u0644 \u0644\u0645\u062F\u0631\u0628\u0647 \u0627\u0644\u0645\u0633\u0624\u0648\u0644.', 'coaches': '\u0645\u062F\u0631\u0628\u0648\u0646', 'Manage coaches and assignments': '\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0645\u062F\u0631\u0628\u064A\u0646 \u0648\u0625\u0633\u0646\u0627\u062F \u0627\u0644\u0639\u0645\u0644\u0627\u0621' })
+Object.assign(arabic, { 'Staff coaches': '\u0627\u0644\u0645\u062F\u0631\u0628\u0648\u0646', 'Select a coach to manage their account and clients.': '\u0627\u062E\u062A\u0631 \u0645\u062F\u0631\u0628\u0627\u064B \u0644\u0625\u062F\u0627\u0631\u0629 \u062D\u0633\u0627\u0628\u0647 \u0648\u0639\u0645\u0644\u0627\u0626\u0647.', 'No staff coaches yet. Add the first coach above.': '\u0644\u0627 \u064A\u0648\u062C\u062F \u0645\u062F\u0631\u0628\u0648\u0646 \u0628\u0639\u062F. \u0623\u0636\u0641 \u0623\u0648\u0644 \u0645\u062F\u0631\u0628 \u0645\u0646 \u0627\u0644\u0646\u0645\u0648\u0630\u062C \u0623\u0639\u0644\u0627\u0647.', 'clients': '\u0639\u0645\u0644\u0627\u0621', 'Add a coach': '\u0625\u0636\u0627\u0641\u0629 \u0645\u062F\u0631\u0628' })
+export function toEnglish(text: string) {
+  return englishUi[text] ?? english[text] ?? text
+}
+
 export function toArabic(text: string) {
-  return repairBrokenUiArabic(repairLegacyArabic(arabic[text] ?? text))
+  return arabic[text] ?? text
 }
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => localStorage.getItem('coachpulse.language.v5') === 'ar' ? 'ar' : 'en')
@@ -777,5 +811,3 @@ Object.assign(arabic, {
   'Muscle': '\u0627\u0644\u0639\u0636\u0644\u0629',
   'Not specified': '\u063A\u064A\u0631 \u0645\u062D\u062F\u062F'
 })
-// Include all dictionaries appended below the translation helpers.
-Object.assign(repairedEnglish, Object.fromEntries(Object.entries(arabic).map(([key, value]) => [repairLegacyArabic(value), key])))

@@ -13,11 +13,13 @@ x-api-build: &api-build
 x-api-environment: &api-environment
   ASPNETCORE_ENVIRONMENT: Development
   ASPNETCORE_URLS: http://+:8080
+  Hangfire__RunServer: "true"
   ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
   Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
   Jwt__Issuer: CoachPulse.Api
   Jwt__Audience: CoachPulse.Client
   Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN in .env}
+  Frontend__BaseUrl: ${FRONTEND_BASE_URL:-http://localhost:8088}
   ReverseProxy__KnownProxies__0: 172.30.0.2
   SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL in .env}
   SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD in .env}
@@ -34,13 +36,13 @@ x-api-environment: &api-environment
   Paymob__ReturnUrl: ${PAYMOB_RETURN_URL:-}
   Paymob__NotificationUrl: ${PAYMOB_NOTIFICATION_URL:-}
   Paymob__HmacSecret: ${PAYMOB_HMAC_SECRET:-}
-  Email__Provider: ${EMAIL_PROVIDER:-Dev}
-  Email__Smtp__Host: ${EMAIL_SMTP_HOST:-}
-  Email__Smtp__Port: ${EMAIL_SMTP_PORT:-587}
+  Email__Provider: ${EMAIL_PROVIDER:-Smtp}
+  Email__Smtp__Host: ${EMAIL_SMTP_HOST:-mailpit}
+  Email__Smtp__Port: ${EMAIL_SMTP_PORT:-1025}
   Email__Smtp__UseSsl: ${EMAIL_SMTP_USE_SSL:-false}
   Email__Smtp__Username: ${EMAIL_SMTP_USERNAME:-}
   Email__Smtp__Password: ${EMAIL_SMTP_PASSWORD:-}
-  Email__Smtp__FromAddress: ${EMAIL_SMTP_FROM_ADDRESS:-}
+  Email__Smtp__FromAddress: ${EMAIL_SMTP_FROM_ADDRESS:-no-reply@coachpulse.test}
   Email__Smtp__FromName: ${EMAIL_SMTP_FROM_NAME:-CoachPulse}
   Uploads__MaxRequestBodyBytes: 105906176
 
@@ -110,6 +112,15 @@ services:
           cpus: "1.0"
           memory: 512M
 
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:8025:8025"
+    expose: ["1025", "8025"]
+    networks: [private, public]
+    restart: unless-stopped
+    logging: *default-logging
+
   api:
     build: *api-build
     environment: *api-environment
@@ -123,6 +134,8 @@ services:
         condition: service_healthy
       coachpulse-ai:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     expose: ["8080"]
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/readyz"]

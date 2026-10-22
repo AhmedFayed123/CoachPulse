@@ -6,7 +6,8 @@
   "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run check:translations && tsc -b && vite build",
+    "check:translations": "node scripts/check-arabic-source.mjs",
     "start": "vite preview",
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",

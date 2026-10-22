@@ -27,6 +27,8 @@ public sealed class AuthController(
 {
     private const string UniformResponse = "If the account is eligible, instructions will be sent.";
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    private string FrontendUrl(string path, string email, string token) =>
+        $"{(configuration?["Frontend:BaseUrl"] ?? "http://localhost:8088").TrimEnd('/')}{path}?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
 
     private void Audit(string kind, Guid? userId = null, Guid? tenantId = null, string? identifier = null) =>
         db.SecurityAuditLogs.Add(new SecurityAuditLog
@@ -51,6 +53,7 @@ public sealed class AuthController(
         var tenant = new Tenant { Id = Guid.NewGuid(), Name = request.TenantName.Trim(), Slug = normalizedSlug, Status = "PendingApproval", DefaultLanguage = "en" };
         var user = new User { Id = Guid.NewGuid(), TenantId = tenant.Id, Email = email, Name = request.Name?.Trim(), PasswordHash = passwords.Hash(request.Password), Role = UserRole.TenantOwner };
         db.Tenants.Add(tenant); db.Users.Add(user); await db.SaveChangesAsync();
+        await SendSecurityEmailAsync(user, "email-confirmation", EmailTemplateType.EmailConfirmation, "/confirm-email");
         Audit("tenant.registration.requested", user.Id, tenant.Id, tenant.Slug);
         await db.SaveChangesAsync();
         return Accepted(new TenantRegistrationAcceptedResponse(tenant.Id, "PendingApproval"));
@@ -83,6 +86,7 @@ public sealed class AuthController(
         var client = new Client { Id = Guid.NewGuid(), TenantId = tenantId, UserId = user.Id, CoachId = coachId, Goals = request.Goals?.Trim(), HealthInfo = request.HealthInfo?.Trim() };
         db.Users.Add(user); db.Clients.Add(client); if (invite is not null) invite.AcceptedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
+        await SendSecurityEmailAsync(user, "email-confirmation", EmailTemplateType.EmailConfirmation, "/confirm-email");
         var response = await CreateAuthResponseAsync(user);
         await db.SaveChangesAsync();
         return Ok(response);
@@ -227,19 +231,21 @@ public sealed class AuthController(
     [EnableRateLimiting("auth-forgot")]
     public async Task<IActionResult> ForgotPassword(TenantEmailRequest request)
     {
-        var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Slug == request.TenantSlug.Trim().ToLowerInvariant());
-        if (tenant is not null)
+        var email = request.Email.Trim().ToLowerInvariant();
+        var users = db.Users.IgnoreQueryFilters().Where(x => !x.IsDeleted && x.Email == email);
+        if (!string.IsNullOrWhiteSpace(request.TenantSlug))
         {
-            var email = request.Email.Trim().ToLowerInvariant();
-            var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && x.TenantId == tenant.Id && x.Email == email);
-            if (user is not null)
-            {
-                var raw = refreshTokens.GenerateToken();
-                db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = tenant.Id, Purpose = "password-reset", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
-                await emails.SendTemplateAsync(user.Email, EmailTemplateType.PasswordReset, user.Language,
-                    new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty }, HttpContext.RequestAborted);
-                Audit("password-reset.requested", user.Id, tenant.Id);
-            }
+            var slug = request.TenantSlug.Trim().ToLowerInvariant();
+            var tenantId = await db.Tenants.Where(x => x.Slug == slug).Select(x => (Guid?)x.Id).FirstOrDefaultAsync();
+            users = tenantId is null ? users.Where(_ => false) : users.Where(x => x.TenantId == tenantId);
+        }
+        foreach (var user in await users.ToListAsync())
+        {
+            var raw = refreshTokens.GenerateToken();
+            db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = user.TenantId, Purpose = "password-reset", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
+            await emails.SendTemplateAsync(user.Email, EmailTemplateType.PasswordReset, user.Language,
+                new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty, ["actionUrl"] = FrontendUrl("/reset-password", user.Email, raw) }, HttpContext.RequestAborted);
+            Audit("password-reset.requested", user.Id, user.TenantId);
         }
         await db.SaveChangesAsync(); return Ok(new { Message = UniformResponse });
     }
@@ -268,29 +274,58 @@ public sealed class AuthController(
     }
 
     [AllowAnonymous, HttpPost("resend-confirmation")]
+    [EnableRateLimiting("auth-forgot")]
     public async Task<IActionResult> ResendConfirmation(TenantEmailRequest request)
     {
-        var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Slug == request.TenantSlug.Trim().ToLowerInvariant());
-        if (tenant is not null)
+        var email = request.Email.Trim().ToLowerInvariant();
+        var users = db.Users.IgnoreQueryFilters().Where(x => !x.IsDeleted && !x.EmailConfirmed && x.Email == email);
+        if (!string.IsNullOrWhiteSpace(request.TenantSlug))
         {
-            var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && !x.EmailConfirmed && x.TenantId == tenant.Id && x.Email == request.Email.Trim().ToLowerInvariant());
-            if (user is not null)
-            {
-                var raw = refreshTokens.GenerateToken(); db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = tenant.Id, Purpose = "email-confirmation", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
-                await emails.SendTemplateAsync(user.Email, EmailTemplateType.EmailConfirmation, user.Language,
-                    new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty }, HttpContext.RequestAborted);
-            }
+            var slug = request.TenantSlug.Trim().ToLowerInvariant();
+            var tenantId = await db.Tenants.Where(x => x.Slug == slug).Select(x => (Guid?)x.Id).FirstOrDefaultAsync();
+            users = tenantId is null ? users.Where(_ => false) : users.Where(x => x.TenantId == tenantId);
+        }
+        foreach (var user in await users.ToListAsync())
+        {
+            var raw = refreshTokens.GenerateToken();
+            db.UserSecurityTokens.Add(new UserSecurityToken { Id = Guid.NewGuid(), UserId = user.Id, TenantId = user.TenantId, Purpose = "email-confirmation", TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30) });
+            await emails.SendTemplateAsync(user.Email, EmailTemplateType.EmailConfirmation, user.Language,
+                new Dictionary<string, string> { ["token"] = raw, ["name"] = user.Name ?? string.Empty, ["actionUrl"] = FrontendUrl("/confirm-email", user.Email, raw) }, HttpContext.RequestAborted);
         }
         await db.SaveChangesAsync(); return Ok(new { Message = UniformResponse });
     }
 
-    private async Task<UserSecurityToken?> FindSecurityToken(string slug, string email, string raw, string purpose)
+    private async Task<UserSecurityToken?> FindSecurityToken(string? slug, string email, string raw, string purpose)
     {
-        var tenant = await db.Tenants.FirstOrDefaultAsync(x => x.Slug == slug.Trim().ToLowerInvariant());
-        if (tenant is null) return null;
-        var token = await db.UserSecurityTokens.FirstOrDefaultAsync(x => x.TenantId == tenant.Id && x.Purpose == purpose && x.TokenHash == Hash(raw));
+        IQueryable<UserSecurityToken> tokens = db.UserSecurityTokens.Where(x => x.Purpose == purpose && x.TokenHash == Hash(raw));
+        if (!string.IsNullOrWhiteSpace(slug))
+        {
+            var normalizedSlug = slug.Trim().ToLowerInvariant();
+            var tenantId = await db.Tenants.Where(x => x.Slug == normalizedSlug).Select(x => (Guid?)x.Id).FirstOrDefaultAsync();
+            if (tenantId is null) return null;
+            tokens = tokens.Where(x => x.TenantId == tenantId);
+        }
+        var token = await tokens.FirstOrDefaultAsync();
         if (token is null || token.UsedAt.HasValue || token.ExpiresAt <= DateTime.UtcNow) return null;
         return await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == token.UserId && !x.IsDeleted && x.Email == email.Trim().ToLowerInvariant()) ? token : null;
+    }
+
+    private async Task SendSecurityEmailAsync(User user, string purpose, EmailTemplateType template, string path)
+    {
+        var raw = refreshTokens.GenerateToken();
+        db.UserSecurityTokens.Add(new UserSecurityToken
+        {
+            Id = Guid.NewGuid(), UserId = user.Id, TenantId = user.TenantId, Purpose = purpose,
+            TokenHash = Hash(raw), ExpiresAt = DateTime.UtcNow.AddMinutes(30)
+        });
+        await db.SaveChangesAsync();
+        await emails.SendTemplateAsync(user.Email, template, user.Language,
+            new Dictionary<string, string>
+            {
+                ["token"] = raw,
+                ["name"] = user.Name ?? string.Empty,
+                ["actionUrl"] = FrontendUrl(path, user.Email, raw)
+            }, HttpContext.RequestAborted);
     }
 
     private async Task RevokeAllAsync(Guid userId)

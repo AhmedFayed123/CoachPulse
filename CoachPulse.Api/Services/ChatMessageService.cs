@@ -10,12 +10,15 @@ public sealed class ChatMessageService(CoachPulseDbContext db)
 {
     private static readonly ConcurrentDictionary<Guid, (DateTime Start, int Count)> Windows = new();
 
-    public async Task<Message?> SendAsync(Guid senderId, Guid tenantId, string role, Guid clientUserId, string? content, IReadOnlyCollection<Guid>? fileIds, CancellationToken ct)
+    public async Task<Message?> SendAsync(Guid senderId, Guid tenantId, string role, Guid clientUserId, string? content, IReadOnlyCollection<Guid>? fileIds, CancellationToken ct, Guid? recipientUserId = null)
     {
-        var client = await db.Clients.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.UserId == clientUserId && c.TenantId == tenantId && c.CoachId != null, ct);
-        if (client is null || (role == "Client" && client.UserId != senderId) || (role is "TenantOwner" or "CoachStaff" && client.CoachId != senderId)) return null;
-        var receiverId = role == "Client" ? client.CoachId!.Value : client.UserId;
-        if (role == "TenantOwner" && client.CoachId != senderId) return null;
+        var client = await db.Clients.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.UserId == clientUserId && c.TenantId == tenantId, ct);
+        if (client is null) return null;
+        if (role == "Client" && (client.UserId != senderId || client.CoachId is null && !recipientUserId.HasValue)) return null;
+        if (role == "CoachStaff" && client.CoachId != senderId) return null;
+        if (role is not ("Client" or "CoachStaff" or "TenantOwner")) return null;
+        if (role == "Client" && recipientUserId.HasValue && recipientUserId != client.CoachId && !await db.Users.IgnoreQueryFilters().AnyAsync(x => x.Id == recipientUserId && x.TenantId == tenantId && x.Role == CoachPulse.Domain.Enums.UserRole.TenantOwner && !x.IsDeleted, ct)) return null;
+        var receiverId = role == "Client" ? recipientUserId ?? client.CoachId!.Value : client.UserId;
         var body = content?.Trim() ?? "";
         var attachments = fileIds?.Distinct().ToArray() ?? [];
         if (body.Length == 0 && attachments.Length == 0 || body.Length > 2000 || attachments.Length > 10) throw new ArgumentException("Message must contain text or attachments and be within limits.");

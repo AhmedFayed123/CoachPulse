@@ -70,7 +70,7 @@ public sealed class SubscriptionsController(CoachPulseDbContext db, ISubscriptio
     public async Task<IActionResult> List(CancellationToken ct)
     {
         if(!TryIdentity(out var tenant,out var user,out var role))return Unauthorized();
-        var q=db.Subscriptions.AsNoTracking().Include(x=>x.Client).Where(x=>x.TenantId==tenant);
+        var q=db.Subscriptions.AsNoTracking().Include(x=>x.Client).ThenInclude(x=>x.User).Include(x=>x.Plan).Where(x=>x.TenantId==tenant);
         if(role==UserRole.CoachStaff) q=q.Where(x=>x.Client.CoachId==user);
         return Ok(await q.OrderByDescending(x=>x.StartDate).Select(x=>View(x)).ToListAsync(ct));
     }
@@ -79,7 +79,7 @@ public sealed class SubscriptionsController(CoachPulseDbContext db, ISubscriptio
     public async Task<IActionResult> Get(Guid id,CancellationToken ct)
     {
         if(!TryIdentity(out var tenant,out var user,out var role))return Unauthorized();
-        var q=db.Subscriptions.AsNoTracking().Include(x=>x.Client).Where(x=>x.Id==id && x.TenantId==tenant);
+        var q=db.Subscriptions.AsNoTracking().Include(x=>x.Client).ThenInclude(x=>x.User).Include(x=>x.Plan).Where(x=>x.Id==id && x.TenantId==tenant);
         if(role==UserRole.CoachStaff)q=q.Where(x=>x.Client.CoachId==user);
         var value=await q.Select(x=>View(x)).FirstOrDefaultAsync(ct);return value is null?NotFound():Ok(value);
     }
@@ -126,7 +126,7 @@ public sealed class SubscriptionsController(CoachPulseDbContext db, ISubscriptio
     }
     private void SaveIdempotency(string key,Guid user,Guid tenant,string endpoint,object request,int status,object body)=>db.IdempotencyKeys.Add(new IdempotencyKey{Id=Guid.NewGuid(),TenantId=tenant,UserId=user,Endpoint=endpoint,Key=key,RequestHash=Hash(JsonSerializer.Serialize(request,JsonSerializerOptions.Web)),ResponseSnapshot=JsonSerializer.Serialize(new Snapshot(status,JsonSerializer.Serialize(body,JsonSerializerOptions.Web)),JsonSerializerOptions.Web),CreatedAt=DateTime.UtcNow});
     private static string Hash(string s)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(s)));
-    private static object View(Subscription x)=>new{x.Id,x.TenantId,x.ClientId,x.PlanId,PlanName=x.Plan.Name,Price=x.SnapshotPrice,DurationDays=x.SnapshotDurationDays,x.Status,x.StartDate,x.EndDate,x.RemainingDays};
+    private static object View(Subscription x)=>new{x.Id,x.TenantId,x.ClientId,ClientName=x.Client.User.Name,ClientEmail=x.Client.User.Email,x.PlanId,PlanName=x.Plan.Name,Price=x.SnapshotPrice,DurationDays=x.SnapshotDurationDays,x.Status,x.StartDate,x.EndDate,x.RemainingDays};
     private bool TryIdentity(out Guid tenant,out Guid user,out UserRole role){tenant=Guid.Empty;user=Guid.Empty;role=default;return Guid.TryParse(User.FindFirst("tenantId")?.Value,out tenant)&&Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out user)&&Enum.TryParse(User.FindFirst(ClaimTypes.Role)?.Value,out role);}
     private void Audit(Guid user,Guid tenant,string type,string identifier)=>db.SecurityAuditLogs.Add(new(){Id=Guid.NewGuid(),UserId=user,TenantId=tenant,EventType=type,Identifier=identifier,CreatedAt=DateTime.UtcNow});
     private sealed record Snapshot(int Status,string Body);
