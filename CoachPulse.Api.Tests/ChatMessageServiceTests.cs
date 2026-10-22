@@ -66,4 +66,25 @@ public sealed class ChatMessageServiceTests
         Assert.Equal(ownerId, message.SenderId);
         Assert.Equal(clientId, message.ReceiverId);
     }
+
+    [Fact]
+    public async Task ClientMessageToWorkspaceOwner_UsesASeparateOwnerConversation()
+    {
+        var tenant = Guid.NewGuid(); var ownerId = Guid.NewGuid(); var clientId = Guid.NewGuid(); var coachId = Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<CoachPulseDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+        await using var db = new CoachPulseDbContext(options, new CurrentTenant(tenant));
+        db.Users.AddRange(
+            new User { Id = ownerId, TenantId = tenant, Email = "owner@local", Role = CoachPulse.Domain.Enums.UserRole.TenantOwner },
+            new User { Id = clientId, TenantId = tenant, Email = "client@local", Role = CoachPulse.Domain.Enums.UserRole.Client },
+            new User { Id = coachId, TenantId = tenant, Email = "coach@local", Role = CoachPulse.Domain.Enums.UserRole.CoachStaff });
+        db.Clients.Add(new Client { Id = Guid.NewGuid(), TenantId = tenant, UserId = clientId, CoachId = coachId });
+        await db.SaveChangesAsync();
+
+        var message = await new ChatMessageService(db).SendAsync(clientId, tenant, "Client", clientId, "Private note", null, default, ownerId);
+
+        Assert.NotNull(message);
+        Assert.Equal(clientId, message.SenderId);
+        Assert.Equal(ownerId, message.ReceiverId);
+        Assert.DoesNotContain(await db.Messages.ToListAsync(), row => row.ReceiverId == coachId);
+    }
 }

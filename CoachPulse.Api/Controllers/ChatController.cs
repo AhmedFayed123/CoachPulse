@@ -116,19 +116,6 @@ public class ChatController : ControllerBase
 
         var firstParticipant = userId;
         var secondParticipant = otherUserId;
-        if (role == "TenantOwner")
-        {
-            var hasOwnerConversation = await _context.Messages.AnyAsync(m => m.TenantId == tenantId && ((m.SenderId == userId && m.ReceiverId == otherUserId) || (m.SenderId == otherUserId && m.ReceiverId == userId)));
-            if (!hasOwnerConversation)
-            {
-                var assignedCoach = await _context.Clients.Where(c => c.TenantId == tenantId && c.UserId == otherUserId).Select(c => c.CoachId).FirstOrDefaultAsync();
-                if (assignedCoach is not null)
-                {
-                    firstParticipant = otherUserId;
-                    secondParticipant = assignedCoach.Value;
-                }
-            }
-        }
         var query = _context.Messages
             .AsNoTracking()
             .Where(m =>

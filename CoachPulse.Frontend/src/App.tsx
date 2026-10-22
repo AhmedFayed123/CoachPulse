@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch, apiPost, clearSession, endpoints, saveSession, accessToken, downloadFile, uploadFile } from './api/client'
-import { ApiError, type AcceptStaffInviteRequest, type AuthResponse, type LoginRequest, type PaymentsPage, type RegisterClientRequest, type RegisterTenantRequest, type TenantEmailRequest, type UserRole, type Schema } from './api/types'
+import { ApiError, type AcceptStaffInviteRequest, type AuthResponse, type LoginRequest, type RegisterClientRequest, type RegisterTenantRequest, type TenantEmailRequest, type UserRole, type Schema } from './api/types'
 import { queryKeys, useChatConversation, useClients, useConversations, useDashboard, useMe, useMyDashboard, useMyMealPlan, useMyProgram, useNotifications, useNotificationsHub, usePayments, useSendClientMessage, useUpdateProfile } from './api/hooks'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
@@ -565,7 +565,7 @@ function CoachPrograms() {
     if (firstExercise?.rowVersion && typeof firstExercise.rowVersion === 'string') setExerciseRowVersion(firstExercise.rowVersion)
   }, [detail.data, programExercises.data])
   const update = async (event: React.FormEvent) => { event.preventDefault(); const body: Schema<'ProgramUpdateRequest'> = { title, durationDays: Number(durationDays), rowVersion }; try { await apiFetch<void>(`/programs/${id}`, { method: 'PUT', body: JSON.stringify(body) }); setMessage("\u062A\u0645 \u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C."); await cache.invalidateQueries({ queryKey: ['program', id] }) } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u062A\u0639\u062F\u064A\u0644 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C.") } }
-  const addExercise = async (event: React.FormEvent) => { event.preventDefault(); const body: Schema<'AddProgramExerciseRequest'> = { exerciseId, sets: Number(sets), reps, day: Number(day), rowVersion }; try { await apiFetch<unknown>(`/programs/${id}/exercises`, { method: 'POST', body: JSON.stringify(body) }); setMessage("\u062A\u0645\u062A \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u062A\u0645\u0631\u064A\u0646 \u0644\u0644\u0628\u0631\u0646\u0627\u0645\u062C."); await cache.invalidateQueries({ queryKey: ['program', id] }); await cache.invalidateQueries({ queryKey: ['program', id, 'exercises'] }) } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631\u062A \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u062A\u0645\u0631\u064A\u0646.") } }
+  const addExercise = async (event: React.FormEvent) => { event.preventDefault(); const body: Schema<'AddProgramExerciseRequest'> = { exerciseId, sets: Number(sets), reps, day: Number(day), rowVersion }; try { await apiFetch<unknown>(`/programs/${id}/exercises`, { method: 'POST', body: JSON.stringify(body) }); setExerciseId(''); setSets('3'); setReps('10-12'); setDay('1'); setMessage("\u062A\u0645\u062A \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u062A\u0645\u0631\u064A\u0646 \u0644\u0644\u0628\u0631\u0646\u0627\u0645\u062C."); await cache.invalidateQueries({ queryKey: ['program', id] }); await cache.invalidateQueries({ queryKey: ['program', id, 'exercises'] }) } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631\u062A \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u062A\u0645\u0631\u064A\u0646.") } }
   const act = async (action: 'archive' | 'duplicate' | 'delete') => { if (action === 'delete' && !window.confirm(t('Delete this draft?'))) return; try { if (action === 'archive') await apiFetch<void>('/programs/' + id + '/archive', { method: 'PUT', body: JSON.stringify({ rowVersion } satisfies Schema<'ProgramVersionRequest'>) }); else if (action === 'duplicate') await apiFetch<unknown>('/programs/' + id + '/duplicate', { method: 'POST' }); else await apiFetch<void>('/programs/' + id, { method: 'DELETE', body: JSON.stringify({ rowVersion } satisfies Schema<'ProgramVersionRequest'>) }); setMessage(action === 'delete' ? 'Draft deleted.' : action === 'archive' ? 'Program archived.' : 'Program duplicated.'); await cache.invalidateQueries({ queryKey: ['programs'] }); await cache.invalidateQueries({ queryKey: ['program', id] }) } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not complete the program action.') } }
   const saveTemplate = async () => { try { const body: Schema<'CreateProgramRequest'> = { title: title.trim() || stringField(detail.data, 'title') || '' }; await apiFetch<unknown>(`/programs/${id}/save-as-template`, { method: 'POST', body: JSON.stringify(body) }); await cache.invalidateQueries({ queryKey: ['program-templates'] }); setMessage("\u062A\u0645 \u062D\u0641\u0638 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C \u0643\u0642\u0627\u0644\u0628.") } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u062D\u0641\u0638 \u0627\u0644\u0642\u0627\u0644\u0628.") } }
   const createFromTemplate = async () => { if (!templateId || !templateClientId) return; const body: Schema<'CreateProgramFromTemplateRequest'> = { clientId: templateClientId }; try { const created = await apiFetch<unknown>(`/programs/${templateId}/from-template`, { method: 'POST', body: JSON.stringify(body) }); const newId = responseId(created); await cache.invalidateQueries({ queryKey: ['programs'] }); setTemplateId(''); setTemplateClientId(''); if (newId) { onProgramCreated(newId); setMessage("\u062A\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C. \u062A\u0645 \u0627\u0633\u0646\u0627\u062F\u0647 \u0644\u0644\u0639\u0645\u064A\u0644 \u0627\u0644\u0645\u062E\u062A\u0627\u0631.") } else setMessage("\u062A\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C \u0645\u0646 \u0627\u0644\u0642\u0627\u0644\u0628. \u0627\u0641\u062A\u062D\u0647 \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0628\u0631\u0627\u0645\u062C.") } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C \u0645\u0646 \u0627\u0644\u0642\u0627\u0644\u0628.") } }
@@ -714,7 +714,7 @@ function TenantPlans() {
   const [message, setMessage] = useState('')
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const selectedPlan = useQuery({ queryKey: ['tenant', 'plan', selectedPlanId], queryFn: () => apiFetch<unknown>(`/plans/${selectedPlanId}`), enabled: Boolean(selectedPlanId) })
-  const create = async (event: React.FormEvent) => { event.preventDefault(); const body: Schema<'CreatePlanRequest'> = { name, price: Number(price), durationDays: Number(durationDays) }; try { await apiFetch<unknown>('/tenant/plans', { method: 'POST', body: JSON.stringify(body) }); setName(''); setPrice(''); setMessage(t('Plan created. Clients can now request it.')); await cache.invalidateQueries({ queryKey: ['tenant', 'plans'] }); await cache.invalidateQueries({ queryKey: ['public', 'plans'] }) } catch (error) { setMessage(error instanceof Error ? error.message : t('Could not create the plan.')) } }
+  const create = async (event: React.FormEvent) => { event.preventDefault(); const body: Schema<'CreatePlanRequest'> = { name, price: Number(price), durationDays: Number(durationDays) }; try { await apiFetch<unknown>('/tenant/plans', { method: 'POST', body: JSON.stringify(body) }); setName(''); setPrice(''); setDurationDays('30'); setMessage(t('Plan created. Clients can now request it.')); await cache.invalidateQueries({ queryKey: ['tenant', 'plans'] }); await cache.invalidateQueries({ queryKey: ['public', 'plans'] }) } catch (error) { setMessage(error instanceof Error ? error.message : t('Could not create the plan.')) } }
   const update = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); const body: Schema<'PlanUpdate'> = { name: String(form.get('name') ?? ''), price: Number(form.get('price')), durationDays: Number(form.get('durationDays')) }; try { await apiFetch<void>(`/tenant/plans/${selectedPlanId}`, { method: 'PUT', body: JSON.stringify(body) }); setMessage(t('Plan updated. Existing subscriptions keep their original price and duration.')); await cache.invalidateQueries({ queryKey: ['tenant', 'plans'] }); await cache.invalidateQueries({ queryKey: ['tenant', 'plan', selectedPlanId] }) } catch (error) { setMessage(error instanceof Error ? error.message : t('Could not update the plan.')) } }
   const archive = async () => { if (!selectedPlanId || !window.confirm(t('Archive this plan? Clients can no longer request it.'))) return; try { await apiFetch<void>(`/tenant/plans/${selectedPlanId}/archive`, { method: 'PUT' }); setMessage(t('Plan archived. Existing subscriptions are unchanged.')); await cache.invalidateQueries({ queryKey: ['tenant', 'plans'] }); await cache.invalidateQueries({ queryKey: ['tenant', 'plan', selectedPlanId] }) } catch (error) { setMessage(error instanceof Error ? error.message : t('Could not archive the plan.')) } }
   const planRows = objectItems(plans.data)
@@ -1021,18 +1021,18 @@ function Payments() {
   const cache = useQueryClient()
   const clients = useClients(1,100)
   const subscriptions = useQuery({ queryKey:['tenant','subscriptions'], queryFn:()=>apiFetch<unknown>('/subscriptions?page=1&pageSize=100'), enabled:me.data?.role==='TenantOwner' })
- const pending = useQuery({ queryKey:['tenant','payments','pending'], queryFn:()=>apiFetch<PaymentsPage>('/tenant/payments/pending?page=1&pageSize=20') })
+ const pending = useQuery({ queryKey:['tenant','payments','pending'], queryFn:()=>apiFetch<{items:(Schema<'PaymentListItem'> & {clientName?:string|null;clientEmail?:string|null})[]}>('/tenant/payments/pending?page=1&pageSize=20') })
   const [refundId,setRefundId]=useState(''); const [refundAmount,setRefundAmount]=useState(''); const [refundReason,setRefundReason]=useState(''); const [manualSubscription,setManualSubscription]=useState(''); const [manualAmount,setManualAmount]=useState(''); const [message,setMessage]=useState('')
   const pendingSubscriptions=objectItems(subscriptions.data).filter(row=>String(row.status??'').toLowerCase()==='pending')
   useEffect(()=>{const row=objectItems(subscriptions.data).find(item=>String(item.status??'').toLowerCase()==='pending'&&String(item.id??'')===manualSubscription);if(row)setManualAmount(String(row.price??row.snapshotPrice??''))},[manualSubscription,subscriptions.data])
   const review=async(id:string,confirm:boolean)=>{try{if(confirm)await apiFetch<void>(`/payments/instapay/${id}/confirm`,{method:'PUT'});else{const reason:Schema<'RejectPaymentRequest'>={reason:window.prompt(t('Rejection reason'))??''};if(!(reason.reason??'').trim())return;await apiFetch<void>(`/payments/instapay/${id}/reject`,{method:'PUT',body:JSON.stringify(reason)})}await cache.invalidateQueries({queryKey:queryKeys.payments});await cache.invalidateQueries({queryKey:['tenant','payments','pending']});await cache.invalidateQueries({queryKey:['tenant','subscriptions']});setMessage(t(confirm?'Payment confirmed and subscription activated.':'Payment rejected.'))}catch(error){setMessage(error instanceof Error?error.message:t('Could not review the payment.'))}}
-  const refund=async(event:React.FormEvent)=>{event.preventDefault();const body:Schema<'RefundRequest'>={amount:Number(refundAmount),reason:refundReason};try{await apiPost(`/payments/${refundId}/refund`,body,true);setMessage(t('Refund recorded.'));await cache.invalidateQueries({queryKey:queryKeys.payments})}catch(error){setMessage(error instanceof Error?error.message:t('Could not process the refund.'))}}
+  const refund=async(event:React.FormEvent)=>{event.preventDefault();const body:Schema<'RefundRequest'>={amount:Number(refundAmount),reason:refundReason};try{await apiPost(`/payments/${refundId}/refund`,body,true);setRefundId('');setRefundAmount('');setRefundReason('');setMessage(t('Refund recorded.'));await cache.invalidateQueries({queryKey:queryKeys.payments})}catch(error){setMessage(error instanceof Error?error.message:t('Could not process the refund.'))}}
   const manual=async(event:React.FormEvent)=>{event.preventDefault();if(!manualSubscription)return;const body:Schema<'ManualPaymentRequest'>={subscriptionId:manualSubscription,amount:Number(manualAmount)};try{await apiPost('/tenant/payments/manual',body,true);setMessage(t('Cash payment recorded and subscription activated.'));setManualSubscription('');setManualAmount('');await cache.invalidateQueries({queryKey:queryKeys.payments});await cache.invalidateQueries({queryKey:['tenant','payments','pending']});await cache.invalidateQueries({queryKey:['tenant','subscriptions']})}catch(error){setMessage(error instanceof Error?error.message:t('Could not record the cash payment.'))}}
   const exportCsv=async()=>{try{const file=await downloadFile('/tenant/payments/export');const url=URL.createObjectURL(file.blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=file.filename;anchor.click();URL.revokeObjectURL(url)}catch(error){setMessage(error instanceof Error?error.message:t('Could not download the report.'))}}
   if(query.isLoading)return <Loading />
   if(query.isError)return <ErrorState error={query.error}/>
   return <Page title={t('Payments')} subtitle={t('Review client transfers, record cash collections and manage refunds.')}>
-    <section className="panel"><div className="section-heading"><div><h2>{t('Transfers awaiting review')}</h2><p>{t('Confirm only after matching the transfer reference and receipt.')}</p></div></div>{pending.isLoading?<Loading/>:pending.isError?<ErrorState error={pending.error}/>:!pending.data?.items?.length?<div className="empty-state">{t('No transfers are waiting for review.')}</div>:<div className="table-wrap"><table><thead><tr><th>{t('Client')}</th><th>{t('Amount')}</th><th>{t('Method')}</th><th>{t('Status')}</th><th>{t('Review')}</th></tr></thead><tbody>{pending.data.items.map((payment,index)=><tr key={payment.id??index}><td>{String(payment.subscriptionId??t('Subscription payment'))}</td><td>{payment.amount??0} {payment.currency??''}</td><td>{t(String(payment.method??''))}</td><td>{t(String(payment.status??''))}</td><td>{payment.id&&<><button onClick={()=>void review(payment.id!,true)}>{t('Confirm and activate')}</button> <button className="danger" onClick={()=>void review(payment.id!,false)}>{t('Reject')}</button></>}</td></tr>)}</tbody></table></div>}</section>
+    <section className="panel"><div className="section-heading"><div><h2>{t('Transfers awaiting review')}</h2><p>{t('Confirm only after matching the transfer reference and receipt.')}</p></div></div>{pending.isLoading?<Loading/>:pending.isError?<ErrorState error={pending.error}/>:!pending.data?.items?.length?<div className="empty-state">{t('No transfers are waiting for review.')}</div>:<div className="table-wrap"><table><thead><tr><th>{t('Client')}</th><th>{t('Amount')}</th><th>{t('Method')}</th><th>{t('Status')}</th><th>{t('Receipt')}</th><th>{t('Review')}</th></tr></thead><tbody>{pending.data.items.map((payment,index)=><tr key={payment.id??index}><td><div className="payment-client"><strong>{payment.clientName||t('Client')}</strong><span>{payment.clientEmail||'—'}</span></div></td><td>{payment.amount??0} {payment.currency??''}</td><td>{t(String(payment.method??''))}</td><td>{t(String(payment.status??''))}</td><td>{payment.receiptFileId?<PaymentReceiptPreview fileId={payment.receiptFileId} />:<span className="data-muted">{t('No receipt attached')}</span>}</td><td>{payment.id&&<><button onClick={()=>void review(payment.id!,true)}>{t('Confirm and activate')}</button> <button className="danger" onClick={()=>void review(payment.id!,false)}>{t('Reject')}</button></>}</td></tr>)}</tbody></table></div>}</section>
     {me.data?.role==='TenantOwner'&&<section className="panel"><h2>{t('Record a cash payment')}</h2><p>{t('Only a pending client request can be recorded. The exact plan price is filled in automatically. Recording the payment confirms it and activates the subscription.')}</p>{subscriptions.isLoading?<Loading/>:subscriptions.isError?<ErrorState error={subscriptions.error}/>:pendingSubscriptions.length===0?<div className="empty-state">{t('No pending requests. Ask the client to choose a plan and submit a subscription request first.')}</div>:<form onSubmit={event=>void manual(event)}><EntitySelect label={t('Pending client request')} value={manualSubscription} onChange={setManualSubscription} data={{items:pendingSubscriptions.map(row=>({...row,id:row.id,name:`${String(objectItems(clients.data).find(client=>String(client.id??'')===String(row.clientId??''))?.name??t('Client'))} - ${String(row.planName??'Plan')} - ${String(row.price??row.snapshotPrice??'')} ${String(row.currency??'EGP')}`}))}}/><label>{t('Amount')}<input type="number" step="0.01" min="0.01" value={manualAmount} readOnly required/></label><button disabled={!manualSubscription}>{t('Record cash and activate')}</button></form>}</section>}
     {me.data?.role==='TenantOwner'&&<section className="panel"><h2>{t('Refund a payment')}</h2><form onSubmit={event=>void refund(event)}><EntitySelect label={t('Choose a payment')} value={refundId} onChange={setRefundId} data={query.data}/><label>{t('Amount')}<input type="number" step="0.01" min="0.01" value={refundAmount} onChange={event=>setRefundAmount(event.target.value)} required/></label><label>{t('Reason')}<input value={refundReason} onChange={event=>setRefundReason(event.target.value)} required/></label><button disabled={!refundId}>{t('Process refund')}</button></form><button className="secondary-button" onClick={()=>void exportCsv()}>{t('Export CSV')}</button></section>}
     <Table headers={[t('Client'),t('Amount'),t('Method'),t('Status')]} rows={(query.data?.items??[]).map(payment=>{const subscription=objectItems(subscriptions.data).find(row=>String(row.id??'')===String(payment.subscriptionId??''));const client=objectItems(clients.data).find(row=>String(row.id??'')===String(subscription?.clientId??''));return [String(client?.name??t('Client')),`${payment.amount??0} ${payment.currency??''}`,t(String(payment.method??'')),t(String(payment.status??''))]})}/>{message&&<p role="status" className="form-feedback">{message}</p>}
@@ -1044,6 +1044,19 @@ function Payments() {
     return t('New update')
   }
   return raw || (field === 'title' ? t('Update') : '')
+}
+function PaymentReceiptPreview({ fileId }: { fileId: string }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  const file = useQuery({ queryKey: ['payment-receipt', fileId], queryFn: () => downloadFile(`/files/${fileId}`), enabled: open, staleTime: 5 * 60_000 })
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    if (!file.data) { setUrl(''); return }
+    const objectUrl = URL.createObjectURL(file.data.blob)
+    setUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file.data])
+  return <div className="payment-receipt"><button type="button" className="secondary-button" aria-expanded={open} onClick={() => setOpen(value => !value)}>{t(open ? 'Hide receipt' : 'View receipt')}</button>{open && (file.isLoading ? <span>{t('Loading attachment…')}</span> : file.isError ? <ErrorState error={file.error} /> : url && file.data ? file.data.blob.type.startsWith('image/') ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={t('Payment receipt')} loading="lazy" /></a> : file.data.blob.type === 'application/pdf' ? <a href={url} target="_blank" rel="noreferrer">{t('Open payment receipt PDF')}</a> : <a href={url} download={file.data.filename}>{t('Download receipt')}</a> : null)}</div>
 }
 function NotificationCenter() {
   const { t, language } = useLanguage()
@@ -1265,7 +1278,7 @@ function AiAdvancedWorkspace() {
   const cache = useQueryClient()
   const [searchParams] = useSearchParams()
   const { language, t } = useLanguage()
-  const clients = useClients()
+  const clients = useClients(1, 100)
   const drafts = useQuery({ queryKey: ['ai', 'generated-programs'], queryFn: () => apiFetch<unknown>('/ai/generated-programs?page=1&pageSize=100') })
   const [programId, setProgramId] = useState(() => searchParams.get('draft') ?? '')
   const [clientId, setClientId] = useState('')
@@ -1276,6 +1289,8 @@ function AiAdvancedWorkspace() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null)
   const [message, setMessage] = useState('')
   const detail = useQuery({ queryKey: ['ai', 'generated-program', programId], queryFn: () => apiFetch<unknown>(`/ai/generated-programs/${programId}`), enabled: Boolean(programId) })
+  const detailClientId = stringField(detail.data, 'clientId') ?? ''
+  const detailClient = useQuery({ queryKey: ['ai', 'draft-client', detailClientId], queryFn: () => apiFetch<unknown>(`/clients/${detailClientId}`), enabled: Boolean(detailClientId) })
   const history = useQuery({ queryKey: ['ai', 'churn-history', clientId], queryFn: () => apiFetch<unknown>(`/ai/churn/clients/${clientId}/history`), enabled: Boolean(clientId) })
   const draftContent = readGeneratedDraft(detail.data)
   const unmatchedItems = Array.isArray(draftContent.unmatchedExercises) ? draftContent.unmatchedExercises.map(String) : []
@@ -1328,18 +1343,20 @@ function AiAdvancedWorkspace() {
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not create the progress summary.') }
   }
   const draftRows = objectItems(drafts.data)
-  const clientName = objectItems(clients.data).find(item => String(item.id) === String((detail.data as Record<string, unknown> | undefined)?.clientId))?.name
+  const clientName = stringField(detailClient.data, 'name') ?? objectItems(clients.data).find(item => String(item.id) === detailClientId)?.name
+  const clientEmail = stringField(detailClient.data, 'email')
   const draftStatus = stringField(detail.data, 'status') ?? 'Draft'
   return <Page title={t('AI draft review')} subtitle={t('Review generated training and meal plans before adding them to your workspace.')}>
-    <section className="panel">
+    <section className="panel ai-review-drafts">
       <div className="section-heading"><div><h2>{t('Saved AI drafts')}</h2><p>{t('Choose a draft to inspect its plan, resolve unmatched exercises, and approve it.')}</p></div><Link className="secondary-button" to="/app/ai">{t('Back to AI tools')}</Link></div>
-      {drafts.isLoading ? <Loading /> : drafts.isError ? <ErrorState error={drafts.error} /> : draftRows.length === 0 ? <div className="empty-state">{t('No saved drafts yet. Generate a program first.')}</div> : <div className="program-card-grid">{draftRows.map((item, index) => { const id = String(item.id ?? ''); const name = objectItems(clients.data).find(client => String(client.id) === String(item.clientId))?.name; return <button type="button" className={programId === id ? 'exercise-list-card active' : 'exercise-list-card'} key={id || index} onClick={() => { setProgramId(id); setResult(null); setMessage('') }}><strong>{String(name ?? t('Client'))}</strong><span>{t(String(item.status ?? 'Draft'))}</span><small>{t('Generated with')} {String(item.modelVersion ?? t('AI model'))}</small></button> })}</div>}
+      {drafts.isLoading ? <Loading /> : drafts.isError ? <ErrorState error={drafts.error} /> : draftRows.length === 0 ? <div className="empty-state">{t('No saved drafts yet. Generate a program first.')}</div> : <div className="ai-review-draft-grid">{draftRows.map((item, index) => { const id = String(item.id ?? ''); const client = objectItems(clients.data).find(row => String(row.id) === String(item.clientId)); return <button type="button" className={programId === id ? 'ai-review-draft-card active' : 'ai-review-draft-card'} key={id || index} onClick={() => { setProgramId(id); setResult(null); setMessage('') }}><span className="ai-review-draft-status">{t(String(item.status ?? 'Draft'))}</span><strong>{String(client?.name ?? t('Client'))}</strong><small>{String(client?.email ?? t('Client details appear when selected'))}</small><span>{t('Generated with')} {String(item.modelVersion ?? t('AI model'))}</span></button> })}</div>}
     </section>
-    {programId && <section className="panel">
+    {programId && <section className="panel ai-review-detail">
       {detail.isLoading ? <Loading /> : detail.isError ? <ErrorState error={detail.error} /> : detail.data ? <>
         <div className="section-heading"><div><span className="eyebrow">{t(draftStatus)}</span><h2>{t('Review draft for')} {String(clientName ?? t('Client'))}</h2><p>{t('Prompt version')}: {stringField(detail.data, 'promptVersion') ?? '\u2014'} آ· {t('Model')}: {stringField(detail.data, 'modelVersion') ?? '\u2014'}</p></div></div>
+        <p className="ai-review-client-email">{clientEmail ?? (detailClient.isLoading ? t('Loading client details…') : t('Client email unavailable'))}</p>
         {unmatchedItems.length > 0 && <div className="form-error"><strong>{t('Exercises need attention before approval')}</strong><p>{t('Replace unmatched exercises with items from the exercise library, then save the draft.')}</p><div className="data-chips">{unmatchedItems.map((item, index) => <span className="data-chip" key={index}>{item}</span>)}</div></div>}
-        <div className="admin-dashboard-grid"><section className="nested-panel"><h3>{t('Training plan preview')}</h3><DataValue value={draftContent.workoutPlan} /></section><section className="nested-panel"><h3>{t('Meal plan preview')}</h3><DataValue value={draftContent.mealPlan} /></section></div>
+        <div className="ai-review-preview-grid"><section className="ai-review-preview"><h3>{t('Training plan preview')}</h3><DataValue value={draftContent.workoutPlan} /></section><section className="ai-review-preview"><h3>{t('Meal plan preview')}</h3><DataValue value={draftContent.mealPlan} /></section></div>
         {draftStatus === 'Draft' && <details className="nested-panel"><summary>{t('Advanced draft editing')}</summary><p>{t('Edit structured plan JSON only when needed. Invalid JSON will not be saved.')}</p><form onSubmit={event => void save(event)}><label>{t('Training plan JSON')}<textarea rows={12} value={workoutPlan} onChange={event => setWorkoutPlan(event.target.value)} /></label><label>{t('Meal plan JSON')}<textarea rows={10} value={mealPlan} onChange={event => setMealPlan(event.target.value)} /></label><label>{t('Unmatched exercise names, one per line')}<textarea rows={3} value={unmatched} onChange={event => setUnmatched(event.target.value)} /></label><button type="submit" disabled={detail.isFetching}>{t('Save draft changes')}</button></form></details>}
         {draftStatus === 'Draft' && <section className="nested-panel"><h3>{t('Request a revision')}</h3><p>{t('A revised draft is created separately. This draft remains available.')}</p><label>{t('Notes for the coach assistant')}<textarea maxLength={2000} value={notes} onChange={event => setNotes(event.target.value)} /></label><button onClick={() => void regenerate()} disabled={!notes.trim()}>{t('Create revised draft')}</button></section>}
         {draftStatus === 'Draft' && <div className="actions"><button onClick={() => void review(true)} disabled={unmatchedItems.length > 0}>{t('Approve and create program')}</button><button className="danger" onClick={() => void review(false)}>{t('Reject draft')}</button></div>}
@@ -1489,7 +1506,7 @@ function CheckInsPage() {
   const [weight, setWeight] = useState('')
   const [measurements, setMeasurements] = useState('')
   const [message, setMessage] = useState('')
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setMessage(''); const form = new FormData(); form.append('Weight', weight); form.append('Measurements', measurements); const photos = Array.from((event.currentTarget.elements.namedItem('photos') as HTMLInputElement | null)?.files ?? []).slice(0, 4); try { for (const photo of photos) { const data = new FormData(); data.append('File', photo); data.append('Purpose', 'checkin-photo'); const uploaded = await uploadFile<unknown>('/files/upload', data); const id = responseId(uploaded); if (!id) throw new Error("\u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 \u0644\u0627 \u062A\u062D\u062A\u0648\u064A \u0645\u0639\u0631\u0651\u0641 \u0627\u0644\u0645\u0644\u0641."); form.append('PhotoFileIds', id) } await uploadFile<unknown>('/my/checkins', form); setWeight(''); setMeasurements(''); setMessage("\u062A\u0645 \u0625\u0631\u0633\u0627\u0644 Check-in."); await cache.invalidateQueries({ queryKey: ['my', 'checkins'] }) } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u0625\u0631\u0633\u0627\u0644 Check-in.") } }
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setMessage(''); const form = new FormData(); form.append('Weight', weight); form.append('Measurements', measurements); const photos = Array.from((event.currentTarget.elements.namedItem('photos') as HTMLInputElement | null)?.files ?? []).slice(0, 4); try { for (const photo of photos) { const data = new FormData(); data.append('File', photo); data.append('Purpose', 'checkin-photo'); const uploaded = await uploadFile<unknown>('/files/upload', data); const id = responseId(uploaded); if (!id) throw new Error("\u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631\u0629 \u0644\u0627 \u062A\u062D\u062A\u0648\u064A \u0645\u0639\u0631\u0651\u0641 \u0627\u0644\u0645\u0644\u0641."); form.append('PhotoFileIds', id) } await uploadFile<unknown>('/my/checkins', form); event.currentTarget.reset(); setWeight(''); setMeasurements(''); setMessage("\u062A\u0645 \u0625\u0631\u0633\u0627\u0644 Check-in."); await cache.invalidateQueries({ queryKey: ['my', 'checkins'] }) } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u0625\u0631\u0633\u0627\u0644 Check-in.") } }
   return <Page title="Check-ins" subtitle={'\u062A\u0631\u0641\u0639 \u0627\u0644\u0635\u0648\u0631 \u0625\u0644\u0649 Files API \u0642\u0628\u0644 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0633\u062C\u0644'}><section className="panel"><form onSubmit={event => void submit(event)}><label>الوزي<input type="number" min="1" max="500" step="0.1" value={weight} onChange={event => setWeight(event.target.value)} required /></label><label>القياسات<textarea value={measurements} onChange={event => setMeasurements(event.target.value)} /></label><label>صور (حتى 4)<input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple /></label><button>إرسال Check-in</button></form>{message && <p>{message}</p>}</section>{query.isLoading ? <Loading /> : query.isError ? <ErrorState error={query.error} /> : <JsonPanel value={query.data} />}</Page>
 }
 function ClientSubscriptionPage() {
@@ -1569,7 +1586,7 @@ function ChatTranscript({ value, ownUserId }: { value: unknown; ownUserId?: stri
       return <article key={stringField(row, 'id') ?? index} className={'chat-bubble ' + (mine ? 'mine' : 'theirs')}>
         <p>{typeof row.content === 'string' && row.content ? row.content : fileIds.length ? t('Attachment') : t('Message deleted')}</p>
         {fileIds.length > 0 && <div className="chat-attachments">{fileIds.map(id => <ChatAttachment key={id} id={id} />)}</div>}
-      <footer>{timestamp && !Number.isNaN(timestamp.getTime()) ? new Intl.DateTimeFormat(document.documentElement.lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(timestamp) : ''}{mine && Boolean(row.isRead) && <span> أ‚ |  {t('Read')}</span>}</footer>
+      <footer><time dateTime={timestamp && !Number.isNaN(timestamp.getTime()) ? timestamp.toISOString() : undefined}>{timestamp && !Number.isNaN(timestamp.getTime()) ? new Intl.DateTimeFormat(document.documentElement.lang === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(timestamp) : ''}</time>{mine && Boolean(row.isRead) && <span>{t('Read')}</span>}</footer>
       </article>
     })}
     <div ref={endRef} />
@@ -1579,9 +1596,15 @@ function ClientMessages() {
   const cache = useQueryClient()
   const me = useMe()
   const coach = useQuery({ queryKey: ['my', 'coach'], queryFn: () => apiFetch<unknown>('/my/coach') })
-  const messages = useQuery({ queryKey: ['my', 'messages'], queryFn: () => apiFetch<unknown>('/my/messages?limit=100') })
+  const owners = useQuery({ queryKey: ['my', 'owners'], queryFn: () => apiFetch<unknown>('/my/owners') })
+  const [selectedOwnerId, setSelectedOwnerId] = useState('')
   const coachRecord = coach.data && typeof coach.data === 'object' ? coach.data as Record<string, unknown> : null
   const coachId = responseId(coach.data)
+  const ownerRecords = objectItems(owners.data)
+  const selectedOwner = ownerRecords.find(owner => owner.id === selectedOwnerId) ?? null
+  const chatPartnerId = selectedOwnerId || coachId
+  const partnerRecord = selectedOwner ?? coachRecord
+  const messages = useQuery({ queryKey: ['my', 'messages', chatPartnerId], queryFn: () => apiFetch<unknown>(selectedOwnerId ? `/my/messages/${selectedOwnerId}?limit=100` : '/my/messages?limit=100'), enabled: Boolean(chatPartnerId) })
   const { t, language } = useLanguage()
   const [content, setContent] = useState('')
   const [attachments, setAttachments] = useState<File[]>([])
@@ -1592,28 +1615,28 @@ function ClientMessages() {
   const [hubConnected, setHubConnected] = useState(false)
   const chatConnection = useRef<import('@microsoft/signalr').HubConnection | null>(null)
   useEffect(() => {
-    if (!coachId || !accessToken()) return
+    if (!chatPartnerId || !accessToken()) return
     const connection = new HubConnectionBuilder().withUrl('/hubs/chat', { accessTokenFactory: () => accessToken() || '' }).withAutomaticReconnect().configureLogging(LogLevel.Warning).build()
-    const invalidate = () => void cache.invalidateQueries({ queryKey: ['my', 'messages'] })
+    const invalidate = () => void cache.invalidateQueries({ queryKey: ['my', 'messages', chatPartnerId] })
     connection.on('ReceiveMessage', invalidate)
     connection.on('MessageRead', invalidate)
     let typingTimer: ReturnType<typeof setTimeout> | undefined
     connection.on('UserTyping', payload => {
-      if (payload && typeof payload === 'object' && 'userId' in payload && payload.userId === coachId) {
+      if (payload && typeof payload === 'object' && 'userId' in payload && payload.userId === chatPartnerId) {
         setIsTyping(true)
         if (typingTimer) clearTimeout(typingTimer)
         typingTimer = setTimeout(() => setIsTyping(false), 2500)
       }
     })
     connection.on('PresenceChanged', payload => {
-      if (payload && typeof payload === 'object' && 'userId' in payload && payload.userId === coachId && 'isOnline' in payload && typeof payload.isOnline === 'boolean') setCoachOnline(payload.isOnline)
+      if (payload && typeof payload === 'object' && 'userId' in payload && payload.userId === chatPartnerId && 'isOnline' in payload && typeof payload.isOnline === 'boolean') setCoachOnline(payload.isOnline)
     })
     chatConnection.current = connection
-    void connection.start().then(() => { setHubConnected(true); return connection.invoke('JoinConversation', coachId) }).catch(() => setHubConnected(false))
-    connection.onreconnected(() => { setHubConnected(true); void connection.invoke('JoinConversation', coachId).catch(() => undefined) })
+    void connection.start().then(() => { setHubConnected(true); return connection.invoke('JoinConversation', chatPartnerId) }).catch(() => setHubConnected(false))
+    connection.onreconnected(() => { setHubConnected(true); void connection.invoke('JoinConversation', chatPartnerId).catch(() => undefined) })
     connection.onclose(() => setHubConnected(false))
     return () => { if (typingTimer) clearTimeout(typingTimer); chatConnection.current = null; void connection.stop() }
-  }, [cache, coachId])
+  }, [cache, chatPartnerId])
   const send = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!content.trim() && attachments.length === 0) { setMessage(t('Write a message or attach a file.')); return }
@@ -1632,31 +1655,32 @@ function ClientMessages() {
         fileIds.push(id)
       }
       const body: Schema<'SendMessageRequest'> = { content: content.trim() || null, fileIds }
-      await apiFetch<unknown>('/my/messages', { method: 'POST', body: JSON.stringify(body) })
-      setContent(''); setAttachments([]); formElement.reset(); setMessage(t('Message sent.')); await cache.invalidateQueries({ queryKey: ['my', 'messages'] })
+      await apiFetch<unknown>(selectedOwnerId ? `/my/messages/${selectedOwnerId}` : '/my/messages', { method: 'POST', body: JSON.stringify(body) })
+      setContent(''); setAttachments([]); formElement.reset(); setMessage(t('Message sent.')); await cache.invalidateQueries({ queryKey: ['my', 'messages', chatPartnerId] })
     } catch (error) { setMessage(error instanceof Error ? error.message : t('Could not send the message.')) }
     finally { setSending(false) }
   }
   const markRead = async () => {
     const latest = [...objectItems(messages.data)].reverse().find(item => item.receiverId === me.data?.id && typeof item.id === 'string')
-    if (!latest || typeof latest.id !== 'string' || !coachId) { setMessage("\u0644\u0627 \u062A\u0648\u062C\u062F \u0631\u0633\u0627\u0626\u0644 \u0648\u0627\u0631\u062F\u0629 \u062C\u062F\u064A\u062F\u0629."); return }
+    if (!latest || typeof latest.id !== 'string' || !chatPartnerId) { setMessage("\u0644\u0627 \u062A\u0648\u062C\u062F \u0631\u0633\u0627\u0626\u0644 \u0648\u0627\u0631\u062F\u0629 \u062C\u062F\u064A\u062F\u0629."); return }
     try {
-      if (chatConnection.current?.state === 'Connected') await chatConnection.current.invoke('MarkAsRead', coachId, latest.id)
-      else await apiFetch<void>('/my/messages/read', { method: 'PUT', body: JSON.stringify({ lastMessageId: latest.id } satisfies Schema<'ReadMessageRequest'>) })
-      await cache.invalidateQueries({ queryKey: ['my', 'messages'] }); setMessage("\u062A\u0645 \u062A\u062D\u062F\u064A\u062F \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0627\u0644\u0648\u0627\u0631\u062F\u0629 \u0643\u0645\u0642\u0631\u0648\u0621\u0629.")
+      if (chatConnection.current?.state === 'Connected') await chatConnection.current.invoke('MarkAsRead', chatPartnerId, latest.id)
+      else await apiFetch<void>(selectedOwnerId ? `/my/messages/${selectedOwnerId}/read` : '/my/messages/read', { method: 'PUT', body: JSON.stringify({ lastMessageId: latest.id } satisfies Schema<'ReadMessageRequest'>) })
+      await cache.invalidateQueries({ queryKey: ['my', 'messages', chatPartnerId] }); setMessage("\u062A\u0645 \u062A\u062D\u062F\u064A\u062F \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0627\u0644\u0648\u0627\u0631\u062F\u0629 \u0643\u0645\u0642\u0631\u0648\u0621\u0629.")
     } catch (error) { setMessage(error instanceof Error ? error.message : "\u062A\u0639\u0630\u0631 \u062A\u062D\u062F\u064A\u062B \u062D\u0627\u0644\u0629 \u0627\u0644\u0642\u0631\u0627\u0621\u0629.") }
   }
-  const status = !coachId ? t('No coach assigned') : coachOnline === null ? (hubConnected ? t('Presence unknown') : t('Connecting&')) : coachOnline ? t('Online now') : t('Offline')
-  return <Page title={t('Messages')} subtitle={t('Talk privately with your assigned coach.')}>
+  const status = !chatPartnerId ? t('No coach assigned') : coachOnline === null ? (hubConnected ? t('Presence unknown') : t('Connecting&')) : coachOnline ? t('Online now') : t('Offline')
+  return <Page title={t('Messages')} subtitle={t('Talk privately with your assigned coach or workspace owner.')}>
     <section dir={language === 'ar' ? 'rtl' : 'ltr'} className="panel chat-panel client-chat-panel">
-      <header className="chat-partner"><div className="chat-avatar">{String(coachRecord?.name ?? t('Coach')).slice(0, 1)}</div><div><strong>{String(coachRecord?.name ?? t('Your coach'))}</strong><small>{typeof coachRecord?.specialty === 'string' ? coachRecord.specialty : t('Your assigned coach')}</small></div><span className={'chat-presence ' + (coachOnline ? 'online' : '')}><i />{status}</span></header>
+      <nav className="client-chat-switch" aria-label={t('Choose a conversation')}><button type="button" className={!selectedOwnerId ? 'active' : ''} onClick={() => { setSelectedOwnerId(''); setCoachOnline(null); setMessage('') }}>{t('Assigned coach')}</button>{ownerRecords.map(owner => <button type="button" key={String(owner.id)} className={selectedOwnerId === owner.id ? 'active' : ''} onClick={() => { setSelectedOwnerId(String(owner.id)); setCoachOnline(null); setMessage('') }}>{String(owner.name ?? t('Workspace owner'))}</button>)}</nav>
+      <header className="chat-partner"><div className="chat-avatar">{String(partnerRecord?.name ?? (selectedOwnerId ? t('Workspace owner') : t('Coach'))).slice(0, 1)}</div><div><strong>{String(partnerRecord?.name ?? (selectedOwnerId ? t('Workspace owner') : t('Your coach')))}</strong><small>{selectedOwnerId ? t('Private conversation with workspace owner') : typeof coachRecord?.specialty === 'string' ? coachRecord.specialty : t('Your assigned coach')}</small></div><span className={'chat-presence ' + (coachOnline ? 'online' : '')}><i />{status}</span></header>
       {coach.isError && !(coach.error instanceof ApiError && coach.error.status === 404) && <ErrorState error={coach.error} />}
-      {!coachId && <div className="empty-state callout"><strong>{t('No coach assigned')}</strong><p>{t('Your club will connect you with a coach. Messaging becomes available after assignment.')}</p></div>}
-      {coachId && <><div className="chat-message-heading"><h2>{t('Conversation history')}</h2>{isTyping && <span className="typing-indicator">{t('Coach is typing&')}</span>}</div>
+      {!chatPartnerId && <div className="empty-state callout"><strong>{t('No coach assigned')}</strong><p>{t('Your club will connect you with a coach. Messaging becomes available after assignment.')}</p></div>}
+      {chatPartnerId && <><div className="chat-message-heading"><h2>{t('Conversation history')}</h2>{isTyping && <span className="typing-indicator">{selectedOwnerId ? t('Workspace owner is typing') : t('Coach is typing&')}</span>}</div>
       {messages.isLoading ? <Loading /> : messages.isError ? <ErrorState error={messages.error} /> : <ChatTranscript value={messages.data} ownUserId={me.data?.id} />}
       <button className="chat-read-button" type="button" onClick={() => void markRead()} disabled={messages.isLoading || messages.isError}>{t('Mark as read')}</button>
       {attachments.length > 0 && <div className="chat-selected-files" aria-live="polite">{attachments.map((file,index) => <span className="chat-selected-file" key={file.name + index}><span aria-hidden="true">{String.fromCharCode(file.type.startsWith('image/') ? 9639 : file.type.startsWith('video/') ? 9654 : 8613)}</span><span title={file.name}>{file.name}</span><button type="button" onClick={() => setAttachments(current => current.filter((_,itemIndex) => itemIndex !== index))} aria-label={t('Remove attachment')}>&times;</button></span>)}</div>}
-      <form className="chat-compose client-chat-compose" onSubmit={event => void send(event)}><label>{t('Message')}<textarea value={content} onChange={event => { setContent(event.target.value); if (chatConnection.current?.state === 'Connected') void chatConnection.current.invoke('Typing', coachId).catch(() => undefined) }} maxLength={2000} rows={2} placeholder={t('Write to') + ' ' + String(coachRecord?.name ?? t('your coach'))} /></label><label className="chat-file-label"><span aria-hidden="true">&#43;</span> {t('Attach photos, videos or files')}<input name="attachments" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.pdf,.doc,.docx" onChange={event => setAttachments(Array.from(event.target.files ?? []).slice(0,10))} /></label><button disabled={sending || (!content.trim() && attachments.length===0)}>{sending ? t('Sending&') : t('Send message')}</button></form></>}
+      <form className="chat-compose client-chat-compose" onSubmit={event => void send(event)}><label>{t('Message')}<textarea value={content} onChange={event => { setContent(event.target.value); if (chatConnection.current?.state === 'Connected') void chatConnection.current.invoke('Typing', chatPartnerId).catch(() => undefined) }} maxLength={2000} rows={2} placeholder={t('Write to') + ' ' + String(partnerRecord?.name ?? t('your coach'))} /></label><label className="chat-file-label"><span aria-hidden="true">&#43;</span> {t('Attach photos, videos or files')}<input name="attachments" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,.pdf,.doc,.docx" onChange={event => setAttachments(Array.from(event.target.files ?? []).slice(0,10))} /></label><button disabled={sending || (!content.trim() && attachments.length===0)}>{sending ? t('Sending&') : t('Send message')}</button></form></>}
       {message && <p className="chat-feedback" role="status">{message}</p>}
     </section>
   </Page>
@@ -1742,7 +1766,7 @@ function TenantAudit() {
       const refreshed = churnId ? await apiFetch<unknown>(`/ai/churn/clients/${churnId}`) : undefined
       if (refreshed !== undefined) setChurn(refreshed)
       const scored = result && typeof result === 'object' && 'scored' in result ? String((result as Record<string, unknown>).scored) : null
-      setMessage(scored === null ? 'Churn scores recomputed.' : `Churn scores recomputed for ${scored} clients.`)
+      setMessage(scored === null ? 'Churn scores recomputed.' : Number(scored) === 0 ? 'No clients were scored. Check that the churn model is available and the workspace has eligible clients.' : `Churn scores recomputed for ${scored} clients.`)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not recompute churn scores.') }
     finally { setChurnLoading(false) }
   }
@@ -1780,7 +1804,7 @@ function TenantAudit() {
         <article className="admin-metric"><span>Risk score</span><strong>{typeof churnData.riskScore === 'number' ? `${Math.round(churnData.riskScore * 100)}%` : '—'}</strong></article>
         <article className="admin-metric"><span>Model version</span><strong>{String(churnData.modelVersion ?? '—')}</strong></article>
         <article className="admin-metric"><span>Last calculated</span><strong>{churnData.computedAt ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(String(churnData.computedAt))) : '—'}</strong></article>
-        {Array.isArray(churnData.topFactors) && <div><h3>Contributing factors</h3><div className="data-chips">{churnData.topFactors.map((factor, index) => <span className="data-chip" key={index}>{typeof factor === 'string' ? factor : JSON.stringify(factor)}</span>)}</div></div>}
+        {Array.isArray(churnData.topFactors) && <div className="churn-factors"><h3>Contributing factors</h3><div className="churn-factor-list">{churnData.topFactors.map((factor, index) => { const row = factor && typeof factor === 'object' ? factor as Record<string, unknown> : null; const label = typeof factor === 'string' ? factor : String(row?.feature ?? row?.name ?? row?.factor ?? ''); const impact = row?.impact; return <span className="churn-factor" key={index}><strong>{displayLabel(label, language)}</strong>{impact !== undefined && <small>{String(impact)}</small>}</span> })}</div></div>}
       </div> : <div className="empty-state">No churn score is available for this client yet.</div>)}
     </section>
     {message && <p role="status" className="inline-notice">{message}</p>}

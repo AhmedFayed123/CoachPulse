@@ -253,7 +253,7 @@ public sealed class AiController(CoachPulseDbContext db, IAiClient ai, IClientAc
         var now = DateTime.UtcNow;
         if (LastRecompute.TryGetValue(Tenant, out var last) && now - last < TimeSpan.FromMinutes(10)) { Response.Headers.RetryAfter = Math.Ceiling((TimeSpan.FromMinutes(10) - (now - last)).TotalSeconds).ToString(); return StatusCode(429); }
         LastRecompute[Tenant] = now;
-        try { if (!await ai.IsReadyAsync(ct)) { LastRecompute.TryRemove(Tenant, out _); return PythonUnavailable(); } return Ok(new { scored = await churnScoring.ScoreTenantAsync(Tenant, ct) }); }
+        try { if (!await ai.IsChurnReadyAsync(ct)) { LastRecompute.TryRemove(Tenant, out _); return PythonUnavailable(); } return Ok(new { scored = await churnScoring.ScoreTenantAsync(Tenant, ct) }); }
         catch (HttpRequestException) { LastRecompute.TryRemove(Tenant, out _); return PythonUnavailable(); }
     }
 }

@@ -93,6 +93,7 @@ public sealed class AiGatewayTests
     {
         public Task<AiModelInfo> GetModelInfoAsync(CancellationToken ct) => Task.FromResult(new AiModelInfo("fake-v1", 1, 1, 1, "synthetic"));
         public Task<bool> IsReadyAsync(CancellationToken ct) => Task.FromResult(!failing);
+        public Task<bool> IsChurnReadyAsync(CancellationToken ct) => Task.FromResult(!failing);
         public Task<AiWorkoutContent> GenerateProgramAsync(AiGenerateInput request, CancellationToken ct) => Task.FromResult(Content());
         public Task<AiWorkoutContent> RegenerateProgramAsync(AiRegenerateInput request, CancellationToken ct) => Task.FromResult(Content());
         private AiWorkoutContent Content() { if (failing) throw new HttpRequestException("down"); using var d = JsonDocument.Parse($"{{\"weeks\":[{{\"week\":1,\"days\":[{{\"day\":\"Sunday\",\"focus\":\"strength\",\"exercises\":[{{\"exerciseId\":\"{exerciseId}\",\"name\":\"Squat\",\"sets\":3,\"reps\":\"10-12\",\"restSeconds\":60,\"notes\":\"\"}}]}}]}}]}}"); using var m = JsonDocument.Parse("{\"dailyCalories\":2000,\"macros\":{\"proteinG\":100,\"carbsG\":200,\"fatG\":60},\"days\":[{\"day\":\"Sunday\",\"meals\":[]}]}"); return new AiWorkoutContent(d.RootElement.Clone(), m.RootElement.Clone(), []); }

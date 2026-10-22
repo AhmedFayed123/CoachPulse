@@ -6,7 +6,7 @@ public sealed record ClientListItem(Guid Id, Guid UserId, string? Name, string E
 
 public sealed record PaymentListItem(Guid Id, Guid SubscriptionId, decimal Amount, string Currency, PaymentMethod Method,
     PaymentStatus Status, string? ReferenceNumber, DateTime CreatedAt, string? RejectionReason, Guid? ReceiptFileId,
-    string? ClientName = null, string? PlanName = null);
+    string? ClientName = null, string? PlanName = null, string? ClientEmail = null);
 
 public sealed record ConversationListItem(Guid ClientId, string Name, int UnreadCount, ConversationLastMessage? LastMessage);
 

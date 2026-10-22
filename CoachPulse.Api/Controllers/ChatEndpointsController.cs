@@ -20,8 +20,8 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
     {
         return role switch
         {
-            // Client routes pass the assigned coach's user ID; coach routes pass the client's user ID.
-            "Client" => await db.Clients.AnyAsync(c => c.TenantId == tenant && c.UserId == me && c.CoachId == otherUser),
+            "Client" => await db.Clients.AnyAsync(c => c.TenantId == tenant && c.UserId == me && c.CoachId == otherUser)
+                || await db.Users.AnyAsync(u => u.Id == otherUser && u.TenantId == tenant && u.Role == CoachPulse.Domain.Enums.UserRole.TenantOwner && !u.IsDeleted),
             "TenantOwner" => await db.Clients.AnyAsync(c => c.TenantId == tenant && c.UserId == otherUser),
             "CoachStaff" => await db.Clients.AnyAsync(c => c.TenantId == tenant && c.UserId == otherUser && c.CoachId == me),
             _ => false
@@ -39,14 +39,13 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
         var totalCount = clients.Count;
         clients = clients.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         var ids = clients.Select(c => c.UserId).ToArray();
-        var all = await db.Messages.AsNoTracking().Where(m => m.TenantId == tenant && (role=="TenantOwner" ? ids.Contains(m.SenderId)||ids.Contains(m.ReceiverId) : m.SenderId == me && ids.Contains(m.ReceiverId) || ids.Contains(m.SenderId) && m.ReceiverId == me)).OrderByDescending(m => m.Timestamp).ToListAsync(ct);
+        var all = await db.Messages.AsNoTracking().Where(m => m.TenantId == tenant && ((m.SenderId == me && ids.Contains(m.ReceiverId)) || (ids.Contains(m.SenderId) && m.ReceiverId == me))).OrderByDescending(m => m.Timestamp).ToListAsync(ct);
         var rows = clients.Select(c =>
         {
-            var conversation = all.Where(m => (m.SenderId == me && m.ReceiverId == c.UserId) || (m.SenderId == c.UserId && m.ReceiverId == me) ||
-                (role == "TenantOwner" && c.CoachId.HasValue && ((m.SenderId == c.UserId && m.ReceiverId == c.CoachId) || (m.SenderId == c.CoachId && m.ReceiverId == c.UserId)))).ToArray();
+            var conversation = all.Where(m => (m.SenderId == me && m.ReceiverId == c.UserId) || (m.SenderId == c.UserId && m.ReceiverId == me)).ToArray();
             var last = conversation.FirstOrDefault();
             return new ConversationListItem(c.UserId, c.Name,
-                conversation.Count(m => (role == "TenantOwner" || m.ReceiverId == me) && !m.IsRead),
+                conversation.Count(m => m.ReceiverId == me && !m.IsRead),
                 last is null ? null : new ConversationLastMessage(last.Id, last.IsDeleted ? "تم حذف الرسالة" : last.Content, last.SenderId, last.Timestamp));
         }).OrderByDescending(x => x.LastMessage?.Timestamp).ToArray();
         return Ok(PagedResult<ConversationListItem>.Create(rows, page, pageSize, totalCount));
@@ -61,10 +60,18 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
     {
         if (!Identity(out var me, out _, out _)) return Unauthorized(); var coach = await db.Clients.Where(c => c.UserId == me).Select(c => c.CoachId).FirstOrDefaultAsync(ct); if (coach is null) return Conflict("No assigned coach."); return await Send(coach.Value, req, ct, true);
     }
-    private async Task<IActionResult> Send(Guid recipient, SendMessageRequest req, CancellationToken ct, bool clientMode = false)
+    [HttpPost("my/messages/{ownerId:guid}")]
+    [Authorize(Policy = "ClientOnly")]
+    public async Task<IActionResult> SendClientToOwner(Guid ownerId, [FromBody] SendMessageRequest req, CancellationToken ct)
+    {
+        if (!Identity(out var me, out var tenant, out _)) return Unauthorized();
+        if (!await db.Users.AnyAsync(u => u.Id == ownerId && u.TenantId == tenant && u.Role == CoachPulse.Domain.Enums.UserRole.TenantOwner && !u.IsDeleted, ct)) return NotFound();
+        return await Send(ownerId, req, ct, true, ownerId);
+    }
+    private async Task<IActionResult> Send(Guid recipient, SendMessageRequest req, CancellationToken ct, bool clientMode = false, Guid? recipientUserId = null)
     {
         if (!Identity(out var me, out var tenant, out var role)) return Unauthorized();
-        try { var msg = await messages.SendAsync(me, tenant, role, clientMode ? me : recipient, req.Content, req.FileIds, ct); if (msg is null) return NotFound(); var fileIds=await db.StoredFiles.Where(f=>f.LinkedEntityType=="Message"&&f.LinkedEntityId==msg.Id&&!f.IsDeleted).Select(f=>f.Id).ToArrayAsync(ct); var payload = new { msg.Id, msg.SenderId, msg.ReceiverId, msg.Content, msg.Timestamp, fileIds }; await chatHub.Clients.Group(ChatMessageService.Group(msg.SenderId, msg.ReceiverId)).SendAsync("ReceiveMessage", payload, ct); await HttpContext.RequestServices.GetRequiredService<INotificationService>().NotifyAsync(msg.ReceiverId, tenant, "MessageReceived", "\u0631\u0633\u0627\u0644\u0629 \u062c\u062f\u064a\u062f\u0629", "\u0644\u062f\u064a\u0643 \u0631\u0633\u0627\u0644\u0629 \u062c\u062f\u064a\u062f\u0629.", System.Text.Json.JsonSerializer.Serialize(new { messageId = msg.Id, conversationId = clientMode ? me : recipient }), ct); await SendUnread(msg.ReceiverId, tenant, ct); return StatusCode(201, payload); }
+        try { var msg = await messages.SendAsync(me, tenant, role, clientMode ? me : recipient, req.Content, req.FileIds, ct, recipientUserId); if (msg is null) return NotFound(); var fileIds=await db.StoredFiles.Where(f=>f.LinkedEntityType=="Message"&&f.LinkedEntityId==msg.Id&&!f.IsDeleted).Select(f=>f.Id).ToArrayAsync(ct); var payload = new { msg.Id, msg.SenderId, msg.ReceiverId, msg.Content, msg.Timestamp, fileIds }; await chatHub.Clients.Group(ChatMessageService.Group(msg.SenderId, msg.ReceiverId)).SendAsync("ReceiveMessage", payload, ct); await HttpContext.RequestServices.GetRequiredService<INotificationService>().NotifyAsync(msg.ReceiverId, tenant, "MessageReceived", "\u0631\u0633\u0627\u0644\u0629 \u062c\u062f\u064a\u062f\u0629", "\u0644\u062f\u064a\u0643 \u0631\u0633\u0627\u0644\u0629 \u062c\u062f\u064a\u062f\u0629.", System.Text.Json.JsonSerializer.Serialize(new { messageId = msg.Id, conversationId = clientMode ? recipientUserId ?? me : recipient }), ct); await SendUnread(msg.ReceiverId, tenant, ct); return StatusCode(201, payload); }
         catch (KeyNotFoundException) { return NotFound(); } catch (ArgumentException e) { return UnprocessableEntity(e.Message); } catch (InvalidOperationException) { return StatusCode(429); }
     }
 
@@ -80,6 +87,25 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
         return await History(coach.Value, before, page, pageSize, ct);
     }
 
+    [HttpGet("my/owners")]
+    [Authorize(Policy = "ClientOnly")]
+    public async Task<IActionResult> MyOwners(CancellationToken ct)
+    {
+        if (!Identity(out var me, out var tenant, out _)) return Unauthorized();
+        if (!await db.Clients.AnyAsync(c => c.UserId == me && c.TenantId == tenant, ct)) return NotFound();
+        return Ok(await db.Users.AsNoTracking().Where(u => u.TenantId == tenant && u.Role == CoachPulse.Domain.Enums.UserRole.TenantOwner && !u.IsDeleted)
+            .Select(u => new { u.Id, u.Name, u.AvatarFileId }).ToListAsync(ct));
+    }
+
+    [HttpGet("my/messages/{ownerId:guid}")]
+    [Authorize(Policy = "ClientOnly")]
+    public async Task<IActionResult> MyOwnerMessages(Guid ownerId, [FromQuery] Guid? before = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? limit = null, CancellationToken ct = default)
+    {
+        if (!Identity(out var me, out _, out _)) return Unauthorized();
+        pageSize = limit ?? pageSize;
+        return await History(ownerId, before, page, pageSize, ct);
+    }
+
     [NonAction]
     public async Task<IActionResult> History(Guid clientId, Guid? before = null, int page = 1, int pageSize = 20, CancellationToken ct = default)
     {
@@ -89,9 +115,6 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
         var first = me; var second = clientId;
         if (role == "TenantOwner")
         {
-            var coach = await db.Clients.Where(c => c.TenantId == tenant && c.UserId == clientId).Select(c => c.CoachId).FirstOrDefaultAsync(ct);
-            if (coach is null) return NotFound();
-            first = clientId; second = coach.Value;
             db.SecurityAuditLogs.Add(new() { Id = Guid.NewGuid(), UserId = me, TenantId = tenant, EventType = "chat.conversation.read", Identifier = $"client={clientId}", CreatedAt = DateTime.UtcNow });
             await db.SaveChangesAsync(ct);
         }
@@ -117,6 +140,9 @@ public sealed class ChatEndpointsController(CoachPulseDbContext db, ChatMessageS
     [HttpPut("my/messages/read")]
     [Authorize(Policy="ClientOnly")]
     public async Task<IActionResult> ReadClient([FromBody] ReadMessageRequest req,CancellationToken ct){if(!Identity(out var me,out _,out _))return Unauthorized();var coach=await db.Clients.Where(c=>c.UserId==me).Select(c=>c.CoachId).FirstOrDefaultAsync(ct);if(coach is null)return NotFound();return await MarkRead(coach.Value,req,ct,true);}
+    [HttpPut("my/messages/{otherUserId:guid}/read")]
+    [Authorize(Policy = "ClientOnly")]
+    public Task<IActionResult> ReadClientConversation(Guid otherUserId, [FromBody] ReadMessageRequest req, CancellationToken ct) => MarkRead(otherUserId, req, ct, true);
     private async Task<IActionResult> MarkRead(Guid clientUser,ReadMessageRequest req,CancellationToken ct,bool clientMode=false){if(!Identity(out var me,out var tenant,out var role))return Unauthorized();if(role=="TenantOwner")return Forbid();if(!await CanAccessConversation(me,tenant,role,clientUser))return NotFound();var last=await db.Messages.FirstOrDefaultAsync(m=>m.Id==req.LastMessageId&&m.TenantId==tenant&&((m.SenderId==me&&m.ReceiverId==clientUser)||(m.SenderId==clientUser&&m.ReceiverId==me)),ct);if(last is null)return UnprocessableEntity("messageId must belong to this conversation.");var through=last.Timestamp;var changed=await db.Messages.Where(m=>m.TenantId==tenant&&m.SenderId==clientUser&&m.ReceiverId==me&&!m.IsRead&&m.Timestamp<=through).ToListAsync(ct);foreach(var m in changed){m.IsRead=true;m.ReadAt=DateTime.UtcNow;}await db.SaveChangesAsync(ct);await chatHub.Clients.Group(ChatMessageService.Group(me,clientUser)).SendAsync("MessageRead",new{conversationId=clientUser,lastMessageId=last.Id,readerId=me},ct);await SendUnread(me,tenant,ct);return NoContent();}
 
     [HttpDelete("messages/{messageId:guid}")]
