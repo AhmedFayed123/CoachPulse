@@ -31,13 +31,13 @@ public class PaymobClient : IPaymobClient
         string billingPhone,
         CancellationToken cancellationToken)
     {
-        var secretKey = _configuration["Paymob:SecretKey"]
-            ?? throw new InvalidOperationException("Paymob SecretKey is missing.");
-        var publicKey = _configuration["Paymob:PublicKey"]
-            ?? throw new InvalidOperationException("Paymob PublicKey is missing.");
-
-        var integrationId = _configuration["Paymob:IntegrationId"]
-            ?? throw new InvalidOperationException("Paymob IntegrationId is missing.");
+        var secretKey = RequiredSetting("Paymob:SecretKey");
+        var publicKey = RequiredSetting("Paymob:PublicKey");
+        var integrationValue = _configuration["Paymob:IntegrationId"];
+        if (string.IsNullOrWhiteSpace(integrationValue))
+            throw new InvalidOperationException("Paymob:IntegrationId is not configured.");
+        if (!int.TryParse(integrationValue.Trim(), out var integrationId))
+            throw new InvalidOperationException("Paymob:IntegrationId must be a numeric integration ID.");
         var baseUrl = GetPaymobBaseUrl(_configuration["Paymob:BaseUrl"]);
 
         // تحويل المبلغ إلى قروش (Cents) حسب متطلبات Paymob
@@ -49,7 +49,7 @@ public class PaymobClient : IPaymobClient
         {
             amount = amountCents,
             currency = currency,
-            payment_methods = new[] { int.Parse(integrationId) },
+            payment_methods = new[] { integrationId },
             items = new[] { new { name = "Subscription", amount = amountCents, description = "CoachPulse subscription", quantity = 1 } },
             billing_data = new
             {
@@ -88,6 +88,14 @@ public class PaymobClient : IPaymobClient
         var checkoutUrl = BuildUnifiedCheckoutUrl(baseUrl, publicKey, result.ClientSecret);
         _logger.LogInformation("Created Paymob intention for order {OrderId}.", orderId);
         return new PaymobIntentionResult(checkoutUrl, result.IntentionOrderId.ToString());
+    }
+
+    private string RequiredSetting(string key)
+    {
+        var value = _configuration[key];
+        if (string.IsNullOrWhiteSpace(value) || value.Contains("leave-empty", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"{key} is not configured.");
+        return value.Trim();
     }
 
     internal static Uri GetPaymobBaseUrl(string? configuredBaseUrl)

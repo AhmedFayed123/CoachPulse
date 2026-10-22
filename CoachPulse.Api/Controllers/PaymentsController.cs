@@ -46,7 +46,8 @@ public sealed class PaymentsController(CoachPulseDbContext db, IPaymobClient pay
             await db.SaveChangesAsync(ct);
             return Ok(result);
         }
-        catch(HttpRequestException){return StatusCode(502,new{message="Payment provider unavailable."});}
+        catch(HttpRequestException){return StatusCode(502,new{message="Payment provider unavailable. Please try again shortly."});}
+        catch(InvalidOperationException){return StatusCode(503,new{message="Online card payments are not configured correctly. Ask the club owner to check the Paymob integration settings."});}
     }
 
     [HttpGet("{id:guid}/status"),Authorize(Policy="ClientOnly")]

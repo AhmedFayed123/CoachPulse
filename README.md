@@ -2,17 +2,16 @@
 
 CoachPulse is a multi-tenant coaching platform for client onboarding, training and meal plans, subscriptions, payments, check-ins, messaging, notifications, and AI-assisted program drafts.
 
-> **Status (2026-10-18):** Docker Compose readiness and the primary authenticated browser journey passed locally. See [the integration audit](docs/API_INTEGRATION_AUDIT.md) and [security review](SECURITY_REVIEW.md) for exact coverage and outstanding checks.
 
 ## Screenshots
 
 | Coach workspace | Client workspace | SuperAdmin |
 |---|---|---|
-| ![Coach workspace](docs/screenshots/coach-workspace.png) | ![Client workspace](docs/screenshots/client-workspace.png) | ![SuperAdmin dashboard](docs/screenshots/superadmin-dashboard.png) |
+| <img src="docs/screenshots/coach-workspace.png" width="300" alt="Coach workspace"> | <img src="docs/screenshots/client-workspace.png" width="300" alt="Client workspace"> | <img src="docs/screenshots/superadmin-dashboard.png" width="300" alt="SuperAdmin dashboard"> |
 
 | Sign in | Tenant Owner workspace |
 |---|---|
-| ![CoachPulse sign-in](docs/screenshots/auth-login.png) | ![Tenant Owner workspace](docs/screenshots/tenant-owner.png) |
+| <img src="docs/screenshots/auth-login.png" width="300" alt="CoachPulse sign-in"> | <img src="docs/screenshots/tenant-owner.png" width="300" alt="Tenant Owner workspace"> |
 
 ## Features by role
 

@@ -47,6 +47,26 @@ public sealed class PaymobClientTests
         Assert.Contains("https://api.example.test/api/webhooks/paymob", handler.LastRequestBody!, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task IntentionRejectsPlaceholderIntegrationIdBeforeCallingProvider()
+    {
+        var handler = new StubHandler(_ => throw new InvalidOperationException("The provider should not be called."));
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Paymob:SecretKey"] = "sk_test_value",
+            ["Paymob:PublicKey"] = "egy_pk_test_value",
+            ["Paymob:IntegrationId"] = "leave-empty-if-paymob-disabled"
+        }).Build();
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var client = new PaymobClient(new HttpClient(handler), config, loggerFactory.CreateLogger<PaymobClient>());
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => client.CreatePaymentIntentionAsync(
+            100m, "EGP", "order", "member@example.test", "Member", "Test", "+201000000000", CancellationToken.None));
+
+        Assert.Contains("numeric integration ID", error.Message, StringComparison.Ordinal);
+        Assert.Null(handler.LastRequestBody);
+    }
+
     private sealed class StubHandler(Func<HttpRequestMessage,HttpResponseMessage> response) : HttpMessageHandler
     {
         public Dictionary<string,string[]>? LastRequestHeaders { get; private set; }
