@@ -223,7 +223,7 @@ th{background:#edf3f4;color:#526574}th,td{border-color:#e3eaed}td{color:#344a5c}
 .admin-main-content[data-section="usage"] #admin-webhooks,.admin-main-content[data-section="webhooks"] #admin-usage{display:none}
 
 /* CoachPulse shared design system: consistent light surfaces, typography and spacing across roles. */
-:root{--cp-ink:#203448;--cp-muted:#687987;--cp-line:#dce6e9;--cp-canvas:#f4f7f8;--cp-surface:#fff;--cp-soft:#f7fafb;--cp-primary:#13866f;--cp-primary-dark:#0d725d;--cp-mint:#eaf6f2;--cp-danger:#a34e3a;--cp-shadow:0 12px 34px #19364a0b;color:var(--cp-ink);background:var(--cp-canvas)}
+:root{--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:22px;--color-primary:var(--tenant-primary,#0f766e);--color-primary-dark:var(--tenant-primary-dark,#0b5e57);--color-on-primary:var(--tenant-on-primary,#fff);--color-success:#177245;--color-warning:#8a5800;--color-danger:#b42318;--color-info:#175cd3;--color-ink:#1b2b3b;--color-muted:#5d6e7c;--color-line:#dce5e9;--color-canvas:#f4f7f8;--color-surface:#fff;--color-soft:#f7f9fa;--color-shadow:0 12px 34px #19364a0b;--cp-ink:var(--color-ink);--cp-muted:var(--color-muted);--cp-line:var(--color-line);--cp-canvas:var(--color-canvas);--cp-surface:var(--color-surface);--cp-soft:var(--color-soft);--cp-primary:var(--color-primary);--cp-primary-dark:var(--color-primary-dark);--cp-mint:color-mix(in srgb,var(--color-primary) 9%,white);--cp-danger:var(--color-danger);--cp-shadow:var(--color-shadow);font-family:Cairo,"IBM Plex Sans Arabic",system-ui,sans-serif;color:var(--cp-ink);background:var(--cp-canvas);font-synthesis:none}
 html,body,#root{min-height:100%;background:var(--cp-canvas)}body{color:var(--cp-ink);background:radial-gradient(ellipse at 50% -20%,#e5f4ef 0,transparent 48%),var(--cp-canvas)}
 button,input,select,textarea{font-family:inherit}.shell{min-height:100vh;grid-template-columns:260px minmax(0,1fr);background:var(--cp-canvas);color:var(--cp-ink)}
 .shell>aside{position:sticky;top:0;height:100vh;overflow:auto;padding:26px 18px;border:0;border-inline-end:1px solid var(--cp-line);background:var(--cp-surface);box-shadow:4px 0 22px #19364a05;gap:22px}
@@ -628,3 +628,51 @@ option{background:#fff;color:#203448}
 .admin-shell .admin-page-content .admin-overview-grid>.panel:hover,.admin-shell .admin-page-content .admin-kpi:hover{border-color:#c4ded4;box-shadow:0 10px 28px #19364a10}
 @media(max-width:700px){.workspace-shell .page-sections>.panel{padding:16px}.workspace-shell .page-sections>.panel:hover{box-shadow:var(--cp-shadow)}.workspace-shell .page-sections .section-heading{gap:10px}}
 @media(prefers-reduced-motion:reduce){.workspace-shell .page-sections>.panel,.workspace-shell .page-sections :is(.program-list-card,.client-plan-option,.exercise-library-card),.admin-shell .admin-page-content :is(.panel,.admin-kpi){transition:none}}
+
+/* Core product tokens and shared primitives used by all role workspaces. */
+:root{--focus-ring:0 0 0 3px color-mix(in srgb,var(--color-primary) 25%,transparent);--shadow-card:0 2px 8px #172b3a08,0 12px 28px #172b3a08;--shadow-popover:0 18px 50px #102a3820}
+html{font-family:Cairo,"IBM Plex Sans Arabic",system-ui,sans-serif;scrollbar-gutter:stable}
+body{min-width:320px;background:var(--color-canvas);color:var(--color-ink);font-family:inherit;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+:is(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+:is(.shell,.admin-dashboard,.login){font-family:inherit}
+.workspace-shell,.admin-dashboard{--workspace-accent:var(--color-primary);--workspace-accent-dark:var(--color-primary-dark)}
+.workspace-shell .brand span,.workspace-shell .workspace-mobile-brand span,.admin-dashboard .brand span{color:var(--workspace-accent)}
+.workspace-shell :is(.workspace-action-icon,.admin-icon){background:color-mix(in srgb,var(--workspace-accent) 10%,white);color:var(--workspace-accent-dark)}
+.workspace-shell .workspace-drawer,.admin-shell .admin-drawer{background:var(--color-surface);border-color:var(--color-line)}
+.workspace-shell .identity,.admin-drawer-heading{border-color:var(--color-line);background:var(--color-soft)}
+.workspace-shell .workspace-drawer nav a:is(.active,:hover),.admin-drawer nav a:is(.active,:hover){border-color:color-mix(in srgb,var(--workspace-accent) 20%,white);background:color-mix(in srgb,var(--workspace-accent) 9%,white);color:var(--workspace-accent-dark)}
+.workspace-shell .page-content,.admin-shell .page-content{width:100%;max-width:1320px}
+.workspace-shell .page-header{min-height:0;padding-block:var(--space-2) var(--space-5);margin-block-end:var(--space-6)}
+.workspace-shell .page-header h1,.admin-shell .page-header h1{font-size:clamp(1.65rem,2.6vw,2.15rem);font-weight:800;letter-spacing:-.035em}
+.workspace-shell .page-header p,.admin-shell .page-header p{max-width:65ch;font-size:.9rem;line-height:1.8}
+.workspace-shell .page-sections,.admin-shell .page-sections{gap:var(--space-5)}
+.workspace-shell .page-sections>.panel,.admin-shell .page-sections>.panel,.admin-dashboard .panel{border:1px solid var(--color-line);border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-card)}
+.workspace-shell .page-sections>.panel{padding:clamp(var(--space-4),2.2vw,var(--space-6))}
+.workspace-shell .cards,.admin-dashboard .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:var(--space-4)}
+.workspace-shell .metric,.admin-dashboard .admin-metric,.admin-shell .admin-kpi{min-width:0;border:1px solid var(--color-line);border-radius:var(--radius-lg);background:linear-gradient(145deg,#fff,#f9fbfb);box-shadow:var(--shadow-card)}
+.workspace-shell .metric{min-height:126px;padding:var(--space-5)}
+.workspace-shell .metric span{font-size:.78rem;line-height:1.6}
+.workspace-shell .metric strong{color:var(--workspace-accent-dark);font-size:clamp(1.5rem,2.5vw,2rem);line-height:1.25}
+.workspace-shell .page-sections :is(.program-list-card,.coach-team-card,.client-plan-option,.exercise-library-card,.analytics-card,.data-field,.data-item){border-radius:var(--radius-md)}
+.workspace-shell .page-sections :is(.program-list-card,.coach-team-card,.client-plan-option,.exercise-library-card):hover{border-color:color-mix(in srgb,var(--workspace-accent) 35%,white)}
+.workspace-shell .page-sections :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea),.login-card :is(input,select,textarea){border:1px solid #cbd7de;border-radius:var(--radius-sm);background:#fff;color:var(--color-ink);box-shadow:0 1px 2px #172b3a08}
+.workspace-shell .page-sections :is(input,select,textarea):focus,.login-card :is(input,select,textarea):focus{border-color:var(--workspace-accent);box-shadow:var(--focus-ring)}
+.workspace-shell .page-sections button:not(.exercise-library-card),.login-card form>button,.admin-shell .admin-page-content .panel button:not(.danger){border-radius:var(--radius-sm);font-weight:700}
+.workspace-shell .page-sections .form-grid{gap:var(--space-4)}
+.workspace-shell .page-sections label,.login-card label{color:#34495a;font-size:.82rem;font-weight:650;line-height:1.65}
+.workspace-shell .page-sections .table-wrap,.admin-shell .admin-table-scroll{border:1px solid var(--color-line);border-radius:var(--radius-md);background:#fff}
+.workspace-shell .page-sections table thead th,.admin-shell .admin-table th{position:sticky;top:0;z-index:1;background:#f5f8f9;color:#526575;font-size:.72rem;font-weight:750}
+.workspace-shell .page-sections table tbody tr:hover,.admin-shell .admin-table tbody tr:hover{background:#f7faf9}
+.workspace-shell .page-sections .empty-state,.admin-shell .empty-state{border:1px dashed #cbd8de;border-radius:var(--radius-md);background:#f8fafb;color:#526575;line-height:1.8}
+.workspace-shell .page-sections :is(.form-feedback,.inline-notice){border-color:color-mix(in srgb,var(--color-success) 24%,white);background:#f0f8f3;color:#14532d}
+.workspace-shell .page-sections .status-pill,.workspace-shell .page-sections .subscription-status,.admin-shell .tenant-status{border-radius:999px;font-weight:700}
+.admin-shell .admin-topbar{position:sticky;top:0;z-index:30;box-shadow:0 1px 2px #172b3a0a}
+.admin-shell .admin-main-content{min-width:0;background:var(--color-canvas)}
+.admin-shell .admin-drawer nav a{border-radius:var(--radius-sm)}
+.login{padding:clamp(16px,4vw,42px);background:radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--color-primary) 8%,white),transparent 46%),var(--color-canvas)}
+.login-card{border:1px solid var(--color-line);border-radius:var(--radius-xl);box-shadow:0 22px 60px #172b3a12}
+.login-card .brand{color:var(--color-ink)}
+.global-language-toggle{z-index:50}
+@media(max-width:760px){.workspace-shell .cards,.admin-dashboard .cards{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-shell .page-header{margin-block-end:var(--space-4)}.workspace-shell .page-sections>.panel{padding:var(--space-4)}.workspace-shell .page-sections .form-grid{grid-template-columns:1fr}.workspace-shell .metric{min-height:106px;padding:var(--space-4)}}
+@media(max-width:420px){.workspace-shell .cards,.admin-dashboard .cards{grid-template-columns:1fr}.workspace-shell .page-header h1,.admin-shell .page-header h1{font-size:1.5rem}.workspace-shell .metric{min-height:92px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
