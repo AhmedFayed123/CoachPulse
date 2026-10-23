@@ -64,9 +64,11 @@ export function useChatConversation(clientId: string | null) {
   const connectionRef = useRef<import('@microsoft/signalr').HubConnection | null>(null)
   const [isTyping, setIsTyping] = useState(false)
   const [partnerOnline, setPartnerOnline] = useState<boolean | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'reconnecting' | 'offline'>('connecting')
   const messages = useQuery({ queryKey, queryFn: () => apiFetch<unknown>(`/messages/${clientId}?limit=100`), enabled: Boolean(clientId) })
   useEffect(() => {
-    if (!clientId || !accessToken()) return
+    if (!clientId || !accessToken()) { setConnectionStatus('offline'); return }
+    setConnectionStatus('connecting')
     const connection = new HubConnectionBuilder()
       .withUrl(`${HUB_BASE}/hubs/chat`, { accessTokenFactory: () => accessToken() || '' })
       .withAutomaticReconnect()
@@ -87,12 +89,14 @@ export function useChatConversation(clientId: string | null) {
     })
     let active = true
     connectionRef.current = connection
-    void connection.start().then(() => active && connection.invoke('JoinConversation', clientId)).catch(() => undefined)
-    connection.onreconnected(() => { void connection.invoke('JoinConversation', clientId).catch(() => undefined) })
+    void connection.start().then(() => { if (active) { setConnectionStatus('connected'); return connection.invoke('JoinConversation', clientId) } }).catch(() => { if (active) setConnectionStatus('offline') })
+    connection.onreconnecting(() => setConnectionStatus('reconnecting'))
+    connection.onreconnected(() => { setConnectionStatus('connected'); void connection.invoke('JoinConversation', clientId).catch(() => undefined) })
+    connection.onclose(() => setConnectionStatus('offline'))
     return () => { active = false; if (typingTimer) clearTimeout(typingTimer); connectionRef.current = null; void connection.stop() }
   }, [cache, clientId, queryKey])
   const sendTyping = useCallback(() => { if (clientId) void connectionRef.current?.invoke('Typing', clientId).catch(() => undefined) }, [clientId])
-  return { ...messages, isTyping, partnerOnline, sendTyping }
+  return { ...messages, isTyping, partnerOnline, connectionStatus, sendTyping }
 }
 
 export function useNotificationsHub() {

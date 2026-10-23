@@ -5,7 +5,8 @@ Generated from `docs/swagger.json` and `docs/FRONTEND_ROUTE_INVENTORY.md` by `Co
 A matching call site is not equivalent to an end-to-end verified workflow. The runtime section records the covered Playwright journey; remaining operations need route-specific acceptance checks.
 
 - Swagger operations: 219
-- Frontend call sites found: 202
+- Frontend call sites found: 200
+- Duplicate/superseded operations: 2
 - Deprecated compatibility operations: 16
 - Intentional backend-only callbacks: 1
 - Missing frontend workflows: 0
@@ -127,7 +128,7 @@ A matching call site is not equivalent to an end-to-end verified workflow. The r
 | GET | `/api/my/dashboard` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | POST | `/api/my/meal-logs` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/my/meal-plan` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
-| GET | `/api/my/program` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
+| GET | `/api/my/program` | Duplicate/superseded frontend operation | The client workspace uses `/api/my/program/today` for the daily workout and `/api/my/programs` for program history. The older all-days response is not needed by the current workflow. |
 | GET | `/api/my/program/today` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/my/programs` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/notifications` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
@@ -212,7 +213,7 @@ A matching call site is not equivalent to an end-to-end verified workflow. The r
 | PUT | `/api/tenant/branding` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/tenant/coaches` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | POST | `/api/tenant/coaches` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
-| GET | `/api/tenant/plans` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
+| GET | `/api/tenant/plans` | Duplicate frontend operation | Owner plan management already loads the same tenant-scoped plan fields through `/api/plans`, which is also used by clients and coaches. No additional workflow depends on this owner-only alias. |
 | POST | `/api/tenant/plans` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/tenant/dashboard-summary` | Intentional legacy compatibility route | The canonical route is the UI contract; this deprecated operation remains for existing clients. |
 | GET | `/api/tenant/dashboard/summary` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
@@ -233,7 +234,14 @@ A matching call site is not equivalent to an end-to-end verified workflow. The r
 | GET | `/api/clients/{id}/workout-logs` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 | GET | `/api/clients/{id}/adherence` | Frontend call site found; runtime coverage varies | A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks. |
 
-## Runtime verification (2026-10-18)
+## Frontend verification (2026-10-23)
+
+- `npm ci` completed with Node v22.17.1 and npm 10.8.3 using a writable temporary cache and increased registry fetch timeout/retries; the lockfile was preserved.
+- Frontend typecheck, lint, production build, translation source check, API audit, and `git diff --check` passed. Vite reports a 716.54 kB minified JavaScript chunk warning.
+- Playwright rendered login and all four role dashboards at 360, 768, and 1440 px; all five tests passed. Dashboard shell overflow checks passed at each viewport, with owner sidebar collapse, mobile topbar/drawer, client dashboard data, and exercise video interaction exercised.
+- Playwright used mocked API responses for visual and workflow checks. No backend runtime integration was performed during this frontend pass.
+
+## Previous integrated runtime verification (2026-10-18)
 
 Docker Compose ran at `http://127.0.0.1:8088` because the default host port 8080 was occupied. `/healthz` and `/readyz` both returned 200; readiness reported PostgreSQL, startup initialization, and Python AI ready. The AI container had no published host port.
 

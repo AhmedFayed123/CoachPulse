@@ -9,7 +9,7 @@
     "build": "npm run check:translations && tsc -b && vite build",
     "check:translations": "node scripts/check-arabic-source.mjs",
     "start": "vite preview",
-    "lint": "eslint src --max-warnings 0",
+    "lint": "eslint src --max-warnings 0 && node scripts/check-design-consistency.mjs",
     "typecheck": "tsc --noEmit",
     "generate:api-types": "openapi-typescript ../docs/swagger.json -o src/api/generated.ts",
     "inventory:routes": "node scripts/route-inventory.mjs",

@@ -13,7 +13,7 @@ for (const line of inventory.split('\n')) {
 }
 
 const rows = []
-const totals = { present: 0, legacy: 0, backendOnly: 0, missing: 0 }
+const totals = { present: 0, duplicate: 0, legacy: 0, backendOnly: 0, missing: 0 }
 for (const [route, operations] of Object.entries(swagger.paths)) {
   for (const [method, operation] of Object.entries(operations)) {
     if (!['get', 'post', 'put', 'delete', 'patch'].includes(method)) continue
@@ -24,6 +24,14 @@ for (const [route, operations] of Object.entries(swagger.paths)) {
       status = 'Frontend call site found; runtime coverage varies'
       rationale = 'A matching frontend call exists. See the runtime verification section for covered Playwright paths; other operations need route-specific acceptance checks.'
       totals.present++
+    } else if (key === 'GET /api/my/program') {
+      status = 'Duplicate/superseded frontend operation'
+      rationale = 'The client workspace uses `/api/my/program/today` for the daily workout and `/api/my/programs` for program history. The older all-days response is not needed by the current workflow.'
+      totals.duplicate++
+    } else if (key === 'GET /api/tenant/plans') {
+      status = 'Duplicate frontend operation'
+      rationale = 'Owner plan management already loads the same tenant-scoped plan fields through `/api/plans`, which is also used by clients and coaches. No additional workflow depends on this owner-only alias.'
+      totals.duplicate++
     } else if (operation.deprecated) {
       status = 'Intentional legacy compatibility route'
       rationale = 'The canonical route is the UI contract; this deprecated operation remains for existing clients.'
@@ -50,16 +58,24 @@ const report = [
   '',
   `- Swagger operations: ${rows.length}`,
   `- Frontend call sites found: ${totals.present}`,
+  `- Duplicate/superseded operations: ${totals.duplicate}`,
   `- Deprecated compatibility operations: ${totals.legacy}`,
   `- Intentional backend-only callbacks: ${totals.backendOnly}`,
   `- Missing frontend workflows: ${totals.missing}`,
-  `- Reconciled total: ${totals.present + totals.legacy + totals.backendOnly + totals.missing}`,
+  `- Reconciled total: ${totals.present + totals.duplicate + totals.legacy + totals.backendOnly + totals.missing}`,
   '',
   '| Method | Backend operation | Classification | Reason / follow-up |',
   '|---|---|---|---|',
   ...rows,
   '',
-  '## Runtime verification (2026-10-18)',
+  '## Frontend verification (2026-10-23)',
+  '',
+  '- `npm ci` completed with Node v22.17.1 and npm 10.8.3 using a writable temporary cache and increased registry fetch timeout/retries; the lockfile was preserved.',
+  '- Frontend typecheck, lint, production build, translation source check, API audit, and `git diff --check` passed. Vite reports a 716.54 kB minified JavaScript chunk warning.',
+  '- Playwright rendered login and all four role dashboards at 360, 768, and 1440 px; all five tests passed. Dashboard shell overflow checks passed at each viewport, with owner sidebar collapse, mobile topbar/drawer, client dashboard data, and exercise video interaction exercised.',
+  '- Playwright used mocked API responses for visual and workflow checks. No backend runtime integration was performed during this frontend pass.',
+  '',
+  '## Previous integrated runtime verification (2026-10-18)',
   '',
   'Docker Compose ran at `http://127.0.0.1:8088` because the default host port 8080 was occupied. `/healthz` and `/readyz` both returned 200; readiness reported PostgreSQL, startup initialization, and Python AI ready. The AI container had no published host port.',
   '',

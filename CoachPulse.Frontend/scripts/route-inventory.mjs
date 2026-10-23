@@ -42,6 +42,34 @@ for (const { file, source } of sources) {
   }
 }
 
+// These route expressions are intentionally composed from a selected peer, ID,
+// or bounded action union. Record the concrete Swagger variants so the static
+// inventory does not mistake implemented workflows for missing call sites.
+const appFile = sources.find(item => item.file.endsWith('/src/App.tsx'))
+const appSource = appFile?.source ?? ''
+const dynamicOperations = [
+  ['POST', '/my/messages', "selectedOwnerId ? `/my/messages/${selectedOwnerId}` : '/my/messages'"],
+  ['PUT', '/messages/{clientId}/read', "'/messages/' + clientId + '/read'"],
+  ['PUT', '/my/messages/read', "'/my/messages/read'"],
+  ['DELETE', '/messages/{messageId}', "'/messages/' + deleteMessageId"],
+  ['GET', '/messages/unread-count', "'/messages/unread-count'"],
+  ['PUT', '/notifications/{id}/read', "'/notifications/'+id+'/read'"],
+  ['DELETE', '/notifications/{id}', "'/notifications/'+id"],
+  ['GET', '/tenant/payments/pending', "'/tenant/payments/pending?page=1&pageSize=20'"],
+  ['DELETE', '/programs/{id}', "'/programs/' + id"],
+  ['POST', '/programs/{id}/duplicate', "'/programs/' + id + '/duplicate'"],
+  ['PUT', '/programs/{id}/archive', "'/programs/' + id + '/archive'"],
+  ['PUT', '/subscriptions/{id}/extend', "action:'extend'|'pause'|'resume'|'cancel'"],
+  ['PUT', '/subscriptions/{id}/pause', "action:'extend'|'pause'|'resume'|'cancel'"],
+  ['PUT', '/subscriptions/{id}/resume', "action:'extend'|'pause'|'resume'|'cancel'"],
+  ['PUT', '/subscriptions/{id}/cancel', "action:'extend'|'pause'|'resume'|'cancel'"],
+  ['PUT', '/tenant/coaches/{id}/deactivate', "action: 'activate' | 'deactivate'"],
+  ['PUT', '/tenant/coaches/{id}/activate', "action: 'activate' | 'deactivate'"],
+]
+for (const [method, route, marker] of dynamicOperations) {
+  if (appSource.includes(marker)) calls.push({ file: appFile.file, method, route: route.replace(/\{[^}]+\}/g, '__PARAM__') })
+}
+
 if (clientSource.includes("'/auth/refresh-token'")) {
   calls.push({ file: sources.find(item => item.file.endsWith('/src/api/client.ts'))?.file ?? 'src/api/client.ts', method: 'POST', route: '/auth/refresh-token' })
 }

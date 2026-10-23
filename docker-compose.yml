@@ -20,7 +20,7 @@ x-api-environment: &api-environment
   Jwt__Audience: CoachPulse.Client
   Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN in .env}
   Frontend__BaseUrl: ${FRONTEND_BASE_URL:-http://localhost:8088}
-  ReverseProxy__KnownProxies__0: 172.30.0.2
+  ReverseProxy__KnownProxies__0: 172.30.0.5
   SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Set SUPERADMIN_EMAIL in .env}
   SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Set SUPERADMIN_PASSWORD in .env}
   Ai__InternalApiKey: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
@@ -189,7 +189,7 @@ services:
         condition: service_healthy
     networks:
       public:
-        ipv4_address: 172.30.0.2
+        ipv4_address: 172.30.0.5
     restart: unless-stopped
     logging: *default-logging
     deploy:

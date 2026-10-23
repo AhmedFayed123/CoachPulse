@@ -19,4 +19,17 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/components/ui/primitives.tsx'],
+    rules: {
+      'no-restricted-syntax': ['error',
+        { selector: "JSXOpeningElement[name.name='button']", message: 'Use the shared Button primitive.' },
+        { selector: "JSXOpeningElement[name.name='input']", message: 'Use the shared Input primitive.' },
+        { selector: "JSXOpeningElement[name.name='select']", message: 'Use the shared Select primitive.' },
+        { selector: "JSXOpeningElement[name.name='textarea']", message: 'Use the shared Textarea primitive.' },
+        { selector: "JSXOpeningElement[name.name='table']", message: 'Use the shared Table primitive.' },
+      ],
+    },
+  },
 )
