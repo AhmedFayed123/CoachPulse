@@ -18,7 +18,7 @@ async function mockWorkspace(page: Page, role: 'TenantOwner' | 'CoachStaff' | 'C
     if (url.pathname.endsWith('/account/me')) body = { id: 'preview-user', name: role === 'Client' ? 'Samira Hassan' : 'Northstar Studio', role, tenantId: 'preview-tenant' }
     else if (url.pathname.endsWith('/tenant')) body = { id: 'preview-tenant', name: 'Northstar Studio', logoUrl: '', primaryColor: '#0f766e', secondaryColor: '#38a890' }
     else if (url.pathname.endsWith('/tenant/dashboard/summary')) body = { activeClients: 34, monthlyRevenue: 42500, expiringSubscriptionsCount: 3, alerts: { pendingCheckIns: 4, pendingPayments: 2, unreadMessages: 5 } }
-    else if (url.pathname.endsWith('/my/dashboard')) body = { program: { title: 'Strength foundations' }, todayWorkout: { exercises: [{ name: 'Goblet squat' }, { name: 'Dumbbell row' }] }, subscription: { status: 'Active' }, unreadMessages: 2, nextCheckInAt: '2026-10-24T10:00:00Z' }
+    else if (url.pathname.endsWith('/my/dashboard')) body = { program: { title: 'Strength foundations' }, todayWorkout: { exercises: [{ name: 'Goblet squat' }, { name: 'Dumbbell row' }] }, subscription: { status: 'Active' }, unreadMessages: 2, nextCheckIn: '2026-10-24T10:00:00Z' }
     else if (url.pathname.endsWith('/superadmin/platform-analytics')) body = { totalTenants: 128, activeTenants: 112, suspendedTenants: 4, totalUsers: 4230, totalClients: 3810 }
     else if (url.pathname.endsWith('/superadmin/tenants')) body = { items: [{ id: 'tenant-1', name: 'Northstar Studio', slug: 'northstar', status: 'Active', createdAt: '2026-10-17T12:00:00Z' }], totalCount: 1, page: 1, pageSize: 100 }
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
@@ -79,6 +79,14 @@ test('keeps account, sign-out and notifications in the topbar outside the naviga
   await expect(drawer.locator('.logout')).toHaveCount(0)
   await expect(drawer.locator('a[href="/my/notifications"]')).toHaveCount(0)
   await expect(page.locator('.workspace-notification-link')).toBeVisible()
+})
+
+test('client dashboard renders the API nextCheckIn date', async ({ page }) => {
+  await mockWorkspace(page, 'Client')
+  await page.goto('/my/dashboard')
+  await expect(page.locator('.metric').filter({ hasText: 'Next check-in' })).toContainText('Oct 24, 2026')
+  await expect(page.locator('.dashboard-welcome')).toBeVisible()
+  await expect(page.locator('.dashboard-welcome a')).toHaveAttribute('href', '/my/program')
 })
 
 test('client can expand an exercise and watch its demonstration video', async ({ page }) => {
